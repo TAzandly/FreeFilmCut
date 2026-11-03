@@ -158,15 +158,19 @@ export class ProjectManager {
 
 			await this.editor.media.loadProjectMedia({ projectId: id });
 
-			await loadFonts({
-				families: [
-					...new Set(
-						(project.scenes ?? []).flatMap((scene) =>
-							getElementFontFamilies({ tracks: scene.tracks }),
-						),
-					),
-				],
-			});
+				try {
+					await loadFonts({
+						families: [
+							...new Set(
+								(project.scenes ?? []).flatMap((scene) =>
+									getElementFontFamilies({ tracks: scene.tracks }),
+								),
+							),
+						],
+					});
+				} catch (error) {
+					console.warn("Failed to preload project fonts:", error);
+				}
 
 			if (!project.metadata.thumbnail) {
 				try {

@@ -1,5 +1,6 @@
 import type { FontAtlas } from "@/fonts/types";
 import { SYSTEM_FONTS } from "@/fonts/system-fonts";
+import { LOCAL_CJK_FONT_FAMILIES } from "@/fonts/default-troika-font";
 
 const GOOGLE_FONTS_CSS = "https://fonts.googleapis.com/css2";
 const FONT_ATLAS_PATH = "/fonts/font-atlas.json";
@@ -70,11 +71,15 @@ export async function loadFullFont({
 		link.addEventListener("load", () => resolve(), { once: true });
 		link.addEventListener("error", () => resolve(), { once: true });
 	});
-	await Promise.all(
-		weights.map((weight) =>
-			document.fonts.load(`${weight} 16px "${family.replace(/"/g, '\\"')}"`),
-		),
-	);
+	try {
+		await Promise.all(
+			weights.map((weight) =>
+				document.fonts.load(`${weight} 16px "${family.replace(/"/g, '\\"')}"`),
+			),
+		);
+	} catch {
+		/* missing local @font-face / network — do not fail project load */
+	}
 	fullLoaded.add(family);
 }
 
@@ -83,6 +88,9 @@ export async function loadFonts({
 }: {
 	families: string[];
 }): Promise<void> {
-	const googleFonts = families.filter((family) => !SYSTEM_FONTS.has(family));
+	const googleFonts = families.filter(
+		(family) =>
+			!SYSTEM_FONTS.has(family) && !LOCAL_CJK_FONT_FAMILIES.has(family),
+	);
 	await Promise.all(googleFonts.map((family) => loadFullFont({ family })));
 }

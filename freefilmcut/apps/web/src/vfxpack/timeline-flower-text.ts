@@ -578,7 +578,7 @@ export function resolveTimelineFlowerTextProps({
 		content: readTextParamString(p, "content", "Default text") || "Default text",
 		fontSize,
 		scaledFontSize: scaled,
-		fontFamily: readTextParamString(p, "fontFamily", "Microsoft YaHei") || "Microsoft YaHei",
+		fontFamily: readTextParamString(p, "fontFamily", "Noto Sans SC") || "Noto Sans SC",
 		color,
 		textAlign: readTextParamString(p, "textAlign", "center") || "center",
 		fontWeight: readTextParamString(p, "fontWeight", "normal") || "normal",

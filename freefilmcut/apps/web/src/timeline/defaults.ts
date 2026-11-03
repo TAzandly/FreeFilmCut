@@ -39,7 +39,7 @@ const defaultTextElement: Omit<TextElement, "id"> = {
 	params: {
 		content: "Default text",
 		fontSize: DEFAULT_FONT_SIZE,
-		fontFamily: "Microsoft YaHei",
+		fontFamily: "Noto Sans SC",
 		color: "#ffffff",
 		textAlign: "center",
 		fontWeight: "normal",

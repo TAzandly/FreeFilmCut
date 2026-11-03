@@ -1,41 +1,34 @@
 /**
  * Troika timeline / pack text needs a real TTF URL.
  *
- * Microsoft YaHei (`msyh.ttf`) matches CapCut / Editor looks but cannot be
- * redistributed on GitHub. Ship Noto Sans SC (OFL) as the clone-safe default;
- * if a local `public/fonts/msyh.ttf` exists, prefer it after init.
+ * Ship Noto Sans SC (OFL) as the redistributable default. Do not probe
+ * `/fonts/msyh.ttf` — it is gitignored and a 404 breaks `document.fonts.load`
+ * / CSS @font-face on clone machines.
  */
 
 export const FCC_BUNDLED_CJK_FONT = "/fonts/NotoSansSC-Regular.ttf";
+/** Optional local-only file; not requested automatically. */
 export const FCC_MSYH_FONT = "/fonts/msyh.ttf";
 
-let activeDefault = FCC_BUNDLED_CJK_FONT;
-let initPromise: Promise<string> | null = null;
+/** CSS / params family names that resolve via Troika bundled TTF (not Google Fonts). */
+export const LOCAL_CJK_FONT_FAMILIES = new Set([
+	"Noto Sans SC",
+	"Microsoft YaHei",
+	"微软雅黑",
+	"msyh",
+]);
 
-/** Current default Troika font URL (Noto, or YaHei after successful probe). */
+/** Current default Troika font URL. */
 export function getDefaultTroikaFont(): string {
-	return activeDefault;
+	return FCC_BUNDLED_CJK_FONT;
 }
 
 /**
- * @deprecated Prefer getDefaultTroikaFont() — this alias tracks the active default.
- * Kept for older imports that read the constant once at module load.
+ * @deprecated Prefer getDefaultTroikaFont()
  */
-export let FCC_DEFAULT_TROIKA_FONT = FCC_BUNDLED_CJK_FONT;
+export const FCC_DEFAULT_TROIKA_FONT = FCC_BUNDLED_CJK_FONT;
 
+/** No-op kept for call sites; always uses bundled Noto. */
 export async function initDefaultTroikaFont(): Promise<string> {
-	if (initPromise) return initPromise;
-	initPromise = (async () => {
-		try {
-			const res = await fetch(FCC_MSYH_FONT, { method: "HEAD" });
-			if (res.ok) {
-				activeDefault = FCC_MSYH_FONT;
-				FCC_DEFAULT_TROIKA_FONT = FCC_MSYH_FONT;
-			}
-		} catch {
-			/* keep Noto */
-		}
-		return activeDefault;
-	})();
-	return initPromise;
+	return FCC_BUNDLED_CJK_FONT;
 }

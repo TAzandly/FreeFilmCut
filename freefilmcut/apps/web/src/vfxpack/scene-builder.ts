@@ -498,7 +498,7 @@ export async function buildPackScene({
 				const group = new THREE.Group();
 				group.userData = { ...(node.userData || {}), fccUI };
 				// Local TTF (Troika: ttf/otf/woff). Avoid CDN so Default text glyphs still load offline.
-				// Noto Sans SC is shipped; YaHei used when public/fonts/msyh.ttf exists.
+				// Noto Sans SC is shipped; YaHei CSS names alias to the same TTF.
 				const FCC_FLOWER_PREFIX = "__fccFlower_";
 				const FCC_FLOWER_FACE = "__fccFlower_face";
 

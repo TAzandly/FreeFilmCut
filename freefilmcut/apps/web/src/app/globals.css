@@ -1,13 +1,21 @@
+/* Bundled OFL CJK font (msyh.ttf is not redistributed). YaHei aliases map here so old projects still render. */
+@font-face {
+  font-family: "Noto Sans SC";
+  src: url("/fonts/NotoSansSC-Regular.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 @font-face {
   font-family: "Microsoft YaHei";
-  src: url("/fonts/msyh.ttf") format("truetype");
+  src: url("/fonts/NotoSansSC-Regular.ttf") format("truetype");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "微软雅黑";
-  src: url("/fonts/msyh.ttf") format("truetype");
+  src: url("/fonts/NotoSansSC-Regular.ttf") format("truetype");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
