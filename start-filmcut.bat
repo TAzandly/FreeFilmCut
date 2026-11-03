@@ -9,6 +9,7 @@ cd /d "%~dp0" || (
 set "ROOT=%CD%"
 set "NLE_DIR=%ROOT%\freefilmcut"
 set "LOCK=%NLE_DIR%\apps\web\.next\dev\lock"
+set "APP_URL=http://localhost:3000/projects"
 
 REM Bun default install location (used after auto-install in this same window)
 if exist "%USERPROFILE%\.bun\bin\bun.exe" (
@@ -18,7 +19,7 @@ if exist "%USERPROFILE%\.bun\bin\bun.exe" (
 title FreeFilmCut NLE
 echo ========================================
 echo   FreeFilmCut NLE
-echo   URL:  http://localhost:3000
+echo   URL:  %APP_URL%
 echo   Root: %NLE_DIR%
 echo ========================================
 echo.
@@ -104,8 +105,8 @@ if not exist "node_modules" (
 REM If port 3000 already listening, just open the browser.
 netstat -ano | findstr /R /C:":3000 .*LISTENING" >nul 2>&1
 if not errorlevel 1 (
-  echo [INFO] Already running on http://localhost:3000 - opening browser.
-  start "" http://localhost:3000
+  echo [INFO] Already running - opening browser.
+  start "" "%APP_URL%"
   pause
   exit /b 0
 )
@@ -116,7 +117,7 @@ if exist "%LOCK%" (
   del /f /q "%LOCK%" >nul 2>&1
 )
 
-start "FreeFilmCut-OpenBrowser" cmd /c "timeout /t 8 /nobreak >nul & start http://localhost:3000"
+start "FreeFilmCut-OpenBrowser" cmd /c "timeout /t 8 /nobreak >nul & start %APP_URL%"
 bun run dev:web
 set "EC=%ERRORLEVEL%"
 echo.

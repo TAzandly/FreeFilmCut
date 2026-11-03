@@ -40,10 +40,13 @@ test/agent-scratch/**/*.zip
 test/agent-scratch/**/*_b64.txt
 test/backups/_backup_before_git_recovery_*/
 
-# Local editor projects / nested upstream git backups (monorepo flatten)
-projects/
+# Local Three.js editor project folders at repo root only
+# (do NOT use bare "projects/" — that also ignored apps/web/src/app/projects/)
+/projects/
 **/.git.bak-upstream/
 **/.git.bak*/
+**/*.bak
+**/*.bak-*
 
 # Bun lock binary
 bun.lockb
