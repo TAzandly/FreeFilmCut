@@ -12,6 +12,7 @@ import {
 } from "@/vfxpack/text-fake-style";
 
 import type { LoadedVfxPack, VfxSceneNode } from "@/vfxpack/types";
+import { getDefaultTroikaFont } from "@/fonts/default-troika-font";
 import {
 	ensureBelowInputUniforms,
 	isBelowInputUniformName,
@@ -497,12 +498,12 @@ export async function buildPackScene({
 				const group = new THREE.Group();
 				group.userData = { ...(node.userData || {}), fccUI };
 				// Local TTF (Troika: ttf/otf/woff). Avoid CDN so Default text glyphs still load offline.
-				const DEFAULT_FONT = "/fonts/msyh.ttf"; // Microsoft YaHei (match Editor)
+				// Noto Sans SC is shipped; YaHei used when public/fonts/msyh.ttf exists.
 				const FCC_FLOWER_PREFIX = "__fccFlower_";
 				const FCC_FLOWER_FACE = "__fccFlower_face";
 
 				const resolveFont = (fontPath: string): string => {
-					if (!fontPath) return DEFAULT_FONT;
+					if (!fontPath) return getDefaultTroikaFont();
 					if (
 						fontPath.startsWith("http") ||
 						fontPath.startsWith("blob:") ||

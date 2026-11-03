@@ -9,6 +9,7 @@
 import * as THREE from "three";
 import { Text as TroikaText } from "troika-three-text";
 import { getFccUI, UI_LAYER } from "@/vfxpack/ui-overlay";
+import { getDefaultTroikaFont } from "@/fonts/default-troika-font";
 
 export const FCC_FLOWER_PREFIX = "__fccFlower_";
 export const FCC_FLOWER_FACE = "__fccFlower_face";
@@ -33,8 +34,13 @@ function findParentUIText(group: THREE.Object3D): THREE.Object3D | null {
 	return null;
 }
 
-/** Match scene-builder DEFAULT_FONT when ui.font is empty (timeline flower text). */
-export const FCC_DEFAULT_TEXT_FONT = "/fonts/msyh.ttf";
+/** Match scene-builder default when ui.font is empty (timeline flower text). */
+export function getFccDefaultTextFont(): string {
+	return getDefaultTroikaFont();
+}
+
+/** @deprecated use getFccDefaultTextFont() */
+export const FCC_DEFAULT_TEXT_FONT = "/fonts/NotoSansSC-Regular.ttf";
 
 /**
  * Prefer the parent's already-synced face/fill Troika for caret metrics.
@@ -295,7 +301,7 @@ function ensurePlainTroika(
 	mesh.color = ui.color || "#ffffff";
 	mesh.anchorX = "center";
 	mesh.anchorY = "middle";
-	mesh.font = String(ui.fontUrl || ui.font || FCC_DEFAULT_TEXT_FONT);
+	mesh.font = String(ui.fontUrl || ui.font || getFccDefaultTextFont());
 	mesh.letterSpacing = 0;
 	mesh.sync(() => {
 		/* ready */
@@ -346,7 +352,7 @@ export function applyTroikaFromUI(
 	troika.maxWidth = rectW > 0 ? rectW : 400;
 	troika.overflowWrap = "break-word";
 	// Fake bold = SDF expand in scene-builder; layout Troika always uses regular face.
-	const font = ui.fontUrl || ui.font || FCC_DEFAULT_TEXT_FONT;
+	const font = ui.fontUrl || ui.font || getFccDefaultTextFont();
 	troika.font = String(font);
 	troika.fillOpacity = 0;
 	troika.visible = false;

@@ -31,6 +31,8 @@
 
 剪辑端第一次启动可能较慢（`bun install` + Next.js）。
 
+时间线文字默认使用开源 **Noto Sans SC**（`apps/web/public/fonts/NotoSansSC-Regular.ttf`）。微软雅黑 `msyh.ttf` 不能随仓库分发；若你本机自己放进 `public/fonts/`，启动后会自动优先使用。
+
 ---
 
 ## 剪辑端是什么

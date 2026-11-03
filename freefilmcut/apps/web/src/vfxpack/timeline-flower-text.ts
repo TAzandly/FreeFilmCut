@@ -26,6 +26,12 @@ import {
 } from "@/text/typography";
 import type { TextElement } from "@/timeline";
 import type { ParamValues } from "@/params";
+import {
+	FCC_DEFAULT_TROIKA_FONT,
+	getDefaultTroikaFont,
+} from "@/fonts/default-troika-font";
+
+export { FCC_DEFAULT_TROIKA_FONT, getDefaultTroikaFont };
 
 export const TIMELINE_FLOWER_TEXT_PACK_PREFIX = "fcc-timeline-flower-text:";
 
@@ -57,11 +63,6 @@ function flowerStrokeLog(...args: unknown[]): void {
 /** Dedupe render-resolve logs when debug is on. */
 let _lastFlowerResolveLogKey = "";
 
-
-
-/** Default Troika font URL (Microsoft YaHei), matches editor / public/fonts. */
-export const FCC_DEFAULT_TROIKA_FONT = "/fonts/msyh.ttf";
-
 function packFontObjectUrl(
 	pack: LoadedVfxPack,
 	rel: string,
@@ -90,7 +91,8 @@ export function resolveTroikaFontUrl(
 	packId?: string | null,
 ): string {
 	const f = String(fontFamily || "").trim();
-	if (!f) return FCC_DEFAULT_TROIKA_FONT;
+	const fallback = getDefaultTroikaFont();
+	if (!f) return fallback;
 	if (
 		f.startsWith("blob:") ||
 		f.startsWith("http://") ||
@@ -111,10 +113,10 @@ export function resolveTroikaFontUrl(
 			}
 		}
 		// Unresolved pack-relative path — Troika cannot fetch it; fall back.
-		return FCC_DEFAULT_TROIKA_FONT;
+		return fallback;
 	}
-	if (/^(microsoft yahei|微软雅黑|msyh)$/i.test(f)) return FCC_DEFAULT_TROIKA_FONT;
-	return FCC_DEFAULT_TROIKA_FONT;
+	if (/^(microsoft yahei|微软雅黑|msyh)$/i.test(f)) return fallback;
+	return fallback;
 }
 
 /** Fallback when a pack / element carries no usable fontSize (same as new text). */
