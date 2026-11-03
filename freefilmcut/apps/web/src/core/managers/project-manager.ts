@@ -27,6 +27,10 @@ import {
 	type MigrationProgress,
 } from "@/services/storage/migrations";
 import { loadFonts } from "@/fonts/google-fonts";
+import {
+	ensureLocalFontsForFamilies,
+	looksLikeFontUrlOrPackPath,
+} from "@/fonts/local-fonts";
 import { DEFAULTS } from "@/timeline/defaults";
 import { getElementFontFamilies } from "@/timeline/element-utils";
 import { getRaisedProjectFpsForImportedMedia } from "@/fps/utils";
@@ -159,14 +163,18 @@ export class ProjectManager {
 			await this.editor.media.loadProjectMedia({ projectId: id });
 
 				try {
-					await loadFonts({
-						families: [
-							...new Set(
-								(project.scenes ?? []).flatMap((scene) =>
-									getElementFontFamilies({ tracks: scene.tracks }),
-								),
+					const families = [
+						...new Set(
+							(project.scenes ?? []).flatMap((scene) =>
+								getElementFontFamilies({ tracks: scene.tracks }),
 							),
-						],
+						),
+					];
+					await ensureLocalFontsForFamilies({ families });
+					await loadFonts({
+						families: families.filter(
+							(family) => !looksLikeFontUrlOrPackPath(family),
+						),
 					});
 				} catch (error) {
 					console.warn("Failed to preload project fonts:", error);

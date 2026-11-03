@@ -240,6 +240,10 @@ function BasicTab({ element, trackId }: { element: TextElement; trackId: string 
 	const opacity = readNumber({ params, key: "opacity", fallback: 1 });
 	const [strokeEnabled, setStrokeEnabled] = useState(false);
 	const [strokeColor, setStrokeColor] = useState("#000000");
+	const isTpl = isTextTemplateClip(renderElement);
+	const typographyKeys = isTpl
+		? TYPOGRAPHY_PARAM_KEYS.filter((key) => key !== "fontFamily")
+		: TYPOGRAPHY_PARAM_KEYS;
 
 	const patchParams = (patch: ParamValues) => {
 		previewUpdates({ params: { ...renderElement.params, ...patch } });
@@ -449,7 +453,7 @@ function BasicTab({ element, trackId }: { element: TextElement; trackId: string 
 					<ElementParamsTab
 						element={renderElement}
 						trackId={trackId}
-						paramKeys={TYPOGRAPHY_PARAM_KEYS}
+						paramKeys={typographyKeys}
 						sectionKey="text-typography-fields"
 					/>
 				</SectionContent>

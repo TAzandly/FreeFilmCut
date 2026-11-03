@@ -11,6 +11,7 @@ import { useTimelineStore } from "@/timeline/timeline-store";
 import { useEditorActions } from "@/actions/use-editor-actions";
 import { loadFontAtlas } from "@/fonts/google-fonts";
 import { initDefaultTroikaFont } from "@/fonts/default-troika-font";
+import { tryInitLocalFonts } from "@/fonts/local-fonts";
 import {
 	initializeGpuRenderer,
 	isGpuAvailable,
@@ -48,6 +49,7 @@ export function EditorProvider({ projectId, children }: EditorProviderProps) {
 
 				setIsLoading(false);
 				void initDefaultTroikaFont();
+				void tryInitLocalFonts();
 				loadFontAtlas();
 			} catch (err) {
 				if (cancelled) return;
@@ -140,10 +142,11 @@ function EditorRuntimeBindings() {
 		editor.command.isRippleEnabled = rippleEditingEnabled;
 	}, [editor, rippleEditingEnabled]);
 
-	useEffect(() => {
-		void initDefaultTroikaFont();
-		loadBuiltinVfxPacks();
-	}, []);
+		useEffect(() => {
+			void initDefaultTroikaFont();
+			void tryInitLocalFonts();
+			loadBuiltinVfxPacks();
+		}, []);
 
 	useEffect(() => {
 		const handleBeforeUnload = (event: BeforeUnloadEvent) => {

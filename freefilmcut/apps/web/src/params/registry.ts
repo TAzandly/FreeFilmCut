@@ -488,7 +488,7 @@ const textElementParams: ElementParamDefinition[] = [
 		key: "fontFamily",
 		label: "Font Family",
 		type: "font",
-		default: "Arial",
+		default: "Noto Sans SC",
 		keyframable: false,
 	},
 	{

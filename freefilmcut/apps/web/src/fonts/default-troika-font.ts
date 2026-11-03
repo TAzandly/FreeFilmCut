@@ -28,7 +28,7 @@ export function getDefaultTroikaFont(): string {
  */
 export const FCC_DEFAULT_TROIKA_FONT = FCC_BUNDLED_CJK_FONT;
 
-/** No-op kept for call sites; always uses bundled Noto. */
+/** Kept for call sites; bundled Noto remains the Troika file fallback. */
 export async function initDefaultTroikaFont(): Promise<string> {
 	return FCC_BUNDLED_CJK_FONT;
 }

@@ -1,6 +1,10 @@
 import type { FontAtlas } from "@/fonts/types";
 import { SYSTEM_FONTS } from "@/fonts/system-fonts";
 import { LOCAL_CJK_FONT_FAMILIES } from "@/fonts/default-troika-font";
+import {
+	getCachedLocalFontUrl,
+	looksLikeFontUrlOrPackPath,
+} from "@/fonts/local-fonts";
 
 const GOOGLE_FONTS_CSS = "https://fonts.googleapis.com/css2";
 const FONT_ATLAS_PATH = "/fonts/font-atlas.json";
@@ -90,7 +94,10 @@ export async function loadFonts({
 }): Promise<void> {
 	const googleFonts = families.filter(
 		(family) =>
-			!SYSTEM_FONTS.has(family) && !LOCAL_CJK_FONT_FAMILIES.has(family),
+			!SYSTEM_FONTS.has(family) &&
+			!LOCAL_CJK_FONT_FAMILIES.has(family) &&
+			!looksLikeFontUrlOrPackPath(family) &&
+			!getCachedLocalFontUrl(family),
 	);
 	await Promise.all(googleFonts.map((family) => loadFullFont({ family })));
 }

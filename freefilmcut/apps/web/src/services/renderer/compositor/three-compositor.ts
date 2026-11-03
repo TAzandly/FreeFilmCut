@@ -127,6 +127,7 @@ import {
 	TIMELINE_FLOWER_TEXT_PACK_PREFIX,
 	type TimelineFlowerTextProps,
 	resolveTroikaFontUrl,
+	looksLikeFontUrlOrPackPath,
 } from "@/vfxpack/timeline-flower-text";
 import { bumpFlowerTextFrameEpoch } from "@/vfxpack/flower-text-epoch";
 import { loadFlowerPackCatalog } from "@/vfxpack/flower-pack-catalog";
@@ -2644,6 +2645,19 @@ class ThreeCompositor {
 	}): Promise<boolean> {
 		const renderer = this.renderer;
 		if (!renderer) return false;
+
+		// Warm Local Font Access blob before Troika sync (family names need a file URL).
+		{
+			const family = String(item.props.fontFamily || "").trim();
+			if (family && !looksLikeFontUrlOrPackPath(family)) {
+				try {
+					const { ensureLocalFontUrl } = await import("@/fonts/local-fonts");
+					await ensureLocalFontUrl({ family });
+				} catch {
+					/* keep bundled Noto fallback */
+				}
+			}
+		}
 
 		this.ensureFlowerTextBuilt({
 			elementId: item.elementId,

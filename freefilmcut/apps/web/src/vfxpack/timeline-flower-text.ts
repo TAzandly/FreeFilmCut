@@ -30,8 +30,13 @@ import {
 	FCC_DEFAULT_TROIKA_FONT,
 	getDefaultTroikaFont,
 } from "@/fonts/default-troika-font";
+import {
+	getCachedLocalFontUrl,
+	looksLikeFontUrlOrPackPath,
+} from "@/fonts/local-fonts";
 
 export { FCC_DEFAULT_TROIKA_FONT, getDefaultTroikaFont };
+export { looksLikeFontUrlOrPackPath };
 
 export const TIMELINE_FLOWER_TEXT_PACK_PREFIX = "fcc-timeline-flower-text:";
 
@@ -115,7 +120,9 @@ export function resolveTroikaFontUrl(
 		// Unresolved pack-relative path — Troika cannot fetch it; fall back.
 		return fallback;
 	}
-	if (/^(microsoft yahei|微软雅黑|msyh)$/i.test(f)) return fallback;
+	// System / CSS family name — use Local Font Access blob if already warmed.
+	const local = getCachedLocalFontUrl(f);
+	if (local) return local;
 	return fallback;
 }
 

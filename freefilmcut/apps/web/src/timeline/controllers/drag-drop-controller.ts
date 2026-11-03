@@ -9,6 +9,7 @@ import {
 	createSolidContent,
 } from "@/vfxpack/flower-style";
 import { DEFAULTS } from "@/timeline/defaults";
+import { getPreferredTextFontFamily } from "@/fonts/local-fonts";
 import type { DragEvent } from "react";
 import { processMediaAssets } from "@/media/processing";
 import { showMediaUploadToast } from "@/media/upload-toast";
@@ -494,6 +495,8 @@ export class DragDropController {
 				typeof dragData.content === "string"
 					? dragData.content
 					: DEFAULTS.text.element.params.content,
+			// Prefer locale-matched system font once Local Font Access is granted.
+			fontFamily: getPreferredTextFontFamily(),
 		};
 		let flowerStyle: unknown = undefined;
 		let flowerBaseFontSize: number | null | undefined = undefined;
