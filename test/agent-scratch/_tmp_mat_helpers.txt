@@ -1,0 +1,44 @@
+function writeShaderFilesIfPossible( material ) {
+
+		const pf = editor.projectFolder;
+		if ( ! pf || typeof pf.hasFolder !== 'function' || ! pf.hasFolder() ) return;
+		if ( ! material || ( ! material.isShaderMaterial && ! material.isRawShaderMaterial ) ) return;
+
+		const base = String( material.name || 'CustomShader' )
+			.replace( /[<>:"/\\|?*\s]+/g, '_' )
+			.replace( /_+/g, '_' )
+			.slice( 0, 48 ) || 'CustomShader';
+		const vertName = base + '.vert.glsl';
+		const fragName = base + '.frag.glsl';
+
+		Promise.resolve()
+			.then( function () {
+
+				return pf.saveBlob( 'assets/shaders', vertName, material.vertexShader || '' );
+
+			} )
+			.then( function () {
+
+				return pf.saveBlob( 'assets/shaders', fragName, material.fragmentShader || '' );
+
+			} )
+			.then( function () {
+
+				if ( ! material.userData ) material.userData = {};
+				material.userData.shaderFiles = {
+					vert: 'assets/shaders/' + vertName,
+					frag: 'assets/shaders/' + fragName
+				};
+
+			} )
+			.catch( function ( err ) {
+
+				console.warn( '[FreeFilmCut] write shader files failed', err );
+
+			} );
+
+	}
+
+	function assignMaterialToCurrent( material, options = {} ) {
+
+		if ( ! currentObject || currentObject.material ===

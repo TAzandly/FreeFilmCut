@@ -1,0 +1,646 @@
+{
+    "created":  "2026-10-22T20:56:15",
+    "note":  "Moved only; nothing deleted. To restore a file: move it back from \u0027to\u0027 to \u0027from\u0027 under FreeFilmCut root.",
+    "formal_unit_tests":  "Left in place under freefilmcut/**/__tests__ and *.test.ts so vitest/jest keep working. See test/README.md.",
+    "moved":  [
+                  {
+                      "from":  "_add_fill_params.js",
+                      "to":  "test/agent-scratch/_add_fill_params.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_agent_xfer",
+                      "to":  "test/agent-scratch/_agent_xfer",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_audit_anim.py",
+                      "to":  "test/agent-scratch/_audit_anim.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_bump_final.js",
+                      "to":  "test/agent-scratch/_bump_final.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_check_rest.js",
+                      "to":  "test/agent-scratch/_check_rest.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_clean_empty_gate.js",
+                      "to":  "test/agent-scratch/_clean_empty_gate.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_console_check.js",
+                      "to":  "test/agent-scratch/_console_check.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_console_check2.js",
+                      "to":  "test/agent-scratch/_console_check2.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_dbg_method.txt",
+                      "to":  "test/agent-scratch/_dbg_method.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_debug_pack",
+                      "to":  "test/agent-scratch/_debug_pack",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_diag_filldim.js",
+                      "to":  "test/agent-scratch/_diag_filldim.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_diag_wipe_sample.js",
+                      "to":  "test/agent-scratch/_diag_wipe_sample.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_du.js",
+                      "to":  "test/agent-scratch/_du.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_dump2.js",
+                      "to":  "test/agent-scratch/_dump2.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_dump_sidebar.js",
+                      "to":  "test/agent-scratch/_dump_sidebar.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_empty1.py",
+                      "to":  "test/agent-scratch/_empty1.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_empty2.py",
+                      "to":  "test/agent-scratch/_empty2.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_empty3.py",
+                      "to":  "test/agent-scratch/_empty3.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_empty4.py",
+                      "to":  "test/agent-scratch/_empty4.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_empty5.py",
+                      "to":  "test/agent-scratch/_empty5.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fill_params_ctx.js",
+                      "to":  "test/agent-scratch/_fill_params_ctx.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_full_scan.js",
+                      "to":  "test/agent-scratch/_full_scan.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fxbug1.py",
+                      "to":  "test/agent-scratch/_fxbug1.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fxbug2.py",
+                      "to":  "test/agent-scratch/_fxbug2.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fxbug3.py",
+                      "to":  "test/agent-scratch/_fxbug3.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fxbug4.py",
+                      "to":  "test/agent-scratch/_fxbug4.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fxfix1.py",
+                      "to":  "test/agent-scratch/_fxfix1.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fxfix2.py",
+                      "to":  "test/agent-scratch/_fxfix2.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fxfix3.py",
+                      "to":  "test/agent-scratch/_fxfix3.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fxfix4.py",
+                      "to":  "test/agent-scratch/_fxfix4.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fxfix5.py",
+                      "to":  "test/agent-scratch/_fxfix5.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fxfix6.py",
+                      "to":  "test/agent-scratch/_fxfix6.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fxfix7.py",
+                      "to":  "test/agent-scratch/_fxfix7.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fxfix8.py",
+                      "to":  "test/agent-scratch/_fxfix8.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fxfix9.py",
+                      "to":  "test/agent-scratch/_fxfix9.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_hard_wipe_edge.js",
+                      "to":  "test/agent-scratch/_hard_wipe_edge.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_hex_builtins.js",
+                      "to":  "test/agent-scratch/_hex_builtins.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_insp_manifest.json",
+                      "to":  "test/agent-scratch/_insp_manifest.json",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_jy_anim_inspect",
+                      "to":  "test/agent-scratch/_jy_anim_inspect",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_new_methods.txt",
+                      "to":  "test/agent-scratch/_new_methods.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_oc_dump",
+                      "to":  "test/agent-scratch/_oc_dump",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_organize_test.py",
+                      "to":  "test/agent-scratch/_organize_test.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_pp_order.js",
+                      "to":  "test/agent-scratch/_pp_order.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_rm_wipe_logs.js",
+                      "to":  "test/agent-scratch/_rm_wipe_logs.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_scan_builtins.js",
+                      "to":  "test/agent-scratch/_scan_builtins.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_scan_fix_all.js",
+                      "to":  "test/agent-scratch/_scan_fix_all.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_scan_tanim.js",
+                      "to":  "test/agent-scratch/_scan_tanim.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_snap_method.txt",
+                      "to":  "test/agent-scratch/_snap_method.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tanim_check",
+                      "to":  "test/agent-scratch/_tanim_check",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_Sidebar.Object.UI.js.txt",
+                      "to":  "test/agent-scratch/_tmp_Sidebar.Object.UI.js.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_comp.b64",
+                      "to":  "test/agent-scratch/_tmp_comp.b64",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_cover.png",
+                      "to":  "test/agent-scratch/_tmp_cover.png",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_fade_pack",
+                      "to":  "test/agent-scratch/_tmp_fade_pack",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_find_strings_out.txt",
+                      "to":  "test/agent-scratch/_tmp_find_strings_out.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_link_handoff.py",
+                      "to":  "test/agent-scratch/_tmp_link_handoff.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_mat_helpers.txt",
+                      "to":  "test/agent-scratch/_tmp_mat_helpers.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_mat_snippet.txt",
+                      "to":  "test/agent-scratch/_tmp_mat_snippet.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_patch.b64",
+                      "to":  "test/agent-scratch/_tmp_patch.b64",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_pp_check",
+                      "to":  "test/agent-scratch/_tmp_pp_check",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_res_snippet.txt",
+                      "to":  "test/agent-scratch/_tmp_res_snippet.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_rm_logs.py",
+                      "to":  "test/agent-scratch/_tmp_rm_logs.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_rm_logs2.py",
+                      "to":  "test/agent-scratch/_tmp_rm_logs2.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_script_hits.txt",
+                      "to":  "test/agent-scratch/_tmp_script_hits.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_shader-uniforms-fix.md",
+                      "to":  "test/agent-scratch/_tmp_shader-uniforms-fix.md",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_stack_pack",
+                      "to":  "test/agent-scratch/_tmp_stack_pack",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_sweep_inspect",
+                      "to":  "test/agent-scratch/_tmp_sweep_inspect",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_sweep_phase",
+                      "to":  "test/agent-scratch/_tmp_sweep_phase",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_sweep_src",
+                      "to":  "test/agent-scratch/_tmp_sweep_src",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_tex1.png",
+                      "to":  "test/agent-scratch/_tmp_tex1.png",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_tex2.png",
+                      "to":  "test/agent-scratch/_tmp_tex2.png",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_textanim_sample",
+                      "to":  "test/agent-scratch/_tmp_textanim_sample",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_three-compositor.ts",
+                      "to":  "test/agent-scratch/_tmp_three-compositor.ts",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_verify_out.txt",
+                      "to":  "test/agent-scratch/_tmp_verify_out.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_vfxpack-editor.md",
+                      "to":  "test/agent-scratch/_tmp_vfxpack-editor.md",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_wipe_pack",
+                      "to":  "test/agent-scratch/_tmp_wipe_pack",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_verify.js",
+                      "to":  "test/agent-scratch/_verify.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_verify269.js",
+                      "to":  "test/agent-scratch/_verify269.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_verify_keydrag.js",
+                      "to":  "test/agent-scratch/_verify_keydrag.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_verify_rm_logs.js",
+                      "to":  "test/agent-scratch/_verify_rm_logs.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_wipe_diag.txt",
+                      "to":  "test/agent-scratch/_wipe_diag.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_wipe_fill.js",
+                      "to":  "test/agent-scratch/_wipe_fill.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_wipe_frag.js",
+                      "to":  "test/agent-scratch/_wipe_frag.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_wipe_log_ctx.js",
+                      "to":  "test/agent-scratch/_wipe_log_ctx.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_wipe_shader_lines.js",
+                      "to":  "test/agent-scratch/_wipe_shader_lines.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_wipe_test",
+                      "to":  "test/agent-scratch/_wipe_test",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "clear-editor.cjs",
+                      "to":  "test/agent-scratch/clear-editor.cjs",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "diagnose-editor.cjs",
+                      "to":  "test/agent-scratch/diagnose-editor.cjs",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "diagnose-editor.mjs",
+                      "to":  "test/agent-scratch/diagnose-editor.mjs",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "package-lock.json.bak",
+                      "to":  "test/agent-scratch/package-lock.json.bak",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "patch-bridge-hook.js",
+                      "to":  "test/agent-scratch/patch-bridge-hook.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "patch-editor.js",
+                      "to":  "test/agent-scratch/patch-editor.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "patch-index.js",
+                      "to":  "test/agent-scratch/patch-index.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "patch-shaders.js",
+                      "to":  "test/agent-scratch/patch-shaders.js",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "project-(2)-fixed.json",
+                      "to":  "test/agent-scratch/project-(2)-fixed.json",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "repro-fromjson.cjs",
+                      "to":  "test/agent-scratch/repro-fromjson.cjs",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "repro-parse.cjs",
+                      "to":  "test/agent-scratch/repro-parse.cjs",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "repro-reload-wrap.cjs",
+                      "to":  "test/agent-scratch/repro-reload-wrap.cjs",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "repro-shader-save.cjs",
+                      "to":  "test/agent-scratch/repro-shader-save.cjs",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "verify-fix.cjs",
+                      "to":  "test/agent-scratch/verify-fix.cjs",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "freefilmcut/apps/web/src/services/renderer/compositor/three-compositor.ts.bak-below-fix",
+                      "to":  "test/backups/freefilmcut/apps/web/src/services/renderer/compositor/three-compositor.ts.bak-below-fix",
+                      "kind":  "backup"
+                  },
+                  {
+                      "from":  "freefilmcut/apps/web/src/services/renderer/compositor/three-compositor.ts.bak-uinput-stack",
+                      "to":  "test/backups/freefilmcut/apps/web/src/services/renderer/compositor/three-compositor.ts.bak-uinput-stack",
+                      "kind":  "backup"
+                  },
+                  {
+                      "from":  "three.js/editor/js/Menubar.File.js.bak-savefix",
+                      "to":  "test/backups/three.js/editor/js/Menubar.File.js.bak-savefix",
+                      "kind":  "backup"
+                  },
+                  {
+                      "from":  "three.js/editor/js/Sidebar.Object.TextAnim.js.bak_corrupt",
+                      "to":  "test/backups/three.js/editor/js/Sidebar.Object.TextAnim.js.bak_corrupt",
+                      "kind":  "backup"
+                  },
+                  {
+                      "from":  "three.js/editor/js/Sidebar.Object.UI.js.bak-fcc-ui-61",
+                      "to":  "test/backups/three.js/editor/js/Sidebar.Object.UI.js.bak-fcc-ui-61",
+                      "kind":  "backup"
+                  },
+                  {
+                      "from":  "three.js/editor/js/Storage.js.bak-savefix",
+                      "to":  "test/backups/three.js/editor/js/Storage.js.bak-savefix",
+                      "kind":  "backup"
+                  },
+                  {
+                      "from":  "three.js/editor/js/textanim/TextAnimBuiltins.js.bak_corrupt",
+                      "to":  "test/backups/three.js/editor/js/textanim/TextAnimBuiltins.js.bak_corrupt",
+                      "kind":  "backup"
+                  },
+                  {
+                      "from":  "three.js/editor/js/textanim/TextAnimBuiltins.js.bak_corrupt2",
+                      "to":  "test/backups/three.js/editor/js/textanim/TextAnimBuiltins.js.bak_corrupt2",
+                      "kind":  "backup"
+                  },
+                  {
+                      "from":  "scripts/_check_exp.py",
+                      "to":  "test/agent-scratch/scripts/_check_exp.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "scripts/__pycache__",
+                      "to":  "test/agent-scratch/scripts/__pycache__",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "scripts/vfxpack-patch",
+                      "to":  "test/agent-scratch/scripts/vfxpack-patch",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_a12.py",
+                      "to":  "test/agent-scratch/_a12.py",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_fccvideo_b64.txt",
+                      "to":  "test/agent-scratch/_fccvideo_b64.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_hello_manifest.json",
+                      "to":  "test/agent-scratch/_hello_manifest.json",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_inspect_testart.zip",
+                      "to":  "test/agent-scratch/_inspect_testart.zip",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_layer2_out.txt",
+                      "to":  "test/agent-scratch/_layer2_out.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_layer3_out.txt",
+                      "to":  "test/agent-scratch/_layer3_out.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_layer4_out.txt",
+                      "to":  "test/agent-scratch/_layer4_out.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_layer_out.txt",
+                      "to":  "test/agent-scratch/_layer_out.txt",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_patch_flower_media_helper.tsfrag",
+                      "to":  "test/agent-scratch/_patch_flower_media_helper.tsfrag",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_mg.mp4",
+                      "to":  "test/agent-scratch/_tmp_mg.mp4",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_hello_inspect",
+                      "to":  "test/agent-scratch/_hello_inspect",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_hello_seq",
+                      "to":  "test/agent-scratch/_hello_seq",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_inspect_testart",
+                      "to":  "test/agent-scratch/_inspect_testart",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_bloom_pack",
+                      "to":  "test/agent-scratch/_tmp_bloom_pack",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_tmp_flower_767",
+                      "to":  "test/agent-scratch/_tmp_flower_767",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "finalize-rename-FreeFilmCut.bat",
+                      "to":  "test/agent-scratch/finalize-rename-FreeFilmCut.bat",
+                      "kind":  "scratch"
+                  },
+                  {
+                      "from":  "_backup_before_git_recovery_2026-10-27",
+                      "to":  "test/backups/_backup_before_git_recovery_2026-10-27",
+                      "kind":  "backup"
+                  }
+              ],
+    "skipped":  [
+
+                ],
+    "last_cleanup":  "2026-11-02"
+}

@@ -1,0 +1,104 @@
+230|	return true;
+231|}
+232|
+233|export function applyAnimToRoot(
+234|	root: THREE.Object3D,
+235|	clip: FreecapcutAnimClip,
+236|	t: number,
+237|	opts: ApplyAnimOptions = {},
+238|): number {
+239|	if (!root || !clip) return 0;
+240|	const tc = mapAnimTime(t, clip.duration, clip.loop || "clamp");
+241|	let n = 0;
+242|	for (const target of clip.targets || []) {
+243|		const obj = root.getObjectByProperty("uuid", target.objectUuid);
+244|		let touched = false;
+245|		for (const track of target.tracks || []) {
+246|			const v = sampleKeys(track.keys, tc, track.interp || "linear");
+247|			if (v === null) continue;
+248|
+249|			if (TRANSFORM_PATHS.has(track.path)) {
+250|				if (!obj) continue;
+251|				if (setObjectPathValue(obj, track.path, v)) {
+252|					touched = true;
+253|					n++;
+254|				}
+255|				continue;
+256|			}
+257|
+258|			if (parseMaterialPath(track.path)) {
+259|				if (applyMaterialPath(root, track.path, v, opts.materialsByUuid)) n++;
+260|				continue;
+261|			}
+262|
+263|			if (parsePostProcessPath(track.path)) {
+264|				if (
+265|					applyPostProcessPath(
+266|						root,
+267|						target.objectUuid,
+268|						track.path,
+269|						v,
+270|						opts.postProcess,
+271|					)
+272|				) {
+273|					n++;
+274|				}
+275|				continue;
+276|			}
+277|		}
+278|		if (
+279|			touched &&
+280|			obj &&
+281|			(obj as THREE.Camera).isCamera &&
+282|			typeof (obj as THREE.PerspectiveCamera).updateProjectionMatrix === "function"
+283|		) {
+284|			(obj as THREE.PerspectiveCamera).updateProjectionMatrix();
+285|		}
+286|	}
+287|	return n;
+288|}
+289|
+290|export function normalizeAnim(raw: unknown): FreecapcutAnimClip | null {
+291|	if (!raw || typeof raw !== "object") return null;
+292|	const r = raw as Record<string, unknown>;
+293|	const targetsIn = Array.isArray(r.targets) ? r.targets : [];
+294|	const targets: AnimTarget[] = [];
+295|	for (const t of targetsIn) {
+296|		if (!t || typeof t !== "object") continue;
+297|		const tt = t as Record<string, unknown>;
+298|		if (!tt.objectUuid) continue;
+299|		const tracksIn = Array.isArray(tt.tracks) ? tt.tracks : [];
+300|		const tracks: AnimTrack[] = [];
+301|		for (const tr of tracksIn) {
+302|			if (!tr || typeof tr !== "object") continue;
+303|			const trr = tr as Record<string, unknown>;
+304|			if (!trr.path) continue;
+305|			const keysIn = Array.isArray(trr.keys) ? trr.keys : [];
+306|			const keys: AnimKey[] = [];
+307|			for (const k of keysIn) {
+308|				if (!k || typeof k !== "object") continue;
+309|				const kk = k as Record<string, unknown>;
+310|				const kt = Number(kk.t);
+311|				const kv = Number(kk.v);
+312|				if (!Number.isFinite(kt) || !Number.isFinite(kv)) continue;
+313|				keys.push({ t: kt, v: kv });
+314|			}
+315|			keys.sort((a, b) => a.t - b.t);
+316|			tracks.push({
+317|				path: String(trr.path),
+318|				interp: trr.interp === "step" ? "step" : "linear",
+319|				keys,
+320|			});
+321|		}
+322|		targets.push({ objectUuid: String(tt.objectUuid), tracks });
+323|	}
+324|	return {
+325|		format: String(r.format || ANIM_FORMAT),
+326|		name: String(r.name || "Animation"),
+327|		fps: Number(r.fps) || 30,
+328|		duration: Math.max(0, Number(r.duration) || 0),
+329|		loop: r.loop === "loop" ? "loop" : "clamp",
+330|		targets,
+331|	};
+332|}
+333|

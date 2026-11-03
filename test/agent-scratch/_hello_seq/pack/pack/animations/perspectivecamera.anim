@@ -1,0 +1,68 @@
+{
+  "format": "freecapcut.anim/2",
+  "name": "PerspectiveCamera",
+  "fps": 30,
+  "duration": 1,
+  "loop": "clamp",
+  "targets": [
+    {
+      "objectUuid": "4ad321e7-41d3-4683-b508-b4f141779f0f",
+      "tracks": [
+        {
+          "path": "postProcess.3c99ef3a-df43-47ae-b6e8-f505db4cdc26.strength",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0.1
+            },
+            {
+              "t": 0.16666666666666666,
+              "v": 0.1
+            },
+            {
+              "t": 0.5,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "postProcess.3c99ef3a-df43-47ae-b6e8-f505db4cdc26.radius",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0.01
+            },
+            {
+              "t": 0.16666666666666666,
+              "v": 0.01
+            },
+            {
+              "t": 0.5,
+              "v": 0.01
+            }
+          ]
+        },
+        {
+          "path": "postProcess.3c99ef3a-df43-47ae-b6e8-f505db4cdc26.threshold",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0.9
+            },
+            {
+              "t": 0.16666666666666666,
+              "v": 0.9
+            },
+            {
+              "t": 0.5,
+              "v": 0.9
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,239 @@
+
+		const st = pass.layer;
+		const w = Math.max( 0, Number( st.width ) || 0 );
+		const col = contentPrimaryColor( st.content );
+		// Thickened glyph under the face (TMP-style outer stroke).
+		troika.outlineWidth = w;
+		troika.outlineColor = colorToTroika( col );
+		troika.outlineOpacity = st.alpha != null ? Number( st.alpha ) : 1;
+		applyContentToTroika( troika, st.content, st.alpha, mode );
+		return;
+
+	}
+
+	// face
+	const fill = pass.layer;
+	applyContentToTroika( troika, fill.content, fill.alpha, mode );
+
+}
+
+function buildFlowerPasses( style ) {
+
+	const passes = [];
+	const shadows = ( style.shadows || [] ).filter( ( s ) => s && s.enable );
+	const strokes = ( style.strokes || [] ).filter( ( s ) => s && s.enable );
+	const inners = ( style.innerShadows || [] ).filter( ( s ) => s && s.enable );
+
+	// Back 鈫?front: outer shadows, outer strokes, face, inner shadows
+	for ( let i = 0; i < shadows.length; i ++ ) {
+
+		passes.push( { kind: 'shadow', name: FCC_FLOWER_PREFIX + 'shadow_' + i, layer: shadows[ i ] } );
+
+	}
+
+	for ( let i = 0; i < strokes.length; i ++ ) {
+
+		passes.push( { kind: 'stroke', name: FCC_FLOWER_PREFIX + 'stroke_' + i, layer: strokes[ i ] } );
+
+	}
+
+	// Inner shadows before face (P1 approx 鈥?true SDF inset is P2+)
+	for ( let i = 0; i < inners.length; i ++ ) {
+
+		passes.push( { kind: 'inner', name: FCC_FLOWER_PREFIX + 'inner_' + i, layer: inners[ i ] } );
+
+	}
+
+	passes.push( {
+		kind: 'face',
+		name: FCC_FLOWER_FACE,
+		layer: style.fill || { alpha: 1, content: { renderType: 'solid', solid: { color: '#ffffff', alpha: 1 } } },
+	} );
+
+	return passes;
+
+}
+
+function flowerSyncSignature( ui, rect, mode, style ) {
+
+	const w = rect && rect.w != null ? rect.w : '';
+	const h = rect && rect.h != null ? rect.h : '';
+	return JSON.stringify( {
+		text: ui.text, font: ui.font, fontBold: ui.fontBold, fontSize: ui.fontSize, bold: ui.bold,
+		color: ui.color, letterSpacing: ui.letterSpacing, lineHeight: ui.lineHeight,
+		align: ui.align, verticalAlign: ui.verticalAlign,
+		outline: ui.outline, shadow: ui.shadow,
+		flowerStyle: ui.flowerStyle || null,
+		style, w, h, mode,
+	} );
+
+}
+
+/**
+ * Ensure Troika flower Effect-stack children match fccUI.
+ * Order: outer shadows 鈫?outer strokes 鈫?face 鈫?inner shadows.
+ * Does NOT rely on Troika single outline/shadow for flowerStyle.
+ * @param {THREE.Object3D} group text root (fccUI.type === 'text')
+ * @param {{w:number,h:number}|null} [rect]
+ */
+export function syncUITextContent( group, rect = null ) {
+
+	const ui = getFccUI( group );
+	if ( ! ui || ui.type !== 'text' ) return;
+
+	const mode = getOwningCanvasRenderMode( group );
+	const fontUrl = resolveFontUrl( ui );
+	const prevFontUrl = group.userData && group.userData.__fccTextFontUrl;
+	const fontChanged = prevFontUrl !== fontUrl;
+	const style = getEffectiveFlowerStyle( ui );
+
+	const sig = flowerSyncSignature( ui, rect, mode, style );
+	if ( ! fontChanged && group.userData.__fccTextSig === sig
+		&& group.getObjectByName( FCC_FLOWER_FACE ) ) return;
+
+	group.userData.__fccTextSig = sig;
+	group.userData.__fccTextFontUrl = fontUrl;
+
+	if ( fontChanged ) {
+
+		disposeFlowerChildren( group );
+
+	}
+
+	const passes = buildFlowerPasses( style );
+	const existing = {};
+	for ( let i = 0; i < group.children.length; i ++ ) {
+
+		const c = group.children[ i ];
+		if ( c && c.name ) existing[ c.name ] = c;
+
+	}
+
+	const keep = new Set( passes.map( ( p ) => p.name ) );
+	for ( const name of Object.keys( existing ) ) {
+
+		if ( name === FCC_TEXT_MESH || name === FCC_TEXT_SHADOW
+			|| ( name.indexOf( FCC_FLOWER_PREFIX ) === 0 && ! keep.has( name ) ) ) {
+
+			const child = existing[ name ];
+			group.remove( child );
+			try {
+
+				if ( typeof child.dispose === 'function' ) child.dispose();
+
+			} catch ( e ) { /* ignore */ }
+
+			delete existing[ name ];
+
+		}
+
+	}
+
+	// Re-add in order (back 鈫?front)
+	const zStep = 0.001;
+	for ( let i = 0; i < passes.length; i ++ ) {
+
+		const pass = passes[ i ];
+		let mesh = existing[ pass.name ];
+		if ( ! mesh || ! mesh.sync ) {
+
+			if ( mesh ) {
+
+				group.remove( mesh );
+				try {
+
+					if ( typeof mesh.dispose === 'function' ) mesh.dispose();
+
+				} catch ( e ) { /* ignore */ }
+
+			}
+
+			mesh = makeTroika( pass.name );
+			existing[ pass.name ] = mesh;
+
+		}
+
+		if ( mesh.parent === group ) group.remove( mesh );
+		group.add( mesh );
+
+		const z = ( i - passes.length ) * zStep;
+		applyFlowerPass( mesh, ui, rect, pass, z, mode );
+		mesh.layers.mask = group.layers.mask;
+		mesh.visible = true;
+
+		const passMode = mode;
+		mesh.sync( () => {
+
+			if ( pass.kind === 'face' || pass.kind === 'stroke'
+				|| pass.kind === 'shadow' || pass.kind === 'inner' ) {
+
+				const content = pass.layer && pass.layer.content;
+				const layerA = pass.layer && pass.layer.alpha;
+				if ( content ) {
+
+					// Re-apply after sync so solid/texture recover and gradient can wrap a real Troika mat
+					applyContentToTroika( mesh, content, layerA, passMode );
+
+				} else {
+
+					tuneMaterial( mesh, passMode );
+
+				}
+
+			} else {
+
+				tuneMaterial( mesh, passMode );
+
+			}
+
+			if ( pass.kind === 'face' && ! mesh.textRenderInfo ) {
+
+				console.warn( '[FreeFilmCut] Troika text sync finished without textRenderInfo; font may have failed to load:', fontUrl );
+
+			}
+
+		} );
+
+	}
+
+}
+
+
+export function applyTextTransform( group, rect ) {
+
+	const ui = getFccUI( group ) || {};
+	group.position.set( rect.x + rect.w * 0.5, rect.y + rect.h * 0.5, group.position.z || 0 );
+	const [ sx, sy, sz ] = readLocalScale( ui );
+	const [ ex, ey, ez ] = readLocalEulerDegrees( ui );
+	group.scale.set( sx, sy, sz );
+	group.rotation.set(
+		THREE.MathUtils.degToRad( ex ),
+		THREE.MathUtils.degToRad( ey ),
+		THREE.MathUtils.degToRad( ez ),
+	);
+	syncUITextContent( group, rect );
+
+}
+
+/**
+ * Nested placement under a pixel-sized parent (Image PlaneGeometry in pixels).
+ * Offset in pixels; localScale / localEulerAngles only (no 1/parentSize hack).
+ */
+export function applyTextTransformNested( group, rect, parentRect ) {
+
+	const ui = getFccUI( group ) || {};
+	const offsetX = ( rect.x + rect.w * 0.5 ) - ( parentRect.x + parentRect.w * 0.5 );
+	const offsetY = ( rect.y + rect.h * 0.5 ) - ( parentRect.y + parentRect.h * 0.5 );
+	group.position.set( offsetX, offsetY, group.position.z || 0 );
+	const [ sx, sy, sz ] = readLocalScale( ui );
+	const [ ex, ey, ez ] = readLocalEulerDegrees( ui );
+	group.scale.set( sx, sy, sz );
+	group.rotation.set(
+		THREE.MathUtils.degToRad( ex ),
+		THREE.MathUtils.degToRad( ey ),
+		THREE.MathUtils.degToRad( ez ),
+	);
+	syncUITextContent( group, rect );
+
+}
+

@@ -1,0 +1,118 @@
+{
+  "schema": "vfxpack/1.3",
+  "id": "freecapcut.pack",
+  "version": "0.1.0",
+  "displayName": "淡入淡出",
+  "engine": {
+    "api": "webgl2",
+    "renderer": "three"
+  },
+  "type": "transition",
+  "scope": "stack",
+  "resolution": {
+    "width": 1080,
+    "height": 1920
+  },
+  "render": {
+    "rendererType": "WebGLRenderer",
+    "cameraType": "perspective",
+    "antialias": true,
+    "shadows": false,
+    "shadowType": 1,
+    "toneMapping": 0,
+    "toneMappingName": "NoToneMapping",
+    "toneMappingExposure": 1
+  },
+  "entry": {
+    "scene": "scene.json"
+  },
+  "params": [
+    {
+      "key": "intensity",
+      "label": "Intensity",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "exposedParams": [],
+  "passes": [
+    {
+      "id": "main",
+      "shader": {
+        "vertex": "shaders/mat_0_uiimagetrans.vert.glsl",
+        "fragment": "shaders/mat_0_uiimagetrans.frag.glsl"
+      },
+      "inputs": {
+        "uInput": "accumBelow"
+      }
+    }
+  ],
+  "assets": {
+    "scene": "scene.json",
+    "textures": [
+      "textures/tex_0_pmrem.png"
+    ],
+    "shaders": [
+      "shaders/mat_0_uiimagetrans.vert.glsl",
+      "shaders/mat_0_uiimagetrans.frag.glsl"
+    ],
+    "animations": [
+      "animations/__fccimagemesh.anim",
+      "animations/animation.anim"
+    ],
+    "timelines": [
+      "timelines/timeline.timeline.json"
+    ],
+    "videos": [],
+    "background": null,
+    "environment": "textures/tex_0_pmrem.png"
+  },
+  "animations": [
+    {
+      "name": "__fccImageMesh",
+      "path": "animations/__fccimagemesh.anim",
+      "fps": 30,
+      "duration": 1,
+      "loop": "clamp",
+      "objectUuids": [
+        "837d7921-cac9-4f27-94d0-3dd412400940"
+      ]
+    },
+    {
+      "name": "Animation",
+      "path": "animations/animation.anim",
+      "fps": 30,
+      "duration": 1,
+      "loop": "loop",
+      "objectUuids": [
+        "fe97d356-8836-4f9c-8922-e344a92d544d"
+      ]
+    }
+  ],
+  "timelines": [
+    {
+      "name": "Timeline",
+      "path": "timelines/timeline.timeline.json",
+      "fps": 30,
+      "duration": 1,
+      "loop": "clamp",
+      "objectUuid": "2c79816f-97f3-4c4d-b6bb-05894fa97860"
+    }
+  ],
+  "i18n": {
+    "zh-CN": {
+      "displayName": "淡入淡出"
+    }
+  },
+  "meta": {
+    "generator": "FreeFilmCut Three.js Editor VfxPackExporter",
+    "exportedAt": "2026-10-16T13:43:27.499Z",
+    "hasCustomShaders": true,
+    "shaderCount": 1,
+    "animationCount": 2,
+    "timelineCount": 1
+  },
+  "duration": 1
+}

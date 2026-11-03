@@ -1,0 +1,46 @@
+=== en ===
+  sidebar/material/newUuid: New UUID
+  sidebar/material/actions: Actions
+  sidebar/material/create: New Material
+  sidebar/material/createShader: New Shader
+  sidebar/material/clone: Clone
+  sidebar/project/NewMaterial: New Material
+  sidebar/project/NewShader: New Shader
+  sidebar/material/new: New
+=== zh ===
+  sidebar/material/newUuid: 新UUID
+  sidebar/material/actions: 操作
+  sidebar/material/create: 新建材质球
+  sidebar/material/createShader: 新建Shader
+  sidebar/material/clone: 克隆材质
+  sidebar/project/NewMaterial: 新建材质球
+  sidebar/project/NewShader: 新建Shader
+  sidebar/material/new: 更新
+=== Material actions snippet ===
+licit create / clone (UUID "New" only renews id — confusing for artists)
+	const materialActionsRow = new UIRow();
+	materialActionsRow.add( new UIText( strings.getKey( 'sidebar/material/actions' ) ).setClass( 'Label' ) );
+
+	const createMaterialBtn = new UIButton( strings.getKey( 'sidebar/material/create' ) );
+	createMaterialBtn.setMarginRight( '4px' );
+	createMaterialBtn.onClick( function () {
+
+		const type = materialClass.getValue() || 'MeshStandardMaterial';
+		createAndAssignMaterial( type );
+
+	} );
+	materialActionsRow.add( createMaterialBtn );
+
+	const createShaderBtn = new UIButton( strings.getKey( 'sidebar/material/createShader' ) );
+	createShaderBtn.setMarginRight( '4px' );
+	createShaderBtn.onClick( function () {
+
+		createAndAssignMaterial( 'ShaderMaterial', { openFrag: true } );
+
+	} );
+	materialActionsRow.add( createShaderBtn );
+
+	const cloneMaterialBtn = new UIButton( strings.getKey( 'sidebar/material/clone' ) );
+	cloneMaterialBtn.onClick( function () {
+
+		clo

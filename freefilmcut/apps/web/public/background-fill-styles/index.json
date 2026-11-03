@@ -1,0 +1,19 @@
+{
+	"styles": [
+		{
+			"id": "solid-dark",
+			"name": "Dark",
+			"file": "solid-dark.svg"
+		},
+		{
+			"id": "solid-light",
+			"name": "Light",
+			"file": "solid-light.svg"
+		},
+		{
+			"id": "gradient-dusk",
+			"name": "Dusk",
+			"file": "gradient-dusk.svg"
+		}
+	]
+}

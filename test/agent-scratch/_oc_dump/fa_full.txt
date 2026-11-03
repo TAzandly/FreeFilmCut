@@ -1,0 +1,333 @@
+1|/**
+2| * FreeFilmCut .anim sampling (shared semantics with Editor FreeCapCutAnimCore.js).
+3| * Transform + material uniforms + camera post-process params.
+4| * See docs/animation-format.md
+5| */
+6|import type * as THREE from "three";
+7|
+8|export const ANIM_FORMAT = "freecapcut.anim/1";
+9|
+10|export type AnimKey = { t: number; v: number };
+11|export type AnimTrack = {
+12|	path: string;
+13|	interp?: "linear" | "step";
+14|	keys: AnimKey[];
+15|};
+16|export type AnimTarget = {
+17|	objectUuid: string;
+18|	tracks: AnimTrack[];
+19|};
+20|export type FreecapcutAnimClip = {
+21|	format?: string;
+22|	name: string;
+23|	fps: number;
+24|	duration: number;
+25|	loop?: "clamp" | "loop";
+26|	targets: AnimTarget[];
+27|};
+28|
+29|export type ApplyAnimOptions = {
+30|	materialsByUuid?: Map<string, THREE.Material>;
+31|	/** Mutable pack post-process stack (sampled params written here before composer rebuild). */
+32|	postProcess?: {
+33|		enabled?: boolean;
+34|		effects: Array<{
+35|			id: string;
+36|			type?: string;
+37|			enabled?: boolean;
+38|			params?: Record<string, number | boolean | string>;
+39|		}>;
+40|	} | null;
+41|};
+42|
+43|const TRANSFORM_PATHS = new Set([
+44|	"position.x",
+45|	"position.y",
+46|	"position.z",
+47|	"rotation.x",
+48|	"rotation.y",
+49|	"rotation.z",
+50|	"scale.x",
+51|	"scale.y",
+52|	"scale.z",
+53|]);
+54|
+55|export function mapAnimTime(
+56|	t: number,
+57|	duration: number,
+58|	loop: "clamp" | "loop" = "clamp",
+59|): number {
+60|	const d = Math.max(0, Number(duration) || 0);
+61|	if (d <= 0) return 0;
+62|	let x = Number(t) || 0;
+63|	if (loop === "loop") {
+64|		x = x % d;
+65|		if (x < 0) x += d;
+66|		return x;
+67|	}
+68|	return Math.max(0, Math.min(d, x));
+69|}
+70|
+71|export function sampleKeys(
+72|	keys: AnimKey[],
+73|	t: number,
+74|	interp: "linear" | "step" = "linear",
+75|): number | null {
+76|	if (!keys?.length) return null;
+77|	if (t <= keys[0].t) return keys[0].v;
+78|	if (t >= keys[keys.length - 1].t) return keys[keys.length - 1].v;
+79|	for (let i = 0; i < keys.length - 1; i++) {
+80|		const a = keys[i];
+81|		const b = keys[i + 1];
+82|		if (t >= a.t && t <= b.t) {
+83|			if (interp === "step" || b.t === a.t) return a.v;
+84|			const u = (t - a.t) / (b.t - a.t);
+85|			return a.v + (b.v - a.v) * u;
+86|		}
+87|	}
+88|	return keys[keys.length - 1].v;
+89|}
+90|
+91|export function parseMaterialPath(
+92|	path: string,
+93|): { materialUuid: string; uniform: string; comp: string | null } | null {
+94|	const m = String(path || "").match(
+95|		/^material\.([^.]+)\.uniforms\.([^.]+)(?:\.(x|y|z|w|r|g|b))?$/,
+96|	);
+97|	if (!m) return null;
+98|	return { materialUuid: m[1], uniform: m[2], comp: m[3] || null };
+99|}
+100|
+101|export function parsePostProcessPath(
+102|	path: string,
+103|): { effectId: string; param: string } | null {
+104|	const m = String(path || "").match(/^postProcess\.([^.]+)\.([^.]+)$/);
+105|	if (!m) return null;
+106|	return { effectId: m[1], param: m[2] };
+107|}
+108|
+109|function setObjectPathValue(
+110|	object: THREE.Object3D,
+111|	path: string,
+112|	value: number,
+113|): boolean {
+114|	const parts = path.split(".");
+115|	if (parts.length === 2) {
+116|		const bag = (object as unknown as Record<string, { [k: string]: number }>)[
+117|			parts[0]
+118|		];
+119|		if (bag && typeof bag[parts[1]] === "number") {
+120|			bag[parts[1]] = value;
+121|			return true;
+122|		}
+123|	}
+124|	return false;
+125|}
+126|
+127|function findMaterial(
+128|	root: THREE.Object3D,
+129|	materialsByUuid: Map<string, THREE.Material> | undefined,
+130|	uuid: string,
+131|): THREE.Material | null {
+132|	if (materialsByUuid?.has(uuid)) return materialsByUuid.get(uuid)!;
+133|	let found: THREE.Material | null = null;
+134|	root.traverse((obj) => {
+135|		if (found) return;
+136|		const mesh = obj as THREE.Mesh;
+137|		const mat = mesh.material;
+138|		if (!mat) return;
+139|		const mats = Array.isArray(mat) ? mat : [mat];
+140|		for (const m of mats) {
+141|			if (m?.uuid === uuid) {
+142|				found = m;
+143|				return;
+144|			}
+145|		}
+146|	});
+147|	return found;
+148|}
+149|
+150|function writeUniformComponent(
+151|	uniformBag: { value: unknown },
+152|	comp: string | null,
+153|	value: number,
+154|): boolean {
+155|	const cur = uniformBag.value;
+156|	if (typeof cur === "number") {
+157|		if (comp) return false;
+158|		uniformBag.value = value;
+159|		return true;
+160|	}
+161|	if (typeof cur === "boolean") {
+162|		if (comp) return false;
+163|		uniformBag.value = value >= 0.5;
+164|		return true;
+165|	}
+166|	if (cur && typeof cur === "object" && comp && typeof (cur as Record<string, unknown>)[comp] === "number") {
+167|		(cur as Record<string, number>)[comp] = value;
+168|		return true;
+169|	}
+170|	return false;
+171|}
+172|
+173|function applyMaterialPath(
+174|	root: THREE.Object3D,
+175|	path: string,
+176|	value: number,
+177|	materialsByUuid?: Map<string, THREE.Material>,
+178|): boolean {
+179|	const parsed = parseMaterialPath(path);
+180|	if (!parsed) return false;
+181|	const mat = findMaterial(root, materialsByUuid, parsed.materialUuid) as
+182|		| THREE.ShaderMaterial
+183|		| null;
+184|	if (!mat?.uniforms?.[parsed.uniform]) return false;
+185|	const ok = writeUniformComponent(
+186|		mat.uniforms[parsed.uniform],
+187|		parsed.comp,
+188|		value,
+189|	);
+190|	if (ok) mat.needsUpdate = true;
+191|	return ok;
+192|}
+193|
+194|function applyPostProcessPath(
+195|	root: THREE.Object3D,
+196|	objectUuid: string,
+197|	path: string,
+198|	value: number,
+199|	postProcess: ApplyAnimOptions["postProcess"],
+200|): boolean {
+201|	const parsed = parsePostProcessPath(path);
+202|	if (!parsed) return false;
+203|	let stack = postProcess || null;
+204|	if (!stack) {
+205|		const cam = root.getObjectByProperty("uuid", objectUuid) as THREE.Camera | undefined;
+206|		const ud = cam?.userData as { postProcessStack?: ApplyAnimOptions["postProcess"] } | undefined;
+207|		stack = ud?.postProcessStack || null;
+208|		if (!stack) {
+209|			root.traverse((obj) => {
+210|				if (stack) return;
+211|				const c = obj as THREE.Camera;
+212|				if (c.isCamera) {
+213|					const s = (c.userData as { postProcessStack?: ApplyAnimOptions["postProcess"] })
+214|						?.postProcessStack;
+215|					if (s) stack = s;
+216|				}
+217|			});
+218|		}
+219|	}
+220|	if (!stack?.effects) return false;
+221|	const entry = stack.effects.find((e) => e && e.id === parsed.effectId);
+222|	if (!entry) return false;
+223|	if (!entry.params || typeof entry.params !== "object") entry.params = {};
+224|	const prev = entry.params[parsed.param];
+225|	if (typeof prev === "boolean") {
+226|		entry.params[parsed.param] = value >= 0.5;
+227|		return true;
+228|	}
+229|	entry.params[parsed.param] = value;
+230|	return true;
+231|}
+232|
+233|export function applyAnimToRoot(
+234|	root: THREE.Object3D,
+235|	clip: FreecapcutAnimClip,
+236|	t: number,
+237|	opts: ApplyAnimOptions = {},
+238|): number {
+239|	if (!root || !clip) return 0;
+240|	const tc = mapAnimTime(t, clip.duration, clip.loop || "clamp");
+241|	let n = 0;
+242|	for (const target of clip.targets || []) {
+243|		const obj = root.getObjectByProperty("uuid", target.objectUuid);
+244|		let touched = false;
+245|		for (const track of target.tracks || []) {
+246|			const v = sampleKeys(track.keys, tc, track.interp || "linear");
+247|			if (v === null) continue;
+248|
+249|			if (TRANSFORM_PATHS.has(track.path)) {
+250|				if (!obj) continue;
+251|				if (setObjectPathValue(obj, track.path, v)) {
+252|					touched = true;
+253|					n++;
+254|				}
+255|				continue;
+256|			}
+257|
+258|			if (parseMaterialPath(track.path)) {
+259|				if (applyMaterialPath(root, track.path, v, opts.materialsByUuid)) n++;
+260|				continue;
+261|			}
+262|
+263|			if (parsePostProcessPath(track.path)) {
+264|				if (
+265|					applyPostProcessPath(
+266|						root,
+267|						target.objectUuid,
+268|						track.path,
+269|						v,
+270|						opts.postProcess,
+271|					)
+272|				) {
+273|					n++;
+274|				}
+275|				continue;
+276|			}
+277|		}
+278|		if (
+279|			touched &&
+280|			obj &&
+281|			(obj as THREE.Camera).isCamera &&
+282|			typeof (obj as THREE.PerspectiveCamera).updateProjectionMatrix === "function"
+283|		) {
+284|			(obj as THREE.PerspectiveCamera).updateProjectionMatrix();
+285|		}
+286|	}
+287|	return n;
+288|}
+289|
+290|export function normalizeAnim(raw: unknown): FreecapcutAnimClip | null {
+291|	if (!raw || typeof raw !== "object") return null;
+292|	const r = raw as Record<string, unknown>;
+293|	const targetsIn = Array.isArray(r.targets) ? r.targets : [];
+294|	const targets: AnimTarget[] = [];
+295|	for (const t of targetsIn) {
+296|		if (!t || typeof t !== "object") continue;
+297|		const tt = t as Record<string, unknown>;
+298|		if (!tt.objectUuid) continue;
+299|		const tracksIn = Array.isArray(tt.tracks) ? tt.tracks : [];
+300|		const tracks: AnimTrack[] = [];
+301|		for (const tr of tracksIn) {
+302|			if (!tr || typeof tr !== "object") continue;
+303|			const trr = tr as Record<string, unknown>;
+304|			if (!trr.path) continue;
+305|			const keysIn = Array.isArray(trr.keys) ? trr.keys : [];
+306|			const keys: AnimKey[] = [];
+307|			for (const k of keysIn) {
+308|				if (!k || typeof k !== "object") continue;
+309|				const kk = k as Record<string, unknown>;
+310|				const kt = Number(kk.t);
+311|				const kv = Number(kk.v);
+312|				if (!Number.isFinite(kt) || !Number.isFinite(kv)) continue;
+313|				keys.push({ t: kt, v: kv });
+314|			}
+315|			keys.sort((a, b) => a.t - b.t);
+316|			tracks.push({
+317|				path: String(trr.path),
+318|				interp: trr.interp === "step" ? "step" : "linear",
+319|				keys,
+320|			});
+321|		}
+322|		targets.push({ objectUuid: String(tt.objectUuid), tracks });
+323|	}
+324|	return {
+325|		format: String(r.format || ANIM_FORMAT),
+326|		name: String(r.name || "Animation"),
+327|		fps: Number(r.fps) || 30,
+328|		duration: Math.max(0, Number(r.duration) || 0),
+329|		loop: r.loop === "loop" ? "loop" : "clamp",
+330|		targets,
+331|	};
+332|}
+333|

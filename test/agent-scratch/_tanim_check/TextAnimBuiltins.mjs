@@ -1,0 +1,290 @@
+/**
+ * FreeFilmCut textanim/2 — first-party components.
+ *
+ * Imported for side effects by TextAnimTypes.js, so the registry is always
+ * populated before any document is normalized or sampled.
+ *
+ * Channel / param conventions (docs/textanim-v2-plan.md §2):
+ *   offsets add, rotations add, scale multiplies, opacity multiplies.
+ *   Every number below is read from ctx.params — NEVER hard-coded in sample() —
+ *   because k-frames (P1) work by rewriting params right before sampling.
+ */
+
+import { registerTextAnim } from './TextAnimRegistry.js?v=fcc-tanim-1';
+
+const WIPE_DIRS = [ 'ltr', 'rtl', 'ttb', 'btt' ];
+const EASES = [ 'linear', 'cubicOut', 'cubicInOut', 'bounceOut', 'spring' ];
+
+function clamp01( x ) {
+
+	return x < 0 ? 0 : ( x > 1 ? 1 : x );
+
+}
+
+function lerp( a, b, u ) {
+
+	return a + ( b - a ) * u;
+
+}
+
+function pair( label, labelZh, defA, defB, min, max, step, unit ) {
+
+	return {
+		type: 'pair',
+		default: [ defA, defB ],
+		min,
+		max,
+		step: step != null ? step : 0.01,
+		unit: unit || '',
+		label,
+		labelZh,
+	};
+
+}
+
+const NUM_OFFSET = { type: 'number', min: - 500, max: 500, step: 1, unit: 'px' };
+const NUM_ROT = { type: 'number', min: - 6.2832, max: 6.2832, step: 0.01, unit: 'rad' };
+const NUM_SCALE = { type: 'number', min: 0, max: 4, step: 0.01 };
+
+// ---------------------------------------------------------------- charIn / charOut
+
+/**
+ * Entrance and exit share one implementation: both are From→To pairs driven by
+ * the selector weight. `charOut` is just the mirrored default.
+ */
+function charStepDescriptor( type, label, labelZh, defs ) {
+
+	return {
+		scope: 'char',
+		group: 'transform',
+		label,
+		labelZh,
+		channels: [ 'opacity', 'offsetX', 'offsetY', 'scale', 'rotateX', 'rotateY', 'rotateZ' ],
+		// Only the channels v1 actually used start enabled — the rest are opt-in.
+		defaultChannels: { opacity: true, offsetX: false, offsetY: true, scale: true, rotateX: false, rotateY: false, rotateZ: true },
+		selector: true,
+		defaultDuration: 0.8,
+		hintZh: 'From→To 逐字过渡；范围/顺序/错开决定每字起始时间。',
+		params: {
+			opacity: pair( 'Opacity', '透明度', defs.opacity[ 0 ], defs.opacity[ 1 ], 0, 1, 0.01 ),
+			offsetX: pair( 'Offset X', '偏移X', defs.offsetX[ 0 ], defs.offsetX[ 1 ], - 500, 500, 1, 'px' ),
+			offsetY: pair( 'Offset Y', '偏移Y', defs.offsetY[ 0 ], defs.offsetY[ 1 ], - 500, 500, 1, 'px' ),
+			scale: pair( 'Scale', '缩放', defs.scale[ 0 ], defs.scale[ 1 ], 0, 4, 0.01 ),
+			rotateX: pair( 'Rotate X', '旋转X', defs.rotateX[ 0 ], defs.rotateX[ 1 ], - 6.2832, 6.2832, 0.01, 'rad' ),
+			rotateY: pair( 'Rotate Y', '旋转Y', defs.rotateY[ 0 ], defs.rotateY[ 1 ], - 6.2832, 6.2832, 0.01, 'rad' ),
+			rotateZ: pair( 'Rotate Z', '旋转Z', defs.rotateZ[ 0 ], defs.rotateZ[ 1 ], - 6.2832, 6.2832, 0.01, 'rad' ),
+		},
+		sample( ctx, pose ) {
+
+			const P = ctx.params;
+			const on = ctx.on;
+			const u = ctx.p;
+
+			if ( on.opacity ) pose.opacity *= clamp01( lerp( P.opacity[ 0 ], P.opacity[ 1 ], u ) );
+			if ( on.offsetX ) pose.offsetX += lerp( P.offsetX[ 0 ], P.offsetX[ 1 ], u );
+			if ( on.offsetY ) pose.offsetY += lerp( P.offsetY[ 0 ], P.offsetY[ 1 ], u );
+			if ( on.rotateX ) pose.rotateX += lerp( P.rotateX[ 0 ], P.rotateX[ 1 ], u );
+			if ( on.rotateY ) pose.rotateY += lerp( P.rotateY[ 0 ], P.rotateY[ 1 ], u );
+			if ( on.rotateZ ) pose.rotateZ += lerp( P.rotateZ[ 0 ], P.rotateZ[ 1 ], u );
+			if ( on.scale ) {
+
+				const s = lerp( P.scale[ 0 ], P.scale[ 1 ], u );
+				pose.scaleX *= s;
+				pose.scaleY *= s;
+
+			}
+
+		},
+	};
+
+}
+
+registerTextAnim( 'charIn', charStepDescriptor( 'charIn', 'Char In', '逐字入场', {
+	opacity: [ 0, 1 ],
+	offsetX: [ 0, 0 ],
+	offsetY: [ - 36, 0 ],
+	scale: [ 0.55, 1 ],
+	rotateX: [ 0, 0 ],
+	rotateY: [ 0, 0 ],
+	rotateZ: [ - 0.35, 0 ],
+} ) );
+
+registerTextAnim( 'charOut', charStepDescriptor( 'charOut', 'Char Out', '逐字出场', {
+	opacity: [ 1, 0 ],
+	offsetX: [ 0, 0 ],
+	offsetY: [ 36, 0 ],
+	scale: [ 1, 0.55 ],
+	rotateX: [ 0, 0 ],
+	rotateY: [ 0, 0 ],
+	rotateZ: [ 0.35, 0 ],
+} ) );
+
+// ---------------------------------------------------------------- wave
+
+registerTextAnim( 'wave', {
+	scope: 'char',
+	group: 'motion',
+	label: 'Wave',
+	labelZh: '波浪',
+	channels: [ 'offsetY', 'offsetX' ],
+	defaultChannels: { offsetY: true, offsetX: false },
+	selector: true,
+	defaultDuration: 1,
+	defaultLoop: 'infinite',
+	hintZh: '一直运行；duration 只控制振幅从 ramp 起振到满量的时间。',
+	params: {
+		amp: Object.assign( {}, NUM_OFFSET, { default: 12, min: 0, max: 400, label: 'Amp Y', labelZh: '振幅Y' } ),
+		ampX: Object.assign( {}, NUM_OFFSET, { default: 0, min: 0, max: 400, label: 'Amp X', labelZh: '振幅X' } ),
+		freq: { type: 'number', default: 1.25, min: 0, max: 8, step: 0.05, label: 'Frequency', labelZh: '频率' },
+		speed: { type: 'number', default: 1, min: - 4, max: 4, step: 0.05, label: 'Speed', labelZh: '速度' },
+		phase: { type: 'number', default: 0, min: - 12.566, max: 12.566, step: 0.1, label: 'Phase', labelZh: '初相位' },
+		ramp: { type: 'number', default: 0.35, min: 0, max: 1, step: 0.05, label: 'Ramp in', labelZh: '起振幅' },
+	},
+	sample( ctx, pose ) {
+
+		const P = ctx.params;
+		const g = P.ramp + ( 1 - P.ramp ) * ctx.p;
+		if ( g === 0 ) return;
+		const ph = ctx.charIndex * P.freq + P.phase + ctx.t * Math.PI * 2 * P.speed;
+		if ( ctx.on.offsetY ) pose.offsetY += Math.sin( ph ) * P.amp * g;
+		if ( ctx.on.offsetX ) pose.offsetX += Math.cos( ph ) * P.ampX * g;
+
+	},
+} );
+
+// ---------------------------------------------------------------- bend
+
+registerTextAnim( 'bend', {
+	scope: 'char',
+	group: 'motion',
+	label: 'Bend',
+	labelZh: '弯曲',
+	channels: [ 'rotateZ', 'offsetY' ],
+	defaultChannels: { rotateZ: true, offsetY: true },
+	selector: true,
+	defaultDuration: 1,
+	hintZh: '按字在整行中的归一化位置弯曲；lift 控制两端上翘量。',
+	params: {
+		amount: { type: 'number', default: 0.15, min: - 3.14, max: 3.14, step: 0.01, unit: 'rad', label: 'Amount', labelZh: '弯曲量' },
+		lift: { type: 'number', default: 20, min: - 200, max: 200, step: 1, unit: 'px', label: 'Lift', labelZh: '端部抬升' },
+	},
+	sample( ctx, pose ) {
+
+		if ( ctx.charCount <= 1 ) return;
+		const P = ctx.params;
+		const mid = ( ctx.charCount - 1 ) * 0.5;
+		const nrm = ( ctx.charIndex - mid ) / Math.max( mid, 1 );
+		const k = nrm * ctx.p;
+		if ( ctx.on.rotateZ ) pose.rotateZ += k * P.amount;
+		if ( ctx.on.offsetY ) pose.offsetY += nrm * k * P.lift;
+
+	},
+} );
+
+// ---------------------------------------------------------------- jitter
+
+function hash01( x ) {
+
+	const s = Math.sin( x * 12.9898 ) * 43758.5453;
+	return s - Math.floor( s );
+
+}
+
+registerTextAnim( 'jitter', {
+	scope: 'char',
+	group: 'motion',
+	label: 'Jitter',
+	labelZh: '抖动',
+	channels: [ 'offsetX', 'offsetY', 'rotateZ' ],
+	defaultChannels: { offsetX: true, offsetY: true, rotateZ: false },
+	selector: true,
+	defaultDuration: 1,
+	defaultLoop: 'infinite',
+	hintZh: '按字噪波抖动；seed 决定图案，speed 决定复用频率。',
+	params: {
+		ampX: { type: 'number', default: 4, min: 0, max: 200, step: 0.5, unit: 'px', label: 'Amp X', labelZh: '抖动X' },
+		ampY: { type: 'number', default: 4, min: 0, max: 200, step: 0.5, unit: 'px', label: 'Amp Y', labelZh: '抖动Y' },
+		rotate: { type: 'number', default: 0.05, min: 0, max: 1.5, step: 0.01, unit: 'rad', label: 'Rotate', labelZh: '旋转抖动' },
+		speed: { type: 'number', default: 12, min: 0, max: 60, step: 0.5, label: 'Speed', labelZh: '速度' },
+		seed: { type: 'number', default: 1, min: 0, max: 9999, step: 1, label: 'Seed', labelZh: '种子' },
+	},
+	sample( ctx, pose ) {
+
+		const P = ctx.params;
+		const g = ctx.p;
+		if ( g === 0 ) return;
+		const base = ctx.t * P.speed + ctx.charIndex * 1.7 + P.seed * 13.13;
+		if ( ctx.on.offsetX ) pose.offsetX += ( hash01( base ) * 2 - 1 ) * P.ampX * g;
+		if ( ctx.on.offsetY ) pose.offsetY += ( hash01( base + 37.7 ) * 2 - 1 ) * P.ampY * g;
+		if ( ctx.on.rotateZ ) pose.rotateZ += ( hash01( base + 91.3 ) * 2 - 1 ) * P.rotate * g;
+
+	},
+} );
+
+// ---------------------------------------------------------------- typewriter
+
+registerTextAnim( 'typewriter', {
+	scope: 'char',
+	group: 'look',
+	label: 'Typewriter',
+	labelZh: '打字机',
+	channels: [ 'opacity' ],
+	defaultChannels: { opacity: true },
+	selector: true,
+	defaultDuration: 1,
+	hintZh: '按 selector 顺序硬切显示；fade>0 时每个字有一小段淡入。',
+	params: {
+		fade: { type: 'number', default: 0, min: 0, max: 1, step: 0.01, label: 'Fade', labelZh: '单字淡入' },
+	},
+	sample( ctx, pose ) {
+
+		if ( ctx.amount <= 0 ) return;
+		const fade = Math.max( 0, ctx.params.fade );
+		const a = fade <= 0 ? ( ctx.raw > 0 ? 1 : 0 ) : clamp01( ctx.raw / fade );
+		pose.opacity *= a;
+
+	},
+} );
+
+// ---------------------------------------------------------------- wipeReveal (text pass)
+
+registerTextAnim( 'wipeReveal', {
+	scope: 'text',
+	group: 'reveal',
+	label: 'Wipe reveal',
+	labelZh: '扫光',
+	defaultDuration: 1,
+	hintZh: '整文片元扫光 + 刃光（走 TextLayerRT，不是逐字透明度）。',
+	params: {
+		direction: {
+			type: 'select',
+			options: WIPE_DIRS,
+			default: 'ltr',
+			label: 'Direction',
+			labelZh: '方向',
+			optionLabelsZh: { ltr: '左→右', rtl: '右→左', ttb: '上→下', btt: '下→上' },
+		},
+		soft: { type: 'number', default: 0.08, min: 0, max: 0.5, step: 0.01, label: 'Soft', labelZh: '软边' },
+		edgeIntensity: { type: 'number', default: 2.5, min: 0, max: 8, step: 0.1, label: 'Edge', labelZh: '刃光强度' },
+		edgeWidth: { type: 'number', default: 0.03, min: 0.005, max: 0.25, step: 0.005, label: 'Edge width', labelZh: '刃光宽度' },
+		invert: { type: 'bool', default: false, label: 'Invert', labelZh: '反向（出场）' },
+	},
+	resolvePass( ctx ) {
+
+		const P = ctx.params;
+		let progress = clamp01( ctx.raw );
+		if ( P.invert ) progress = 1 - progress;
+		return {
+			kind: 'wipe',
+			componentId: ctx.comp ? ctx.comp.id : '',
+			progress,
+			direction: WIPE_DIRS.includes( P.direction ) ? P.direction : 'ltr',
+			soft: Math.max( 0.02, Math.min( 0.45, P.soft ) ),
+			edgeIntensity: Math.max( 0, P.edgeIntensity ),
+			edgeWidth: Math.max( 0.005, Math.min( 0.25, P.edgeWidth ) ),
+		};
+
+	},
+} );
+
+export { EASES };

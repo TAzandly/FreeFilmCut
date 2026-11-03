@@ -1,0 +1,12 @@
+C:\Users\pc\AppData\Local\JianyingPro\User Data\Cache\effect\7237409385092223525\6828d67634e66ace1e76c4eb7cc2f8e6\Sprite2D.material, 1792418787
+C:\Users\pc\AppData\Local\JianyingPro\User Data\Cache\effect\7237409385092223525\6828d67634e66ace1e76c4eb7cc2f8e6\Sprite2D.xshader, 1792418787
+C:\Users\pc\AppData\Local\JianyingPro\User Data\Cache\effect\7237409385092223525\6828d67634e66ace1e76c4eb7cc2f8e6\TextAnim.lua, 1792418787
+C:\Users\pc\AppData\Local\JianyingPro\User Data\Cache\effect\7237409385092223525\6828d67634e66ace1e76c4eb7cc2f8e6\anim.prefab, 1792418787
+C:\Users\pc\AppData\Local\JianyingPro\User Data\Cache\effect\7237409385092223525\6828d67634e66ace1e76c4eb7cc2f8e6\config.json, 1792418787
+C:\Users\pc\AppData\Local\JianyingPro\User Data\Cache\effect\7237409385092223525\6828d67634e66ace1e76c4eb7cc2f8e6\content.json, 1792418787
+C:\Users\pc\AppData\Local\JianyingPro\User Data\Cache\effect\7237409385092223525\6828d67634e66ace1e76c4eb7cc2f8e6\effect_platform_children.tag, 1792418787
+C:\Users\pc\AppData\Local\JianyingPro\User Data\Cache\effect\7237409385092223525\6828d67634e66ace1e76c4eb7cc2f8e6\extra.json, 1792418787
+C:\Users\pc\AppData\Local\JianyingPro\User Data\Cache\effect\7237409385092223525\6828d67634e66ace1e76c4eb7cc2f8e6\gles2_bvcwvg.vert, 1792418787
+C:\Users\pc\AppData\Local\JianyingPro\User Data\Cache\effect\7237409385092223525\6828d67634e66ace1e76c4eb7cc2f8e6\gles2_yvsong.frag, 1792418787
+C:\Users\pc\AppData\Local\JianyingPro\User Data\Cache\effect\7237409385092223525\6828d67634e66ace1e76c4eb7cc2f8e6\kiss.png, 1792418787
+C:\Users\pc\AppData\Local\JianyingPro\User Data\Cache\effect\7237409385092223525\6828d67634e66ace1e76c4eb7cc2f8e6\kiss.png.meta, 1792418787

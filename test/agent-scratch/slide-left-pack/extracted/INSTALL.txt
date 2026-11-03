@@ -1,0 +1,5 @@
+FreeFilmCut clip-anim pack
+
+1. Place under freefilmcut/apps/web/public/vfxpacks/clip-anims/in/
+2. Add filename to that folder index.json
+3. Hard-refresh → image/video → Animation → in

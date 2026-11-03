@@ -1,0 +1,32 @@
+	/**
+	 * Snapshot full project-canvas composite of ALL layers currently in accum
+	 * (i.e. every track strictly BELOW the pack about to render).
+	 *
+	 * Prefer copyFramebufferToTexture while accum is still bound: sampling
+	 * accumRT.texture via a blit pass can return stale/partial contents on
+	 * some drivers after multi-layer sequential renders, which showed up as
+	 * uInput containing only the topmost media (video) instead of jpg+video.
+	 */
+	private snapshotBelowSource(): THREE.Texture | null {
+		const renderer = this.renderer;
+		const accumRT = this.accumRT;
+		const belowSourceRT = this.belowSourceRT;
+		const belowFbTex = this.belowFbTex;
+		if (!renderer || !accumRT || !belowSourceRT || !belowFbTex) return null;
+
+		// Keep accum bound so copyFramebufferToTexture reads the real FB.
+		renderer.setRenderTarget(accumRT);
+		renderer.copyFramebufferToTexture(new THREE.Vector2(0, 0), belowFbTex);
+
+		// Copy into a dedicated RT so pack rendering never samples a texture
+		// that is also a color attachment of the current draw target.
+		this.blitTextureToTarget({
+			source: belowFbTex,
+			target: belowSourceRT,
+			flipY: false,
+			clear: true,
+		});
+		renderer.initTexture(belowSourceRT.texture);
+		this.debugBelowRegions('belowRT');
+		return belowSourceRT.texture;
+	}

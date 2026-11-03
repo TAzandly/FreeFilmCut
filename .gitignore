@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build / cache
+.next/
+**/.next/
+.turbo/
+**/.turbo/
+dist/
+build/
+.content-collections/
+.open-next/
+target/
+.cargo-tools/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# Local tooling (not needed on GitHub)
+.codegraph/
+.cursor/
+.workbuddy/
+.cursorignore
+
+# Scratch dumps under test/ (files still on disk; skip heavy media in git)
+test/agent-scratch/**/*.mp4
+test/agent-scratch/**/*.webm
+test/agent-scratch/**/*.zip
+test/agent-scratch/**/*_b64.txt
+test/backups/_backup_before_git_recovery_*/
+
+# Local editor projects / nested upstream git backups (monorepo flatten)
+projects/
+**/.git.bak-upstream/
+**/.git.bak*/
+
+# Bun lock binary
+bun.lockb
+
+# Large local-only font extract (do not redistribute)
+freefilmcut/apps/web/public/fonts/msyh.ttf

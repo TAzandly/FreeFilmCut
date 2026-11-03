@@ -1,0 +1,265 @@
+1236:
+1237:	let startTime = 0;
+1238:	let endTime = 0;
+1239:
+1240:	function render() {
+1241:
+1242:		if ( renderer === null ) return;
+1243:
+1244:		syncFccListenerToCamera( editor );
+1245:		updateFccVideos( renderer, scene );
+1246:
+1247:		// Char poses first, then text-scope bend / wipe in the Troika materials
+1248:		// (they read the posed char matrices). Values come from the last .anim
+1249:		// sample (animation panel / timeline), see TextAnimOverrides.
+1250:		applyTextAnimsInScene( scene );
+1251:		// Stickers follow posed glyph AABB (after char anim, before geom fx / TextFx).
+1252:		applyTextStickersInScene( scene, editor.materials );
+1253:		applyTextGeomFxInScene( scene, {
+1254:			enabled: ! stickerPreviewActive( editor ),
+1255:			debug: !! editor.textAnimWipeDebug,
+1256:		} );
+1257:
+1258:		startTime = performance.now();
+1259:
+1260:		const cw = container.dom.offsetWidth;
+1261:		const ch = container.dom.offsetHeight;
+1262:		const layout = getSafeFrameLayout();
+1263:
+1264:		// Canvas clear: Default => fully transparent (checker/page shows through empty beauty).
+1265:		// Color/Texture => opaque chrome; letterbox bars filled opaque below when Default.
+1266:		renderer.setScissorTest( false );
+1267:		renderer.setViewport( 0, 0, cw, ch );
+1268:		if ( isTransparentBackground( editor ) ) {
+1269:			renderer.setClearColor( 0x000000, 0 );
+1270:		} else {
+1271:			applyLetterboxChromeClear( renderer );
+1272:		}
+1273:		renderer.clear();
+1274:		if ( isTransparentBackground( editor ) ) {
+1275:			fillLetterboxBarsOpaque( renderer, layout, cw, ch );
+1276:		}
+1277:
+1278:		const vpCam = editor.viewportCamera;
+1279:		// SS-Camera contract: prepareCameraMode enables UI_CAMERA_LAYER on vpCam so
+1280:		// RenderPass beauty = scene meshes + Camera-mode UI, then Bloom/DeepGlow see both.
+1281:		// Overlay UI is drawn AFTER present (intentionally NOT in this stack).
+1282:		// usePost reads ONLY vpCam.userData.postProcessStack (editor nav cam never keeps one).
+1283:		const usePost = stackHasEnabledEffects( vpCam );
+1284:		const projectRes = layout.res || safeFrame.getResolution();
+1285:		// Global screen uniforms (uResolution / uScreenParams) = project/safe-frame pixels.
+1286:		applyGlobalScreenParamsToMaterials( editor.materials, projectRes.width, projectRes.height );
+1287:		applyGlobalScreenParamsToObject3D( scene, projectRes.width, projectRes.height );
+1288:
+1289:		// Post-process must match the camera image inside the safe frame (project
+1290:		// resolution), not the full canvas or on-screen letterbox CSS size — otherwise
+1291:		// bloom kernels scale with window resize / safe-frame toggle and diverge from OpenCut.
+1292:		const wantAspect = usePost
+1293:			? ( projectRes.width / Math.max( projectRes.height, 1 ) )
+1294:			: ( layout.w / Math.max( layout.h, 1 ) );
+1295:
+1296:		if ( vpCam.isPerspectiveCamera ) {
+1297:			if ( Math.abs( ( vpCam.aspect || 0 ) - wantAspect ) > 1e-6 ) {
+1298:				vpCam.aspect = wantAspect;
+1299:				vpCam.updateProjectionMatrix();
+1300:			}
+1301:		} else if ( vpCam.isOrthographicCamera ) {
+1302:			const frustumHeight = vpCam.top - vpCam.bottom;
+1303:			const wantLeft = - frustumHeight * wantAspect / 2;
+1304:			const wantRight = frustumHeight * wantAspect / 2;
+1305:			if ( Math.abs( vpCam.left - wantLeft ) > 1e-6 || Math.abs( vpCam.right - wantRight ) > 1e-6 ) {
+1306:				vpCam.left = wantLeft;
+1307:				vpCam.right = wantRight;
+1308:				vpCam.updateProjectionMatrix();
+1309:			}
+1310:		}
+1311:
+1312:		// Screen Space–Camera UI: lay out in front of beauty cam and enable layer
+1313:		// so RenderPass / non-PP beauty includes UI (before post-process).
+1314:		uiOverlay.prepareCameraMode( projectRes.width, projectRes.height );
+1315:
+1316:		const stickerPreviewOn = stickerPreviewActive( editor );
+1317:
+1318:		if ( stickerPreviewOn ) {
+1319:
+1320:			const pose = sampleStickerMotion(
+1321:				normalizeStickerMotion( editor.stickerMotion ),
+1322:				editor.stickerMotionTime || 0,
+1323:			);
+1324:			renderStickerMotionPreview( {
+1325:				renderer,
+1326:				scene,
+1327:				camera: vpCam,
+1328:				rect: layout,
+1329:				pose,
+1330:				overlay: uiOverlay,
+1331:				projectRes,
+1332:			} );
+1333:
+1334:		} else if ( usePost ) {
+1335:
+1336:			// Composer FBO = project / safe-frame pixel size (not full canvas, not CSS letterbox).
+1337:			// Window-offset scissor during composer.render() still clips FBO passes empty.
+1338:			const compW = Math.max( 1, Math.floor( projectRes.width ) );
+1339:			const compH = Math.max( 1, Math.floor( projectRes.height ) );
+1340:
+1341:			// Present destination = safe-frame content rect on screen (letterboxed).
+1342:			// Even if the overlay is hidden, blit into the same content rect so bars
+1343:			// stay clear and bloom never samples outside the camera image.
+1344:			let presentLayout = layout;
+1345:			if ( ! layout.show ) {
+1346:				const rect = safeFrame.computeFrameRect( cw, ch, projectRes.width, projectRes.height );
+1347:				presentLayout = {
+1348:					x: rect.x,
+1349:					y: ch - rect.y - rect.h,
+1350:					w: rect.w,
+1351:					h: rect.h,
+1352:				};
+1353:			}
+1354:
+1355:			if (
+1356:				needsComposerRebuild( postComposerBuilt, vpCam, compW, compH, renderer ) ||
+1357:				postComposerCameraUuid !== vpCam.uuid
+1358:			) {
+1359:				if ( postComposerBuilt ) postComposerBuilt.dispose();
+1360:				postComposerBuilt = buildComposerForCamera( {
+1361:					renderer,
+1362:					scene,
+1363:					camera: vpCam,
+1364:					width: compW,
+1365:					height: compH,
+1366:				} );
+1367:				postComposerCameraUuid = vpCam.uuid;
+1368:			} else if ( postComposerBuilt ) {
+1369:				// Param-only changes (threshold / strength / radius):
+1370:				// apply onto live passes — do not dispose/rebuild the composer.
+1371:				syncComposerParams( postComposerBuilt, vpCam );
+1372:			}
+1373:
+1374:			renderer.setScissorTest( false );
+1375:			renderer.setViewport( 0, 0, cw, ch );
+1376:			if ( isTransparentBackground( editor ) ) {
+1377:				renderer.setClearColor( 0x000000, 0 );
+1378:			} else {
+1379:				applyLetterboxChromeClear( renderer );
+1380:			}
+1381:			renderer.clear();
+1382:			if ( isTransparentBackground( editor ) ) {
+1383:				fillLetterboxBarsOpaque( renderer, presentLayout, cw, ch );
+1384:			}
+1385:
+1386:			if ( postComposerBuilt && postComposerBuilt.composer ) {
+1387:				presentComposerToLetterbox( postComposerBuilt.composer, presentLayout, compW, compH );
+1388:			} else {
+1389:				renderSceneWithColorOutput( renderer, scene, vpCam, presentLayout );
+1390:			}
+1391:
+1392:		} else {
+1393:
+1394:			if ( postComposerBuilt ) {
+1395:				postComposerBuilt.dispose();
+1396:				postComposerBuilt = null;
+1397:				postComposerCameraUuid = null;
+1398:			}
+1399:
+1400:			if ( isTransparentBackground( editor ) ) {
+1401:				fillLetterboxBarsOpaque( renderer, layout, cw, ch );
+1402:			}
+1403:			applyBeautyClear( renderer, editor );
+1404:
+1405:			// Linear scene, then one sRGB (and tone-map) present. Same final step as OutputPass.
+1406:			renderSceneWithColorOutput( renderer, scene, vpCam, layout );
+1407:
+1408:		}
+1409:
+1410:		uiOverlay.restoreCameraMode();
+1411:
+1412:		if ( camera === editor.viewportCamera && ! stickerPreviewOn ) {
+1413:
+1414:			renderer.autoClear = false;
+1415:			if ( grid.visible === true ) renderer.render( grid, camera );
+1416:			if ( sceneHelpers.visible === true ) renderer.render( sceneHelpers, camera );
+1417:			renderer.autoClear = true;
+1418:
+1419:		}
+1420:
+1421:		// FreeFilmCut UGUI: draw Screen-Space Overlay AFTER post-process / 3D
+1422:		// (and after editor helpers), still inside the safe-frame letterbox.
+1423:		// Sticker-motion preview already drew overlay into the motion buffer.
+1424:		if ( ! stickerPreviewOn ) {
+1425:			let uiLayout = layout;
+1426:			if ( usePost && ! layout.show ) {
+1427:				const rect = safeFrame.computeFrameRect( cw, ch, projectRes.width, projectRes.height );
+1428:				uiLayout = {
+1429:					x: rect.x,
+1430:					y: ch - rect.y - rect.h,
+1431:					w: rect.w,
+1432:					h: rect.h,
+1433:				};
+1434:			}
+1435:			// CSS (top-left) letterbox rect for Selector overlay picking.
+1436:			editor.fccUIPickLayout = {
+1437:				x: uiLayout.x,
+1438:				y: ch - uiLayout.y - uiLayout.h,
+1439:				w: uiLayout.w,
+1440:				h: uiLayout.h,
+1441:				cssW: cw,
+1442:				cssH: ch,
+1443:			};
+1444:			// Overlay: Text→RT→TextFx→blit when preview toggle / TextFx on.
+1445:			// Bend / wipeReveal are already in the Troika materials.
+1446:			const hasOverlayUI = sceneHasOverlayCanvas( scene );
+1447:			let textFxStack = null;
+1448:			const sel = editor.selected;
+1449:			if ( hasOverlayUI && sel && isUIText( sel )
+1450:				&& getOwningCanvasRenderMode( sel ) !== RENDER_MODE_CAMERA ) {
+1451:
+1452:				const ui = getFccUI( sel );
+1453:				textFxStack = ( ui && ui.textFxStack ) ? ui.textFxStack : null;
+1454:
+1455:			}
+1456:
+1457:			const wantTextRT = hasOverlayUI && (
+1458:				editor.textLayerRTPreview === true
+1459:				|| stackDataHasEnabledEffects( textFxStack )
+1460:			);
+1461:
+1462:			if ( wantTextRT ) {
+1463:
+1464:				const textRT = ensureTextLayerRenderTarget( projectRes.width, projectRes.height );
+1465:				renderOverlayTextLayerToRT( {
+1466:					renderer,
+1467:					uiOverlay,
+1468:					resW: projectRes.width,
+1469:					resH: projectRes.height,
+1470:					target: textRT,
+1471:				} );
+1472:
+1473:				const outTex = applyTextLayerFx( {
+1474:					renderer,
+1475:					target: textRT,
+1476:					stack: textFxStack,
+1477:				} ) || textRT.texture;
+1478:				blitTextLayerToLetterbox( {
+1479:					renderer,
+1480:					texture: outTex,
+1481:					rect: uiLayout,
+1482:					opacity: 1,
+1483:				} );
+1484:
+1485:			} else {
+1486:
+1487:				uiOverlay.render( renderer, uiLayout, projectRes.width, projectRes.height );
+1488:
+1489:			}
+1490:		}
+1491:
+1492:		if ( camera === editor.viewportCamera ) {
+1493:
+1494:			renderer.autoClear = false;
+1495:			if ( renderer.xr.isPresenting !== true ) viewHelper.render( renderer );
+1496:			renderer.autoClear = true;
+1497:
+1498:		}
+1499:
+1500:		renderer.setScissorTest( false );

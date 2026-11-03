@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>FreeFilmCut Asset Editor (three.js)</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link rel="apple-touch-icon" href="images/icon.png">
+		<link rel="manifest" href="manifest.json">
+		<link rel="shortcut icon" href="../files/favicon_white.ico" media="(prefers-color-scheme: dark)"/>
+		<link rel="shortcut icon" href="../files/favicon.ico" media="(prefers-color-scheme: light)" />
+	</head>
+	<body>
+		<link rel="stylesheet" href="css/main.css?v=fcc-ui-230">
+
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/webgpu": "../build/three.webgpu.js",
+					"three/addons/": "../examples/jsm/",
+
+					"three/examples/": "../examples/",
+					"three-gpu-pathtracer": "https://cdn.jsdelivr.net/npm/three-gpu-pathtracer@0.0.23/build/index.module.js",
+					"three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.4/build/index.module.js",
+					"jszip": "https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm",
+					"troika-three-text": "./vendor/troika/troika-three-text.js",
+					"troika-worker-utils": "./vendor/troika/troika-worker-utils.js",
+					"troika-three-utils": "./vendor/troika/troika-three-utils.js",
+					"webgl-sdf-generator": "./vendor/troika/webgl-sdf-generator.js",
+					"bidi-js": "./vendor/troika/bidi.js"
+				}
+			}
+		</script>
+
+		<script src="https://cdn.jsdelivr.net/gh/google/draco@1.5.7/javascript/draco_encoder.js"></script>
+
+		<link rel="stylesheet" href="js/libs/codemirror/codemirror.css">
+		<link rel="stylesheet" href="js/libs/codemirror/theme/monokai.css">
+		<script src="js/libs/codemirror/codemirror.js"></script>
+		<script src="js/libs/codemirror/mode/javascript.js"></script>
+		<script src="js/libs/codemirror/mode/glsl.js"></script>
+
+		<script src="js/libs/esprima.js"></script>
+		<script src="js/libs/jsonlint.js"></script>
+
+		<link rel="stylesheet" href="js/libs/codemirror/addon/dialog.css">
+		<link rel="stylesheet" href="js/libs/codemirror/addon/show-hint.css">
+		<link rel="stylesheet" href="js/libs/codemirror/addon/tern.css">
+
+		<script src="js/libs/codemirror/addon/dialog.js"></script>
+		<script src="js/libs/codemirror/addon/show-hint.js"></script>
+		<script src="js/libs/codemirror/addon/tern.js"></script>
+		<script src="js/libs/acorn/acorn.js"></script>
+		<script src="js/libs/acorn/acorn_loose.js"></script>
+		<script src="js/libs/acorn/walk.js"></script>
+		<script src="js/libs/ternjs/polyfill.js"></script>
+		<script src="js/libs/ternjs/signal.js"></script>
+		<script src="js/libs/ternjs/tern.js"></script>
+		<script src="js/libs/ternjs/def.js"></script>
+		<script src="js/libs/ternjs/comment.js"></script>
+		<script src="js/libs/ternjs/infer.js"></script>
+		<script src="js/libs/ternjs/doc_comment.js"></script>
+		<script src="js/libs/signals.min.js"></script>
+
+		<script type="module">
+
+			import * as THREE from 'three';
+
+			import { Editor } from './js/Editor.js?v=fcc-ui-234';
+			import { Viewport } from './js/Viewport.js?v=fcc-ui-230';
+			import { Toolbar } from './js/Toolbar.js?v=fcc-ui-220';
+			import { Script } from './js/Script.js?v=fcc-ui-109';
+			import { Player } from './js/Player.js';
+			import { Sidebar } from './js/Sidebar.js?v=fcc-ui-232';
+			import { Menubar } from './js/Menubar.js?v=fcc-ui-232';
+			import { Resizer } from './js/Resizer.js';
+			import { AnimationResizer } from './js/AnimationResizer.js?v=fcc-ui-109';
+			import { Animation } from './js/Animation.js?v=fcc-ui-228';
+			import { FccTimelineEditor } from './js/timeline/FccTimelineEditor.js?v=fcc-ui-195';
+			import { StickerMotionPanel } from './js/sticker-motion/StickerMotionPanel.js?v=fcc-ui-109';
+			import { createProjectFolder } from './js/ProjectFolder.js?v=fcc-ui-219';
+
+			import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+
+			window.URL = window.URL || window.webkitURL;
+			window.BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder;
+
+			//
+
+			const editor = new Editor();
+
+			window.editor = editor; // Expose editor to Console
+			window.__FCC_EDITOR__ = editor;
+			/** Paste in console: __FCC_CHECK_STENCIL__() */
+			window.__FCC_CHECK_STENCIL__ = function () {
+				const ed = window.__FCC_EDITOR__ || window.editor;
+				const r = ed && ( ed.renderer || ed.fccRenderer );
+				if ( ! r || typeof r.getContext !== 'function' ) {
+					console.warn( '[FCC] no WebGLRenderer yet (ed.renderer / ed.fccRenderer)' );
+					return null;
+				}
+				const attrs = r.getContext().getContextAttributes();
+				console.log( '[FCC] stencil=', attrs && attrs.stencil, 'antialias=', attrs && attrs.antialias, 'renderer=', r );
+				return !!( attrs && attrs.stencil );
+			};
+			editor.projectFolder = createProjectFolder( editor );
+			if ( editor.signals.projectFolderChanged ) {
+
+				editor.signals.projectFolderChanged.add( function () {
+
+					if ( typeof editor.restoreUITextFonts === 'function' ) editor.restoreUITextFonts();
+
+				} );
+
+			}
+			const projectFolderReady = editor.projectFolder.tryRestore().catch( function () { return false; } );
+			window.THREE = THREE; // Expose THREE to APP Scripts and Console
+
+			// FreeFilmCut: after autosave restore, re-attach ShaderMaterial sidebar bridge (color/map)
+			import( './js/FreeCapCutShaders.js?v=fcc-ui-109' ).then( ( { syncShaderMaterialBridge } ) => {
+
+				function rebridge( object ) {
+
+					if ( ! object ) return;
+					const mats = Array.isArray( object.material ) ? object.material : ( object.material ? [ object.material ] : [] );
+					for ( const m of mats ) syncShaderMaterialBridge( m );
+					object.traverse( ( child ) => {
+
+						const cm = Array.isArray( child.material ) ? child.material : ( child.material ? [ child.material ] : [] );
+						for ( const m of cm ) syncShaderMaterialBridge( m );
+
+					} );
+
+				}
+
+				editor.signals.objectAdded.add( rebridge );
+				editor.signals.materialChanged.add( function ( object ) { rebridge( object ); } );
+
+			} ).catch( ( e ) => console.warn( 'FreeCapCutShaders bridge hook failed', e ) );
+
+
+			THREE.ObjectLoader.registerGeometry( 'TextGeometry', TextGeometry );
+
+			const viewport = new Viewport( editor );
+			document.body.appendChild( viewport.dom );
+
+			const toolbar = new Toolbar( editor );
+			document.body.appendChild( toolbar.dom );
+
+			const script = new Script( editor );
+			document.body.appendChild( script.dom );
+
+			const player = new Player( editor );
+			document.body.appendChild( player.dom );
+
+			const sidebar = new Sidebar( editor );
+			document.body.appendChild( sidebar.dom );
+
+			const menubar = new Menubar( editor );
+			document.body.appendChild( menubar.dom );
+
+			const resizer = new Resizer( editor );
+			document.body.appendChild( resizer.dom );
+
+			const animation = new Animation( editor );
+			document.body.appendChild( animation.dom );
+
+			const timelineEditor = new FccTimelineEditor( editor );
+			document.body.appendChild( timelineEditor.dom );
+
+			const stickerMotionPanel = new StickerMotionPanel( editor );
+			document.body.appendChild( stickerMotionPanel.dom );
+
+			const animationResizer = new AnimationResizer( editor );
+			document.body.appendChild( animationResizer.dom );
+
+			editor.signals.animationPanelChanged.add( function ( height ) {
+
+				const visible = height !== false;
+
+				viewport.dom.classList.toggle( 'with-animation', visible );
+				toolbar.dom.classList.toggle( 'with-animation', visible );
+
+				if ( visible ) {
+
+					viewport.dom.style.bottom = height + 'px';
+					toolbar.dom.style.bottom = ( height + 20 ) + 'px';
+
+				} else {
+
+					viewport.dom.style.bottom = '';
+					toolbar.dom.style.bottom = '';
+
+				}
+
+				editor.signals.windowResize.dispatch();
+
+			} );
+
+			//
+
+			editor.storage.init( function () {
+
+				editor.storage.get( async function ( state ) {
+
+					if ( isLoadingFromHash ) return;
+
+					try {
+
+						// Prefer bound project folder's project.json over IndexedDB autosave
+						await projectFolderReady;
+						let loaded = false;
+						const pf = editor.projectFolder;
+						if ( pf && pf.hasFolder && pf.hasFolder() ) {
+
+							try {
+
+								const ok = await pf.requestPermissionOnGesture();
+								if ( ok ) {
+
+									const folderJson = await pf.readProjectJson();
+									if ( folderJson && folderJson.scene ) {
+
+										await editor.fromJSON( folderJson );
+										loaded = true;
+										console.log( '[FreeFilmCut] restored scene from project folder project.json' );
+
+									}
+
+								}
+
+							} catch ( e ) {
+
+								console.warn( '[FreeFilmCut] folder project.json restore skipped', e );
+
+							}
+
+						}
+						if ( ! loaded && state !== undefined ) {
+
+							await editor.fromJSON( state );
+
+						} else if ( ! loaded ) {
+
+							editor.signals.sceneEnvironmentChanged.dispatch( 'Default' );
+
+						}
+
+					} catch ( err ) {
+
+						console.error( 'FreeFilmCut: failed to restore autosave, starting empty scene.', err );
+						alert( 'Autosave scene failed to load (often a bad ShaderMaterial save).\nStarting with an empty scene. Re-import your last .vfxpack from Downloads if needed.' );
+						editor.storage.clear();
+						editor.signals.sceneEnvironmentChanged.dispatch( 'Default' );
+
+					}
+
+					const selected = editor.config.getKey( 'selected' );
+
+					if ( selected !== undefined ) {
+
+						editor.selectByUuid( selected );
+
+					}
+
+				} );
+
+				//
+
+				let timeout;
+
+				function saveState() {
+
+					if ( editor.config.getKey( 'autosave' ) === false ) {
+
+						return;
+
+					}
+
+					// FreeFilmCut: never persist mid-hydration (cameraResetted raced empty scene into IndexedDB)
+					if ( editor.isLoadingState ) {
+
+						return;
+
+					}
+
+					clearTimeout( timeout );
+
+					timeout = setTimeout( function () {
+
+						editor.signals.savingStarted.dispatch();
+
+						timeout = setTimeout( async function () {
+
+							if ( editor.projectFolder && editor.projectFolder.hasFolder() && editor.flushAnimsToProjectFolder ) {
+
+								try {
+
+									await editor.flushAnimsToProjectFolder();
+
+								} catch ( e ) { /* ignore flush errors on autosave */ }
+
+							}
+							const json = editor.toJSON();
+							editor.storage.set( json );
+
+							if ( editor.projectFolder && editor.projectFolder.hasFolder() ) {
+
+								try {
+
+									await editor.projectFolder.requestPermissionOnGesture();
+									await editor.projectFolder.saveProjectJson( json );
+
+								} catch ( e ) {
+
+									console.warn( '[FreeFilmCut] autosave to project folder failed:', e );
+
+								}
+
+							}
+
+							editor.signals.savingFinished.dispatch();
+
+						}, 100 );
+
+					}, 1000 );
+
+				}
+
+				const signals = editor.signals;
+
+				signals.cameraResetted.add( saveState );
+				signals.geometryChanged.add( saveState );
+				signals.objectAdded.add( saveState );
+				signals.objectChanged.add( saveState );
+				signals.objectRemoved.add( saveState );
+				signals.materialChanged.add( saveState );
+				signals.sceneBackgroundChanged.add( saveState );
+				signals.sceneEnvironmentChanged.add( saveState );
+				signals.sceneFogChanged.add( saveState );
+				signals.sceneGraphChanged.add( saveState );
+				signals.scriptChanged.add( saveState );
+				signals.historyChanged.add( saveState );
+
+			} );
+
+			//
+
+			document.addEventListener( 'dragover', function ( event ) {
+
+				event.preventDefault();
+				event.dataTransfer.dropEffect = 'copy';
+
+			} );
+
+			document.addEventListener( 'drop', function ( event ) {
+
+				event.preventDefault();
+
+				if ( event.dataTransfer.types[ 0 ] === 'text/plain' ) return; // Outliner drop
+
+				if ( event.dataTransfer.items ) {
+
+					// DataTransferItemList supports folders
+
+					editor.loader.loadItemList( event.dataTransfer.items );
+
+				} else {
+
+					editor.loader.loadFiles( event.dataTransfer.files );
+
+				}
+
+			} );
+
+			function onWindowResize() {
+
+				editor.signals.windowResize.dispatch();
+
+			}
+
+			window.addEventListener( 'resize', onWindowResize );
+
+			onWindowResize();
+
+			//
+
+			let isLoadingFromHash = false;
+			const hash = window.location.hash;
+
+			if ( hash.slice( 1, 6 ) === 'file=' ) {
+
+				const file = hash.slice( 6 );
+
+				if ( confirm( editor.strings.getKey( 'prompt/file/open' ) ) ) {
+
+					const loader = new THREE.FileLoader();
+					loader.crossOrigin = '';
+					loader.load( file, function ( text ) {
+
+						editor.clear();
+						editor.fromJSON( JSON.parse( text ) );
+
+					} );
+
+					isLoadingFromHash = true;
+
+				}
+
+			}
+
+			// @deprecated, r183
+
+			if ( 'serviceWorker' in navigator ) {
+
+				try {
+
+					navigator.serviceWorker.register( 'sw.js' );
+
+				} catch ( error ) {
+
+				}
+
+			}
+
+		</script>
+	</body>
+</html>
+

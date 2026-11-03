@@ -1,0 +1,43 @@
+{
+  "format": "freecapcut.anim/1",
+  "name": "Slide",
+  "fps": 30,
+  "duration": 0.5,
+  "loop": "clamp",
+  "targets": [
+    {
+      "objectUuid": "c3333333-3333-4333-8333-333333333333",
+      "tracks": [
+        {
+          "path": "material.c4444444-4444-4444-8444-444444444444.uniforms.uSlideX",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": -1,
+              "ease": "easeOut"
+            },
+            {
+              "t": 0.5,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "material.c4444444-4444-4444-8444-444444444444.uniforms.uSlideY",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 0.5,
+              "v": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

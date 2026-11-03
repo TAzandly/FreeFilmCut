@@ -1,0 +1,170 @@
+﻿281|
+282|
+283|			if (uiType === "text") {
+284|				const group = new THREE.Group();
+285|				group.userData = { ...(node.userData || {}), fccUI };
+286|				const DEFAULT_FONT =
+287|					"https://cdn.jsdelivr.net/fontsource/fonts/noto-sans-sc@5.2.5/chinese-simplified-400-normal.woff";
+288|
+289|				const resolveFont = (fontPath: string): string => {
+290|					if (!fontPath) return DEFAULT_FONT;
+291|					if (fontPath.startsWith("http") || fontPath.startsWith("blob:") || fontPath.startsWith("data:")) {
+292|						return fontPath;
+293|					}
+294|					const fromUrl = pack.objectUrls.get(fontPath);
+295|					if (fromUrl) return fromUrl;
+296|					const bytes = pack.files.get(fontPath);
+297|					if (bytes) {
+298|						const copy = bytes.slice();
+299|						const blob = new Blob([copy], { type: "font/ttf" });
+300|						const url = URL.createObjectURL(blob);
+301|						pack.objectUrls.set(fontPath, url);
+302|						return url;
+303|					}
+304|					return fontPath;
+305|				}
+306|
+307|				const applyTroika = (
+308|					troika: InstanceType<typeof TroikaText>,
+309|					role: "fill" | "shadow",
+310|					rectW: number,
+311|				) => {
+312|					const fontSize = Number(fccUI.fontSize) > 0 ? Number(fccUI.fontSize) : 48;
+313|					const align = String(fccUI.align || "center");
+314|					const vAlign = String(fccUI.verticalAlign || "middle");
+315|					const fontUrl =
+316|						fccUI.bold && fccUI.fontBold
+317|							? resolveFont(String(fccUI.fontBold))
+318|							: resolveFont(String(fccUI.font || ""));
+319|					troika.font = fontUrl;
+320|					troika.fontSize = fontSize;
+321|					troika.anchorX = align === "left" ? "left" : align === "right" ? "right" : "center";
+322|					troika.anchorY = vAlign === "top" ? "top" : vAlign === "bottom" ? "bottom" : "middle";
+323|					troika.textAlign =
+324|						align === "left" || align === "right" || align === "justify" ? align : "center";
+325|					troika.letterSpacing = Number(fccUI.letterSpacing) || 0;
+326|					troika.lineHeight = Number(fccUI.lineHeight) > 0 ? Number(fccUI.lineHeight) : 1.2;
+327|					troika.maxWidth = rectW > 0 ? rectW : Number(fccUI.sizeDelta?.[0]) || 400;
+328|					troika.overflowWrap = "break-word";
+329|					troika.frustumCulled = false;
+330|					troika.text = String(fccUI.text ?? "");
+331|					if (role === "shadow") {
+332|						const sh = (fccUI.shadow || {}) as {
+333|							color?: string;
+334|							opacity?: number;
+335|							blur?: number;
+336|							offsetX?: number;
+337|							offsetY?: number;
+338|						};
+339|						troika.color = sh.color || "#000000";
+340|						troika.fillOpacity = sh.opacity != null ? Number(sh.opacity) : 0.75;
+341|						troika.outlineWidth = 0;
+342|						troika.outlineBlur = Math.max(0, Number(sh.blur) || 0);
+343|						troika.position.set(Number(sh.offsetX) || 0, Number(sh.offsetY) || 0, -0.01);
+344|					} else {
+345|						troika.color = String(fccUI.color || "#ffffff");
+346|						troika.fillOpacity = 1;
+347|						troika.position.set(0, 0, 0);
+348|						const ol = (fccUI.outline || {}) as {
+349|							enabled?: boolean;
+350|							width?: number;
+351|							color?: string;
+352|							opacity?: number;
+353|						};
+354|						if (ol.enabled) {
+355|							const px = Math.max(0, Number(ol.width) || 0);
+356|							troika.outlineWidth = px;
+357|							troika.outlineColor = ol.color || "#000000";
+358|							troika.outlineOpacity = ol.opacity != null ? Number(ol.opacity) : 1;
+359|							troika.outlineBlur = 0;
+360|						} else {
+361|							troika.outlineWidth = 0;
+362|							troika.outlineOpacity = 0;
+363|							troika.outlineBlur = 0;
+364|						}
+365|					}
+366|				};
+367|
+368|				const fill = new TroikaText();
+369|				fill.name = "__fccText";
+370|				const shadow = new TroikaText();
+371|				shadow.name = "__fccTextShadow";
+372|				shadow.visible = !!(fccUI.shadow as { enabled?: boolean } | undefined)?.enabled;
+373|
+374|				let textSyncToken = 0;
+375|				const syncText = (rect?: { w: number; h: number }) => {
+376|					const w = rect?.w ?? Number(fccUI.sizeDelta?.[0]) ?? 400;
+377|					const shadowOn = !!(fccUI.shadow as { enabled?: boolean } | undefined)?.enabled;
+378|					const sig = JSON.stringify({
+379|						text: fccUI.text ?? "",
+380|						fontSize: fccUI.fontSize,
+381|						bold: fccUI.bold,
+382|						color: fccUI.color,
+383|						letterSpacing: fccUI.letterSpacing,
+384|						lineHeight: fccUI.lineHeight,
+385|						align: fccUI.align,
+386|						verticalAlign: fccUI.verticalAlign,
+387|						font: fccUI.font,
+388|						fontBold: fccUI.fontBold,
+389|						outline: fccUI.outline,
+390|						shadow: fccUI.shadow,
+391|						w,
+392|					});
+393|					const ud = group.userData as { __fccTextSig?: string };
+394|					if (ud.__fccTextSig === sig) return;
+395|					ud.__fccTextSig = sig;
+396|					const token = ++textSyncToken;
+397|					// Hide immediately so an in-flight sync of the pack's original
+398|					// string cannot stay on screen until the NLE override finishes.
+399|					fill.visible = false;
+400|					shadow.visible = false;
+401|					if (shadowOn && shadow.parent !== group) {
+402|						group.add(shadow);
+403|						group.remove(fill);
+404|						group.add(shadow);
+405|						group.add(fill);
+406|					}
+407|					const reveal = () => {
+408|						if (token !== textSyncToken) return;
+409|						fill.visible = true;
+410|						shadow.visible = shadowOn;
+411|					};
+412|					if (shadowOn) {
+413|						applyTroika(shadow, "shadow", w);
+414|						shadow.sync(reveal);
+415|					}
+416|					applyTroika(fill, "fill", w);
+417|					fill.sync(reveal);
+418|				};
+419|
+420|				(group.userData as { __fccSyncText?: (r: { w: number; h: number }) => void }).__fccSyncText =
+421|					syncText;
+422|				if (shadow.visible) group.add(shadow);
+423|				group.add(fill);
+424|				syncText();
+425|				registerObject(group, node);
+426|				group.position.set(0, 0, 0);
+427|				group.scale.set(1, 1, 1);
+428|				group.rotation.set(0, 0, 0);
+429|				applyUIObjectFlags(group);
+430|				continue;
+431|			}
+432|
+433|			// Image: Group (fccUI + Euler) + __fccImageMesh (pixel size via scale).
+434|			const geometry = new THREE.PlaneGeometry(1, 1);
+435|			disposables.push(geometry);
+436|			const material = await createMaterial(node, loadTexture, pack, disposables);
+437|			disposables.push(material);
+438|			const matUuid = node.materials?.[0]?.uuid;
+439|			if (matUuid) materialsByUuid.set(matUuid, material);
+440|			collectBelowInputNames(material, belowInputUniformNames);
+441|			const group = new THREE.Group();
+442|			group.userData = { ...(node.userData || {}), fccUI };
+443|			const mesh = new THREE.Mesh(geometry, material);
+444|			mesh.name = "__fccImageMesh";
+445|			mesh.castShadow = false;
+446|			mesh.receiveShadow = false;
+447|			group.add(mesh);
+448|			registerObject(group, node);
+449|			applyUIObjectFlags(group);
+450|			continue;

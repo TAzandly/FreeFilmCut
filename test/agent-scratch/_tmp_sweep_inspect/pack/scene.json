@@ -1,0 +1,3949 @@
+{
+  "schema": "vfxpack-scene/1.2",
+  "name": "Scene",
+  "background": {
+    "type": "None",
+    "value": null
+  },
+  "environment": {
+    "type": "Equirectangular",
+    "path": "textures/tex_0_pmrem.png",
+    "uuid": "8c5c5c23-2f16-42a1-abfc-f584565d9bfb",
+    "colorSpace": "srgb-linear",
+    "intensity": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "exported": false
+  },
+  "fog": null,
+  "render": {
+    "rendererType": "WebGLRenderer",
+    "cameraType": "perspective",
+    "antialias": true,
+    "shadows": false,
+    "shadowType": 1,
+    "toneMapping": 0,
+    "toneMappingName": "NoToneMapping",
+    "toneMappingExposure": 1
+  },
+  "activeCamera": "4ad321e7-41d3-4683-b508-b4f141779f0f",
+  "nodes": [
+    {
+      "uuid": "9a7a199d-ad32-42e2-a61b-bdb0fdf2ca16",
+      "name": "Scene",
+      "kind": "scene",
+      "type": "Scene",
+      "visible": true,
+      "layers": 1,
+      "parent": null,
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "userData": {
+        "fccAudioListener": {
+          "volume": 1,
+          "muted": false
+        }
+      }
+    },
+    {
+      "uuid": "fbeb0ff2-99a7-42ff-84f8-830b40d61039",
+      "name": "Canvas",
+      "kind": "ui",
+      "type": "Group",
+      "visible": true,
+      "layers": 4,
+      "parent": null,
+      "transform": {
+        "position": [
+          -46.630765815499856,
+          -46.630765815499856,
+          -100
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          0.08635327002870344,
+          0.08635327002870344,
+          0.08635327002870344
+        ],
+        "matrix": [
+          0.08635327002870344,
+          0,
+          0,
+          0,
+          0,
+          0.08635327002870344,
+          0,
+          0,
+          0,
+          0,
+          0.08635327002870344,
+          0,
+          -46.630765815499856,
+          -46.630765815499856,
+          -100,
+          1
+        ]
+      },
+      "userData": {
+        "fccUI": {
+          "type": "canvas",
+          "renderMode": "camera",
+          "planeDistance": 100,
+          "anchorMin": [
+            0,
+            0
+          ],
+          "anchorMax": [
+            1,
+            1
+          ],
+          "pivot": [
+            0.5,
+            0.5
+          ],
+          "anchoredPosition": [
+            0,
+            0
+          ],
+          "sizeDelta": [
+            0,
+            0
+          ],
+          "localEulerAngles": [
+            0,
+            0,
+            0
+          ],
+          "localScale": [
+            1,
+            1,
+            1
+          ],
+          "_resolved": {
+            "w": 1080,
+            "h": 1080
+          },
+          "cameraUuid": "4ad321e7-41d3-4683-b508-b4f141779f0f"
+        }
+      },
+      "ui": {
+        "type": "canvas",
+        "anchorMin": [
+          0,
+          0
+        ],
+        "anchorMax": [
+          1,
+          1
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "anchoredPosition": [
+          0,
+          0
+        ],
+        "sizeDelta": [
+          0,
+          0
+        ],
+        "localEulerAngles": [
+          0,
+          0,
+          0
+        ],
+        "localScale": [
+          1,
+          1,
+          1
+        ],
+        "renderMode": "camera",
+        "cameraUuid": "4ad321e7-41d3-4683-b508-b4f141779f0f",
+        "planeDistance": 100
+      }
+    },
+    {
+      "uuid": "5814ad6b-0d3d-42d2-a4a6-893311e262c8",
+      "name": "扫光标题",
+      "kind": "ui",
+      "type": "Group",
+      "visible": true,
+      "layers": 4,
+      "parent": "fbeb0ff2-99a7-42ff-84f8-830b40d61039",
+      "transform": {
+        "position": [
+          540,
+          580,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          540,
+          580,
+          0,
+          1
+        ]
+      },
+      "userData": {
+        "fccUI": {
+          "type": "text",
+          "text": "扫光 SWEEP",
+          "font": "",
+          "fontBold": "",
+          "fontSize": 120,
+          "bold": false,
+          "color": "#ffffff",
+          "letterSpacing": 0.02,
+          "lineHeight": 1.2,
+          "align": "center",
+          "verticalAlign": "middle",
+          "outline": {
+            "enabled": false,
+            "width": 2,
+            "color": "#000000",
+            "opacity": 1
+          },
+          "shadow": {
+            "enabled": false,
+            "offsetX": 2,
+            "offsetY": -2,
+            "blur": 4,
+            "color": "#000000",
+            "opacity": 0.75
+          },
+          "flowerStyle": {
+            "version": 2,
+            "id": null,
+            "fill": {
+              "alpha": 1,
+              "content": {
+                "renderType": "solid",
+                "solid": {
+                  "color": "#ffffff",
+                  "alpha": 1
+                },
+                "gradient": {
+                  "style": "linear",
+                  "angle": 90,
+                  "colors": [
+                    "#ffffff",
+                    "#afafaf"
+                  ],
+                  "alphas": [
+                    1,
+                    1
+                  ],
+                  "stops": [
+                    0,
+                    1
+                  ],
+                  "mode": "character"
+                },
+                "texture": {
+                  "path": "",
+                  "fileName": "",
+                  "alpha": 1,
+                  "angle": 0,
+                  "scale": 1,
+                  "flip": [
+                    false,
+                    false
+                  ],
+                  "wrapMode": "repeat",
+                  "stretchMode": "fit"
+                }
+              },
+              "visible": true
+            },
+            "stack": [
+              {
+                "id": "face",
+                "kind": "face"
+              }
+            ],
+            "strokes": [],
+            "shadows": [],
+            "innerShadows": [],
+            "anims": {
+              "in": null,
+              "out": null,
+              "loop": null
+            }
+          },
+          "anchorMin": [
+            0.5,
+            0.5
+          ],
+          "anchorMax": [
+            0.5,
+            0.5
+          ],
+          "pivot": [
+            0.5,
+            0.5
+          ],
+          "anchoredPosition": [
+            0,
+            40
+          ],
+          "sizeDelta": [
+            1200,
+            240
+          ],
+          "localEulerAngles": [
+            0,
+            0,
+            0
+          ],
+          "localScale": [
+            1,
+            1,
+            1
+          ],
+          "textAnim": {
+            "format": "freecapcut.textanim/3",
+            "enabled": true,
+            "components": [
+              {
+                "id": "c_charIn_1",
+                "type": "charIn",
+                "scope": "char",
+                "enabled": true,
+                "channels": {
+                  "opacity": true,
+                  "offsetX": false,
+                  "offsetY": true,
+                  "scale": true,
+                  "rotateX": false,
+                  "rotateY": false,
+                  "rotateZ": true
+                },
+                "params": {
+                  "opacity": 1,
+                  "offsetX": 0,
+                  "offsetY": -36,
+                  "scale": 1,
+                  "rotateX": 0,
+                  "rotateY": 0,
+                  "rotateZ": 0
+                },
+                "selector": {
+                  "unit": "char",
+                  "order": "ltr",
+                  "start": 0,
+                  "end": 1,
+                  "amount": 1,
+                  "delay": 0.56,
+                  "ease": "linear",
+                  "seed": 1
+                }
+              },
+              {
+                "id": "c_wipeReveal_1",
+                "type": "wipeReveal",
+                "scope": "text",
+                "enabled": true,
+                "channels": {},
+                "params": {
+                  "direction": "ltr",
+                  "soft": 0.08,
+                  "edgeIntensity": 2.5,
+                  "edgeWidth": 0.03,
+                  "fillDim": 1,
+                  "fillRange": 0.12,
+                  "fillPower": 2.5,
+                  "blendMode": "normal",
+                  "invert": false
+                },
+                "selector": null
+              }
+            ],
+            "legacy": null,
+            "legacyRepaired": true,
+            "legacyTimes": {
+              "c_wave_1": {
+                "start": 0,
+                "duration": 1,
+                "loop": "infinite",
+                "timeScale": 1
+              },
+              "c_wipeReveal_1": {
+                "start": 0,
+                "duration": 1.6,
+                "loop": "clamp",
+                "timeScale": 1
+              }
+            }
+          },
+          "rect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "_layoutRect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "textFxStack": {
+            "enabled": false,
+            "effects": [],
+            "_bloomThresholdMigrated": true
+          },
+          "exposed": {},
+          "flowerBaseFontSize": 120,
+          "renderMode": "overlay",
+          "cameraUuid": null,
+          "planeDistance": 100,
+          "fontFileName": ""
+        },
+        "__fccTextFontUrl": "./fonts/msyh.ttf",
+        "__fccTextAnimBuiltSig": "{\"text\":\"扫光 SWEEP\",\"fontSize\":120,\"font\":\"\",\"fontBold\":\"\",\"bold\":false,\"align\":\"center\",\"vAlign\":\"middle\",\"letterSpacing\":0.02,\"lineHeight\":1.2,\"color\":\"#ffffff\",\"flowerStyle\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"w\":1200,\"h\":240,\"flowerWithChar\":1}",
+        "__fccTextAnimVis": {
+          "7039124e-f804-4d28-ac8f-a991609402ca": true
+        },
+        "__fccTextAnimHideOriginals": true,
+        "__fccTextAnimCharCount": 8,
+        "freecapcutAnimController": {
+          "enabled": true,
+          "clipId": "Animation"
+        },
+        "__fccTextSig": "{\"text\":\"扫光 SWEEP\",\"font\":\"\",\"fontBold\":\"\",\"fontSize\":120,\"bold\":false,\"color\":\"#ffffff\",\"letterSpacing\":0.02,\"lineHeight\":1.2,\"align\":\"center\",\"verticalAlign\":\"middle\",\"outline\":{\"enabled\":false,\"width\":2,\"color\":\"#000000\",\"opacity\":1},\"shadow\":{\"enabled\":false,\"offsetX\":2,\"offsetY\":-2,\"blur\":4,\"color\":\"#000000\",\"opacity\":0.75},\"flowerStyle\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"sdfGlyphSize\":256,\"sdfMargin\":0.125,\"defaultFont\":\"msyh\",\"gpuAccelerateSDF\":0,\"innerFaceMask\":5,\"strokeContentPaint\":6,\"effectStack\":1,\"shadowWidth\":1,\"cjkOpaqueAlphaTest\":0,\"shadowNestedStrokes\":1,\"style\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"w\":1200,\"h\":240,\"mode\":\"camera\"}"
+      },
+      "ui": {
+        "type": "text",
+        "anchorMin": [
+          0.5,
+          0.5
+        ],
+        "anchorMax": [
+          0.5,
+          0.5
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "anchoredPosition": [
+          0,
+          40
+        ],
+        "sizeDelta": [
+          1200,
+          240
+        ],
+        "localEulerAngles": [
+          0,
+          0,
+          0
+        ],
+        "localScale": [
+          1,
+          1,
+          1
+        ],
+        "renderMode": "overlay",
+        "cameraUuid": null,
+        "planeDistance": 100,
+        "text": "扫光 SWEEP",
+        "font": "",
+        "fontBold": "",
+        "fontFileName": "",
+        "fontSize": 120,
+        "bold": false,
+        "color": "#ffffff",
+        "letterSpacing": 0.02,
+        "lineHeight": 1.2,
+        "align": "center",
+        "verticalAlign": "middle",
+        "outline": {
+          "enabled": false,
+          "width": 2,
+          "color": "#000000",
+          "opacity": 1
+        },
+        "shadow": {
+          "enabled": false,
+          "offsetX": 2,
+          "offsetY": -2,
+          "blur": 4,
+          "color": "#000000",
+          "opacity": 0.75
+        },
+        "flowerStyle": {
+          "version": 2,
+          "id": null,
+          "fill": {
+            "alpha": 1,
+            "content": {
+              "renderType": "solid",
+              "solid": {
+                "color": "#ffffff",
+                "alpha": 1
+              },
+              "gradient": {
+                "style": "linear",
+                "angle": 90,
+                "colors": [
+                  "#ffffff",
+                  "#afafaf"
+                ],
+                "alphas": [
+                  1,
+                  1
+                ],
+                "stops": [
+                  0,
+                  1
+                ],
+                "mode": "character"
+              },
+              "texture": {
+                "path": "",
+                "fileName": "",
+                "alpha": 1,
+                "angle": 0,
+                "scale": 1,
+                "flip": [
+                  false,
+                  false
+                ],
+                "wrapMode": "repeat",
+                "stretchMode": "fit"
+              }
+            },
+            "visible": true
+          },
+          "stack": [
+            {
+              "id": "face",
+              "kind": "face"
+            }
+          ],
+          "strokes": [],
+          "shadows": [],
+          "innerShadows": [],
+          "anims": {
+            "in": null,
+            "out": null,
+            "loop": null
+          }
+        },
+        "flowerBaseFontSize": 120
+      }
+    },
+    {
+      "uuid": "6c57bb7d-37a6-491a-b03b-ea49b7016428",
+      "name": "__fccTextAnimRoot",
+      "kind": "group",
+      "type": "Group",
+      "visible": true,
+      "layers": 4,
+      "parent": "5814ad6b-0d3d-42d2-a4a6-893311e262c8",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "userData": {
+        "__fccReady": true,
+        "__fccCharCount": 8
+      }
+    },
+    {
+      "uuid": "242aa901-7f46-4ed9-b9fe-f4c9faea9cb0",
+      "name": "__fccTextAnimLayout",
+      "kind": "mesh",
+      "type": "Mesh",
+      "visible": false,
+      "layers": 4,
+      "parent": "6c57bb7d-37a6-491a-b03b-ea49b7016428",
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "userData": {},
+      "geometry": {
+        "uuid": "cfe70cb7-6a3c-4562-9b4d-f8117cb9b565",
+        "name": "",
+        "type": "InstancedBufferGeometry",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "aTroikaGlyphBounds",
+          "aTroikaGlyphIndex"
+        ],
+        "indexCount": 6,
+        "data": "geometries/geom_cfe70cb7.json"
+      },
+      "materials": [
+        {
+          "uuid": "67ED35A9-F62C-454C-8ACF-808F78B36EC6",
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "transparent": true,
+          "opacity": 1,
+          "side": 2,
+          "depthWrite": true,
+          "depthTest": true,
+          "color": "#ffffff",
+          "emissive": null,
+          "textures": {},
+          "uniforms": {}
+        }
+      ],
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "uuid": "eba869ac-d67c-44a2-80c3-4e4b0d680816",
+      "name": "__fccChar_0",
+      "kind": "group",
+      "type": "Group",
+      "visible": true,
+      "layers": 4,
+      "parent": "6c57bb7d-37a6-491a-b03b-ea49b7016428",
+      "transform": {
+        "position": [
+          -284.5230407714844,
+          -1.5303030303030378,
+          0.01
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          -284.5230407714844,
+          -1.5303030303030378,
+          0.01,
+          1
+        ]
+      },
+      "userData": {
+        "__fccCharFlowerUI": {
+          "type": "text",
+          "text": "扫",
+          "font": "",
+          "fontBold": "",
+          "fontSize": 120,
+          "bold": false,
+          "color": "#ffffff",
+          "letterSpacing": 0.02,
+          "lineHeight": 1.2,
+          "align": "center",
+          "verticalAlign": "middle",
+          "outline": {
+            "enabled": false,
+            "width": 2,
+            "color": "#000000",
+            "opacity": 1
+          },
+          "shadow": {
+            "enabled": false,
+            "offsetX": 2,
+            "offsetY": -2,
+            "blur": 4,
+            "color": "#000000",
+            "opacity": 0.75
+          },
+          "flowerStyle": {
+            "version": 2,
+            "id": null,
+            "fill": {
+              "alpha": 1,
+              "content": {
+                "renderType": "solid",
+                "solid": {
+                  "color": "#ffffff",
+                  "alpha": 1
+                },
+                "gradient": {
+                  "style": "linear",
+                  "angle": 90,
+                  "colors": [
+                    "#ffffff",
+                    "#afafaf"
+                  ],
+                  "alphas": [
+                    1,
+                    1
+                  ],
+                  "stops": [
+                    0,
+                    1
+                  ],
+                  "mode": "character"
+                },
+                "texture": {
+                  "path": "",
+                  "fileName": "",
+                  "alpha": 1,
+                  "angle": 0,
+                  "scale": 1,
+                  "flip": [
+                    false,
+                    false
+                  ],
+                  "wrapMode": "repeat",
+                  "stretchMode": "fit"
+                }
+              },
+              "visible": true
+            },
+            "stack": [
+              {
+                "id": "face",
+                "kind": "face"
+              }
+            ],
+            "strokes": [],
+            "shadows": [],
+            "innerShadows": [],
+            "anims": {
+              "in": null,
+              "out": null,
+              "loop": null
+            }
+          },
+          "anchorMin": [
+            0.5,
+            0.5
+          ],
+          "anchorMax": [
+            0.5,
+            0.5
+          ],
+          "pivot": [
+            0.5,
+            0.5
+          ],
+          "anchoredPosition": [
+            0,
+            40
+          ],
+          "sizeDelta": [
+            1200,
+            240
+          ],
+          "localEulerAngles": [
+            0,
+            0,
+            0
+          ],
+          "localScale": [
+            1,
+            1,
+            1
+          ],
+          "textAnim": {
+            "format": "freecapcut.textanim/3",
+            "enabled": true,
+            "components": [
+              {
+                "id": "c_charIn_1",
+                "type": "charIn",
+                "scope": "char",
+                "enabled": true,
+                "channels": {
+                  "opacity": true,
+                  "offsetX": false,
+                  "offsetY": true,
+                  "scale": true,
+                  "rotateX": false,
+                  "rotateY": false,
+                  "rotateZ": true
+                },
+                "params": {
+                  "opacity": 1,
+                  "offsetX": 0,
+                  "offsetY": -36,
+                  "scale": 1,
+                  "rotateX": 0,
+                  "rotateY": 0,
+                  "rotateZ": 0
+                },
+                "selector": {
+                  "unit": "char",
+                  "order": "ltr",
+                  "start": 0,
+                  "end": 1,
+                  "amount": 1,
+                  "delay": 0.56,
+                  "ease": "linear",
+                  "seed": 1
+                }
+              },
+              {
+                "id": "c_wipeReveal_1",
+                "type": "wipeReveal",
+                "scope": "text",
+                "enabled": true,
+                "channels": {},
+                "params": {
+                  "direction": "ltr",
+                  "soft": 0.08,
+                  "edgeIntensity": 2.5,
+                  "edgeWidth": 0.03,
+                  "fillDim": 1,
+                  "fillRange": 0.12,
+                  "fillPower": 2.5,
+                  "blendMode": "normal",
+                  "invert": false
+                },
+                "selector": null
+              }
+            ],
+            "legacy": null,
+            "legacyRepaired": true,
+            "legacyTimes": {
+              "c_wave_1": {
+                "start": 0,
+                "duration": 1,
+                "loop": "infinite",
+                "timeScale": 1
+              },
+              "c_wipeReveal_1": {
+                "start": 0,
+                "duration": 1.6,
+                "loop": "clamp",
+                "timeScale": 1
+              }
+            }
+          },
+          "rect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "_layoutRect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "textFxStack": {
+            "enabled": false,
+            "effects": [],
+            "_bloomThresholdMigrated": true
+          },
+          "exposed": {},
+          "flowerBaseFontSize": 120
+        },
+        "__fccTextAnimChar": true,
+        "__fccCharBase": {
+          "x": -284.5230407714844,
+          "y": 0,
+          "z": 0.01
+        },
+        "__fccTextSig": "{\"text\":\"扫\",\"font\":\"\",\"fontBold\":\"\",\"fontSize\":120,\"bold\":false,\"color\":\"#ffffff\",\"letterSpacing\":0.02,\"lineHeight\":1.2,\"align\":\"center\",\"verticalAlign\":\"middle\",\"outline\":{\"enabled\":false,\"width\":2,\"color\":\"#000000\",\"opacity\":1},\"shadow\":{\"enabled\":false,\"offsetX\":2,\"offsetY\":-2,\"blur\":4,\"color\":\"#000000\",\"opacity\":0.75},\"flowerStyle\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"sdfGlyphSize\":256,\"sdfMargin\":0.125,\"defaultFont\":\"msyh\",\"gpuAccelerateSDF\":0,\"innerFaceMask\":5,\"strokeContentPaint\":6,\"effectStack\":1,\"shadowWidth\":1,\"cjkOpaqueAlphaTest\":0,\"shadowNestedStrokes\":1,\"style\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"w\":1200,\"h\":240,\"mode\":\"camera\"}",
+        "__fccTextFontUrl": "./fonts/msyh.ttf"
+      }
+    },
+    {
+      "uuid": "77b8e58e-553a-4e26-83bb-7fdb0b1cffc1",
+      "name": "__fccFlower_face",
+      "kind": "mesh",
+      "type": "Mesh",
+      "visible": true,
+      "layers": 4,
+      "parent": "eba869ac-d67c-44a2-80c3-4e4b0d680816",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -0.001
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          -0.001,
+          1
+        ]
+      },
+      "userData": {
+        "fccHollowFill": false,
+        "fccChainedBeforeRender": true
+      },
+      "geometry": {
+        "uuid": "3f2a048a-4dd0-4360-b1a7-ddf65245ed7c",
+        "name": "",
+        "type": "InstancedBufferGeometry",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "aTroikaGlyphBounds",
+          "aTroikaGlyphIndex"
+        ],
+        "indexCount": 6,
+        "data": "geometries/geom_3f2a048a.json"
+      },
+      "materials": [
+        {
+          "uuid": "3B853A93-2EEC-4C63-BF7E-CE721B140137",
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "transparent": true,
+          "opacity": 1,
+          "side": 2,
+          "depthWrite": false,
+          "depthTest": true,
+          "color": "#ffffff",
+          "emissive": null,
+          "textures": {},
+          "uniforms": {}
+        }
+      ],
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "uuid": "d97262a4-a81e-449f-8755-b18c57f4b581",
+      "name": "__fccChar_1",
+      "kind": "group",
+      "type": "Group",
+      "visible": true,
+      "layers": 4,
+      "parent": "6c57bb7d-37a6-491a-b03b-ea49b7016428",
+      "transform": {
+        "position": [
+          -162.123046875,
+          -8.075757575757585,
+          0.01
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          -162.123046875,
+          -8.075757575757585,
+          0.01,
+          1
+        ]
+      },
+      "userData": {
+        "__fccCharFlowerUI": {
+          "type": "text",
+          "text": "光",
+          "font": "",
+          "fontBold": "",
+          "fontSize": 120,
+          "bold": false,
+          "color": "#ffffff",
+          "letterSpacing": 0.02,
+          "lineHeight": 1.2,
+          "align": "center",
+          "verticalAlign": "middle",
+          "outline": {
+            "enabled": false,
+            "width": 2,
+            "color": "#000000",
+            "opacity": 1
+          },
+          "shadow": {
+            "enabled": false,
+            "offsetX": 2,
+            "offsetY": -2,
+            "blur": 4,
+            "color": "#000000",
+            "opacity": 0.75
+          },
+          "flowerStyle": {
+            "version": 2,
+            "id": null,
+            "fill": {
+              "alpha": 1,
+              "content": {
+                "renderType": "solid",
+                "solid": {
+                  "color": "#ffffff",
+                  "alpha": 1
+                },
+                "gradient": {
+                  "style": "linear",
+                  "angle": 90,
+                  "colors": [
+                    "#ffffff",
+                    "#afafaf"
+                  ],
+                  "alphas": [
+                    1,
+                    1
+                  ],
+                  "stops": [
+                    0,
+                    1
+                  ],
+                  "mode": "character"
+                },
+                "texture": {
+                  "path": "",
+                  "fileName": "",
+                  "alpha": 1,
+                  "angle": 0,
+                  "scale": 1,
+                  "flip": [
+                    false,
+                    false
+                  ],
+                  "wrapMode": "repeat",
+                  "stretchMode": "fit"
+                }
+              },
+              "visible": true
+            },
+            "stack": [
+              {
+                "id": "face",
+                "kind": "face"
+              }
+            ],
+            "strokes": [],
+            "shadows": [],
+            "innerShadows": [],
+            "anims": {
+              "in": null,
+              "out": null,
+              "loop": null
+            }
+          },
+          "anchorMin": [
+            0.5,
+            0.5
+          ],
+          "anchorMax": [
+            0.5,
+            0.5
+          ],
+          "pivot": [
+            0.5,
+            0.5
+          ],
+          "anchoredPosition": [
+            0,
+            40
+          ],
+          "sizeDelta": [
+            1200,
+            240
+          ],
+          "localEulerAngles": [
+            0,
+            0,
+            0
+          ],
+          "localScale": [
+            1,
+            1,
+            1
+          ],
+          "textAnim": {
+            "format": "freecapcut.textanim/3",
+            "enabled": true,
+            "components": [
+              {
+                "id": "c_charIn_1",
+                "type": "charIn",
+                "scope": "char",
+                "enabled": true,
+                "channels": {
+                  "opacity": true,
+                  "offsetX": false,
+                  "offsetY": true,
+                  "scale": true,
+                  "rotateX": false,
+                  "rotateY": false,
+                  "rotateZ": true
+                },
+                "params": {
+                  "opacity": 1,
+                  "offsetX": 0,
+                  "offsetY": -36,
+                  "scale": 1,
+                  "rotateX": 0,
+                  "rotateY": 0,
+                  "rotateZ": 0
+                },
+                "selector": {
+                  "unit": "char",
+                  "order": "ltr",
+                  "start": 0,
+                  "end": 1,
+                  "amount": 1,
+                  "delay": 0.56,
+                  "ease": "linear",
+                  "seed": 1
+                }
+              },
+              {
+                "id": "c_wipeReveal_1",
+                "type": "wipeReveal",
+                "scope": "text",
+                "enabled": true,
+                "channels": {},
+                "params": {
+                  "direction": "ltr",
+                  "soft": 0.08,
+                  "edgeIntensity": 2.5,
+                  "edgeWidth": 0.03,
+                  "fillDim": 1,
+                  "fillRange": 0.12,
+                  "fillPower": 2.5,
+                  "blendMode": "normal",
+                  "invert": false
+                },
+                "selector": null
+              }
+            ],
+            "legacy": null,
+            "legacyRepaired": true,
+            "legacyTimes": {
+              "c_wave_1": {
+                "start": 0,
+                "duration": 1,
+                "loop": "infinite",
+                "timeScale": 1
+              },
+              "c_wipeReveal_1": {
+                "start": 0,
+                "duration": 1.6,
+                "loop": "clamp",
+                "timeScale": 1
+              }
+            }
+          },
+          "rect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "_layoutRect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "textFxStack": {
+            "enabled": false,
+            "effects": [],
+            "_bloomThresholdMigrated": true
+          },
+          "exposed": {},
+          "flowerBaseFontSize": 120
+        },
+        "__fccTextAnimChar": true,
+        "__fccCharBase": {
+          "x": -162.123046875,
+          "y": 0,
+          "z": 0.01
+        },
+        "__fccTextSig": "{\"text\":\"光\",\"font\":\"\",\"fontBold\":\"\",\"fontSize\":120,\"bold\":false,\"color\":\"#ffffff\",\"letterSpacing\":0.02,\"lineHeight\":1.2,\"align\":\"center\",\"verticalAlign\":\"middle\",\"outline\":{\"enabled\":false,\"width\":2,\"color\":\"#000000\",\"opacity\":1},\"shadow\":{\"enabled\":false,\"offsetX\":2,\"offsetY\":-2,\"blur\":4,\"color\":\"#000000\",\"opacity\":0.75},\"flowerStyle\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"sdfGlyphSize\":256,\"sdfMargin\":0.125,\"defaultFont\":\"msyh\",\"gpuAccelerateSDF\":0,\"innerFaceMask\":5,\"strokeContentPaint\":6,\"effectStack\":1,\"shadowWidth\":1,\"cjkOpaqueAlphaTest\":0,\"shadowNestedStrokes\":1,\"style\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"w\":1200,\"h\":240,\"mode\":\"camera\"}",
+        "__fccTextFontUrl": "./fonts/msyh.ttf"
+      }
+    },
+    {
+      "uuid": "46a73b3a-1f10-4ecc-8f9e-b2265ab756ab",
+      "name": "__fccFlower_face",
+      "kind": "mesh",
+      "type": "Mesh",
+      "visible": true,
+      "layers": 4,
+      "parent": "d97262a4-a81e-449f-8755-b18c57f4b581",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -0.001
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          -0.001,
+          1
+        ]
+      },
+      "userData": {
+        "fccHollowFill": false,
+        "fccChainedBeforeRender": true
+      },
+      "geometry": {
+        "uuid": "0618fc70-322d-4ec3-a4d5-3d568ec605a5",
+        "name": "",
+        "type": "InstancedBufferGeometry",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "aTroikaGlyphBounds",
+          "aTroikaGlyphIndex"
+        ],
+        "indexCount": 6,
+        "data": "geometries/geom_0618fc70.json"
+      },
+      "materials": [
+        {
+          "uuid": "42767555-8761-4312-97EF-13DE2A928F0F",
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "transparent": true,
+          "opacity": 1,
+          "side": 2,
+          "depthWrite": false,
+          "depthTest": true,
+          "color": "#ffffff",
+          "emissive": null,
+          "textures": {},
+          "uniforms": {}
+        }
+      ],
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "uuid": "bc048c85-4c9c-4f82-9b59-639b74f70fb0",
+      "name": "__fccChar_2",
+      "kind": "group",
+      "type": "Group",
+      "visible": true,
+      "layers": 4,
+      "parent": "6c57bb7d-37a6-491a-b03b-ea49b7016428",
+      "transform": {
+        "position": [
+          -81.9691390991211,
+          -14.621212121212134,
+          0.01
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          -81.9691390991211,
+          -14.621212121212134,
+          0.01,
+          1
+        ]
+      },
+      "userData": {
+        "__fccCharFlowerUI": {
+          "type": "text",
+          "text": " ",
+          "font": "",
+          "fontBold": "",
+          "fontSize": 120,
+          "bold": false,
+          "color": "#ffffff",
+          "letterSpacing": 0.02,
+          "lineHeight": 1.2,
+          "align": "center",
+          "verticalAlign": "middle",
+          "outline": {
+            "enabled": false,
+            "width": 2,
+            "color": "#000000",
+            "opacity": 1
+          },
+          "shadow": {
+            "enabled": false,
+            "offsetX": 2,
+            "offsetY": -2,
+            "blur": 4,
+            "color": "#000000",
+            "opacity": 0.75
+          },
+          "flowerStyle": {
+            "version": 2,
+            "id": null,
+            "fill": {
+              "alpha": 1,
+              "content": {
+                "renderType": "solid",
+                "solid": {
+                  "color": "#ffffff",
+                  "alpha": 1
+                },
+                "gradient": {
+                  "style": "linear",
+                  "angle": 90,
+                  "colors": [
+                    "#ffffff",
+                    "#afafaf"
+                  ],
+                  "alphas": [
+                    1,
+                    1
+                  ],
+                  "stops": [
+                    0,
+                    1
+                  ],
+                  "mode": "character"
+                },
+                "texture": {
+                  "path": "",
+                  "fileName": "",
+                  "alpha": 1,
+                  "angle": 0,
+                  "scale": 1,
+                  "flip": [
+                    false,
+                    false
+                  ],
+                  "wrapMode": "repeat",
+                  "stretchMode": "fit"
+                }
+              },
+              "visible": true
+            },
+            "stack": [
+              {
+                "id": "face",
+                "kind": "face"
+              }
+            ],
+            "strokes": [],
+            "shadows": [],
+            "innerShadows": [],
+            "anims": {
+              "in": null,
+              "out": null,
+              "loop": null
+            }
+          },
+          "anchorMin": [
+            0.5,
+            0.5
+          ],
+          "anchorMax": [
+            0.5,
+            0.5
+          ],
+          "pivot": [
+            0.5,
+            0.5
+          ],
+          "anchoredPosition": [
+            0,
+            40
+          ],
+          "sizeDelta": [
+            1200,
+            240
+          ],
+          "localEulerAngles": [
+            0,
+            0,
+            0
+          ],
+          "localScale": [
+            1,
+            1,
+            1
+          ],
+          "textAnim": {
+            "format": "freecapcut.textanim/3",
+            "enabled": true,
+            "components": [
+              {
+                "id": "c_charIn_1",
+                "type": "charIn",
+                "scope": "char",
+                "enabled": true,
+                "channels": {
+                  "opacity": true,
+                  "offsetX": false,
+                  "offsetY": true,
+                  "scale": true,
+                  "rotateX": false,
+                  "rotateY": false,
+                  "rotateZ": true
+                },
+                "params": {
+                  "opacity": 1,
+                  "offsetX": 0,
+                  "offsetY": -36,
+                  "scale": 1,
+                  "rotateX": 0,
+                  "rotateY": 0,
+                  "rotateZ": 0
+                },
+                "selector": {
+                  "unit": "char",
+                  "order": "ltr",
+                  "start": 0,
+                  "end": 1,
+                  "amount": 1,
+                  "delay": 0.56,
+                  "ease": "linear",
+                  "seed": 1
+                }
+              },
+              {
+                "id": "c_wipeReveal_1",
+                "type": "wipeReveal",
+                "scope": "text",
+                "enabled": true,
+                "channels": {},
+                "params": {
+                  "direction": "ltr",
+                  "soft": 0.08,
+                  "edgeIntensity": 2.5,
+                  "edgeWidth": 0.03,
+                  "fillDim": 1,
+                  "fillRange": 0.12,
+                  "fillPower": 2.5,
+                  "blendMode": "normal",
+                  "invert": false
+                },
+                "selector": null
+              }
+            ],
+            "legacy": null,
+            "legacyRepaired": true,
+            "legacyTimes": {
+              "c_wave_1": {
+                "start": 0,
+                "duration": 1,
+                "loop": "infinite",
+                "timeScale": 1
+              },
+              "c_wipeReveal_1": {
+                "start": 0,
+                "duration": 1.6,
+                "loop": "clamp",
+                "timeScale": 1
+              }
+            }
+          },
+          "rect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "_layoutRect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "textFxStack": {
+            "enabled": false,
+            "effects": [],
+            "_bloomThresholdMigrated": true
+          },
+          "exposed": {},
+          "flowerBaseFontSize": 120
+        },
+        "__fccTextAnimChar": true,
+        "__fccCharBase": {
+          "x": -81.9691390991211,
+          "y": 0,
+          "z": 0.01
+        },
+        "__fccTextSig": "{\"text\":\" \",\"font\":\"\",\"fontBold\":\"\",\"fontSize\":120,\"bold\":false,\"color\":\"#ffffff\",\"letterSpacing\":0.02,\"lineHeight\":1.2,\"align\":\"center\",\"verticalAlign\":\"middle\",\"outline\":{\"enabled\":false,\"width\":2,\"color\":\"#000000\",\"opacity\":1},\"shadow\":{\"enabled\":false,\"offsetX\":2,\"offsetY\":-2,\"blur\":4,\"color\":\"#000000\",\"opacity\":0.75},\"flowerStyle\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"sdfGlyphSize\":256,\"sdfMargin\":0.125,\"defaultFont\":\"msyh\",\"gpuAccelerateSDF\":0,\"innerFaceMask\":5,\"strokeContentPaint\":6,\"effectStack\":1,\"shadowWidth\":1,\"cjkOpaqueAlphaTest\":0,\"shadowNestedStrokes\":1,\"style\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"w\":1200,\"h\":240,\"mode\":\"camera\"}",
+        "__fccTextFontUrl": "./fonts/msyh.ttf"
+      }
+    },
+    {
+      "uuid": "ee846883-4cb7-4ca0-bac8-0d74c6675c34",
+      "name": "__fccFlower_face",
+      "kind": "mesh",
+      "type": "Mesh",
+      "visible": true,
+      "layers": 4,
+      "parent": "bc048c85-4c9c-4f82-9b59-639b74f70fb0",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -0.001
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          -0.001,
+          1
+        ]
+      },
+      "userData": {
+        "fccHollowFill": false,
+        "fccChainedBeforeRender": true
+      },
+      "geometry": {
+        "uuid": "e6b7a4c6-18d8-4b4d-b59f-3071e577a5ef",
+        "name": "",
+        "type": "InstancedBufferGeometry",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "aTroikaGlyphBounds",
+          "aTroikaGlyphIndex"
+        ],
+        "indexCount": 6,
+        "data": "geometries/geom_e6b7a4c6.json"
+      },
+      "materials": [
+        {
+          "uuid": "965F630B-994A-44B1-BF4B-65B9BDD0DF8E",
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "transparent": true,
+          "opacity": 1,
+          "side": 2,
+          "depthWrite": false,
+          "depthTest": true,
+          "color": "#ffffff",
+          "emissive": null,
+          "textures": {},
+          "uniforms": {}
+        }
+      ],
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "uuid": "0d34ead4-5794-41a9-87ec-16dfb734b681",
+      "name": "__fccChar_3",
+      "kind": "group",
+      "type": "Group",
+      "visible": true,
+      "layers": 4,
+      "parent": "6c57bb7d-37a6-491a-b03b-ea49b7016428",
+      "transform": {
+        "position": [
+          -27.186328411102295,
+          -21.16666666666668,
+          0.01
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          -27.186328411102295,
+          -21.16666666666668,
+          0.01,
+          1
+        ]
+      },
+      "userData": {
+        "__fccCharFlowerUI": {
+          "type": "text",
+          "text": "S",
+          "font": "",
+          "fontBold": "",
+          "fontSize": 120,
+          "bold": false,
+          "color": "#ffffff",
+          "letterSpacing": 0.02,
+          "lineHeight": 1.2,
+          "align": "center",
+          "verticalAlign": "middle",
+          "outline": {
+            "enabled": false,
+            "width": 2,
+            "color": "#000000",
+            "opacity": 1
+          },
+          "shadow": {
+            "enabled": false,
+            "offsetX": 2,
+            "offsetY": -2,
+            "blur": 4,
+            "color": "#000000",
+            "opacity": 0.75
+          },
+          "flowerStyle": {
+            "version": 2,
+            "id": null,
+            "fill": {
+              "alpha": 1,
+              "content": {
+                "renderType": "solid",
+                "solid": {
+                  "color": "#ffffff",
+                  "alpha": 1
+                },
+                "gradient": {
+                  "style": "linear",
+                  "angle": 90,
+                  "colors": [
+                    "#ffffff",
+                    "#afafaf"
+                  ],
+                  "alphas": [
+                    1,
+                    1
+                  ],
+                  "stops": [
+                    0,
+                    1
+                  ],
+                  "mode": "character"
+                },
+                "texture": {
+                  "path": "",
+                  "fileName": "",
+                  "alpha": 1,
+                  "angle": 0,
+                  "scale": 1,
+                  "flip": [
+                    false,
+                    false
+                  ],
+                  "wrapMode": "repeat",
+                  "stretchMode": "fit"
+                }
+              },
+              "visible": true
+            },
+            "stack": [
+              {
+                "id": "face",
+                "kind": "face"
+              }
+            ],
+            "strokes": [],
+            "shadows": [],
+            "innerShadows": [],
+            "anims": {
+              "in": null,
+              "out": null,
+              "loop": null
+            }
+          },
+          "anchorMin": [
+            0.5,
+            0.5
+          ],
+          "anchorMax": [
+            0.5,
+            0.5
+          ],
+          "pivot": [
+            0.5,
+            0.5
+          ],
+          "anchoredPosition": [
+            0,
+            40
+          ],
+          "sizeDelta": [
+            1200,
+            240
+          ],
+          "localEulerAngles": [
+            0,
+            0,
+            0
+          ],
+          "localScale": [
+            1,
+            1,
+            1
+          ],
+          "textAnim": {
+            "format": "freecapcut.textanim/3",
+            "enabled": true,
+            "components": [
+              {
+                "id": "c_charIn_1",
+                "type": "charIn",
+                "scope": "char",
+                "enabled": true,
+                "channels": {
+                  "opacity": true,
+                  "offsetX": false,
+                  "offsetY": true,
+                  "scale": true,
+                  "rotateX": false,
+                  "rotateY": false,
+                  "rotateZ": true
+                },
+                "params": {
+                  "opacity": 1,
+                  "offsetX": 0,
+                  "offsetY": -36,
+                  "scale": 1,
+                  "rotateX": 0,
+                  "rotateY": 0,
+                  "rotateZ": 0
+                },
+                "selector": {
+                  "unit": "char",
+                  "order": "ltr",
+                  "start": 0,
+                  "end": 1,
+                  "amount": 1,
+                  "delay": 0.56,
+                  "ease": "linear",
+                  "seed": 1
+                }
+              },
+              {
+                "id": "c_wipeReveal_1",
+                "type": "wipeReveal",
+                "scope": "text",
+                "enabled": true,
+                "channels": {},
+                "params": {
+                  "direction": "ltr",
+                  "soft": 0.08,
+                  "edgeIntensity": 2.5,
+                  "edgeWidth": 0.03,
+                  "fillDim": 1,
+                  "fillRange": 0.12,
+                  "fillPower": 2.5,
+                  "blendMode": "normal",
+                  "invert": false
+                },
+                "selector": null
+              }
+            ],
+            "legacy": null,
+            "legacyRepaired": true,
+            "legacyTimes": {
+              "c_wave_1": {
+                "start": 0,
+                "duration": 1,
+                "loop": "infinite",
+                "timeScale": 1
+              },
+              "c_wipeReveal_1": {
+                "start": 0,
+                "duration": 1.6,
+                "loop": "clamp",
+                "timeScale": 1
+              }
+            }
+          },
+          "rect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "_layoutRect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "textFxStack": {
+            "enabled": false,
+            "effects": [],
+            "_bloomThresholdMigrated": true
+          },
+          "exposed": {},
+          "flowerBaseFontSize": 120
+        },
+        "__fccTextAnimChar": true,
+        "__fccCharBase": {
+          "x": -27.186328411102295,
+          "y": 0,
+          "z": 0.01
+        },
+        "__fccTextSig": "{\"text\":\"S\",\"font\":\"\",\"fontBold\":\"\",\"fontSize\":120,\"bold\":false,\"color\":\"#ffffff\",\"letterSpacing\":0.02,\"lineHeight\":1.2,\"align\":\"center\",\"verticalAlign\":\"middle\",\"outline\":{\"enabled\":false,\"width\":2,\"color\":\"#000000\",\"opacity\":1},\"shadow\":{\"enabled\":false,\"offsetX\":2,\"offsetY\":-2,\"blur\":4,\"color\":\"#000000\",\"opacity\":0.75},\"flowerStyle\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"sdfGlyphSize\":256,\"sdfMargin\":0.125,\"defaultFont\":\"msyh\",\"gpuAccelerateSDF\":0,\"innerFaceMask\":5,\"strokeContentPaint\":6,\"effectStack\":1,\"shadowWidth\":1,\"cjkOpaqueAlphaTest\":0,\"shadowNestedStrokes\":1,\"style\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"w\":1200,\"h\":240,\"mode\":\"camera\"}",
+        "__fccTextFontUrl": "./fonts/msyh.ttf"
+      }
+    },
+    {
+      "uuid": "d35673ba-4643-4d53-a062-29d3514016fc",
+      "name": "__fccFlower_face",
+      "kind": "mesh",
+      "type": "Mesh",
+      "visible": true,
+      "layers": 4,
+      "parent": "0d34ead4-5794-41a9-87ec-16dfb734b681",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -0.001
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          -0.001,
+          1
+        ]
+      },
+      "userData": {
+        "fccHollowFill": false,
+        "fccChainedBeforeRender": true
+      },
+      "geometry": {
+        "uuid": "2244a99e-c265-4480-88e9-80d412fd60f2",
+        "name": "",
+        "type": "InstancedBufferGeometry",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "aTroikaGlyphBounds",
+          "aTroikaGlyphIndex"
+        ],
+        "indexCount": 6,
+        "data": "geometries/geom_2244a99e.json"
+      },
+      "materials": [
+        {
+          "uuid": "BC2386A6-6C8E-4C17-BD1B-2B4E7B93BDFC",
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "transparent": true,
+          "opacity": 1,
+          "side": 2,
+          "depthWrite": false,
+          "depthTest": true,
+          "color": "#ffffff",
+          "emissive": null,
+          "textures": {},
+          "uniforms": {}
+        }
+      ],
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "uuid": "f968580d-ba61-474d-aa2a-3ac3f7bb2912",
+      "name": "__fccChar_4",
+      "kind": "group",
+      "type": "Group",
+      "visible": true,
+      "layers": 4,
+      "parent": "6c57bb7d-37a6-491a-b03b-ea49b7016428",
+      "transform": {
+        "position": [
+          70.89726400375366,
+          -27.712121212121225,
+          0.01
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          70.89726400375366,
+          -27.712121212121225,
+          0.01,
+          1
+        ]
+      },
+      "userData": {
+        "__fccCharFlowerUI": {
+          "type": "text",
+          "text": "W",
+          "font": "",
+          "fontBold": "",
+          "fontSize": 120,
+          "bold": false,
+          "color": "#ffffff",
+          "letterSpacing": 0.02,
+          "lineHeight": 1.2,
+          "align": "center",
+          "verticalAlign": "middle",
+          "outline": {
+            "enabled": false,
+            "width": 2,
+            "color": "#000000",
+            "opacity": 1
+          },
+          "shadow": {
+            "enabled": false,
+            "offsetX": 2,
+            "offsetY": -2,
+            "blur": 4,
+            "color": "#000000",
+            "opacity": 0.75
+          },
+          "flowerStyle": {
+            "version": 2,
+            "id": null,
+            "fill": {
+              "alpha": 1,
+              "content": {
+                "renderType": "solid",
+                "solid": {
+                  "color": "#ffffff",
+                  "alpha": 1
+                },
+                "gradient": {
+                  "style": "linear",
+                  "angle": 90,
+                  "colors": [
+                    "#ffffff",
+                    "#afafaf"
+                  ],
+                  "alphas": [
+                    1,
+                    1
+                  ],
+                  "stops": [
+                    0,
+                    1
+                  ],
+                  "mode": "character"
+                },
+                "texture": {
+                  "path": "",
+                  "fileName": "",
+                  "alpha": 1,
+                  "angle": 0,
+                  "scale": 1,
+                  "flip": [
+                    false,
+                    false
+                  ],
+                  "wrapMode": "repeat",
+                  "stretchMode": "fit"
+                }
+              },
+              "visible": true
+            },
+            "stack": [
+              {
+                "id": "face",
+                "kind": "face"
+              }
+            ],
+            "strokes": [],
+            "shadows": [],
+            "innerShadows": [],
+            "anims": {
+              "in": null,
+              "out": null,
+              "loop": null
+            }
+          },
+          "anchorMin": [
+            0.5,
+            0.5
+          ],
+          "anchorMax": [
+            0.5,
+            0.5
+          ],
+          "pivot": [
+            0.5,
+            0.5
+          ],
+          "anchoredPosition": [
+            0,
+            40
+          ],
+          "sizeDelta": [
+            1200,
+            240
+          ],
+          "localEulerAngles": [
+            0,
+            0,
+            0
+          ],
+          "localScale": [
+            1,
+            1,
+            1
+          ],
+          "textAnim": {
+            "format": "freecapcut.textanim/3",
+            "enabled": true,
+            "components": [
+              {
+                "id": "c_charIn_1",
+                "type": "charIn",
+                "scope": "char",
+                "enabled": true,
+                "channels": {
+                  "opacity": true,
+                  "offsetX": false,
+                  "offsetY": true,
+                  "scale": true,
+                  "rotateX": false,
+                  "rotateY": false,
+                  "rotateZ": true
+                },
+                "params": {
+                  "opacity": 1,
+                  "offsetX": 0,
+                  "offsetY": -36,
+                  "scale": 1,
+                  "rotateX": 0,
+                  "rotateY": 0,
+                  "rotateZ": 0
+                },
+                "selector": {
+                  "unit": "char",
+                  "order": "ltr",
+                  "start": 0,
+                  "end": 1,
+                  "amount": 1,
+                  "delay": 0.56,
+                  "ease": "linear",
+                  "seed": 1
+                }
+              },
+              {
+                "id": "c_wipeReveal_1",
+                "type": "wipeReveal",
+                "scope": "text",
+                "enabled": true,
+                "channels": {},
+                "params": {
+                  "direction": "ltr",
+                  "soft": 0.08,
+                  "edgeIntensity": 2.5,
+                  "edgeWidth": 0.03,
+                  "fillDim": 1,
+                  "fillRange": 0.12,
+                  "fillPower": 2.5,
+                  "blendMode": "normal",
+                  "invert": false
+                },
+                "selector": null
+              }
+            ],
+            "legacy": null,
+            "legacyRepaired": true,
+            "legacyTimes": {
+              "c_wave_1": {
+                "start": 0,
+                "duration": 1,
+                "loop": "infinite",
+                "timeScale": 1
+              },
+              "c_wipeReveal_1": {
+                "start": 0,
+                "duration": 1.6,
+                "loop": "clamp",
+                "timeScale": 1
+              }
+            }
+          },
+          "rect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "_layoutRect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "textFxStack": {
+            "enabled": false,
+            "effects": [],
+            "_bloomThresholdMigrated": true
+          },
+          "exposed": {},
+          "flowerBaseFontSize": 120
+        },
+        "__fccTextAnimChar": true,
+        "__fccCharBase": {
+          "x": 70.89726400375366,
+          "y": 0,
+          "z": 0.01
+        },
+        "__fccTextSig": "{\"text\":\"W\",\"font\":\"\",\"fontBold\":\"\",\"fontSize\":120,\"bold\":false,\"color\":\"#ffffff\",\"letterSpacing\":0.02,\"lineHeight\":1.2,\"align\":\"center\",\"verticalAlign\":\"middle\",\"outline\":{\"enabled\":false,\"width\":2,\"color\":\"#000000\",\"opacity\":1},\"shadow\":{\"enabled\":false,\"offsetX\":2,\"offsetY\":-2,\"blur\":4,\"color\":\"#000000\",\"opacity\":0.75},\"flowerStyle\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"sdfGlyphSize\":256,\"sdfMargin\":0.125,\"defaultFont\":\"msyh\",\"gpuAccelerateSDF\":0,\"innerFaceMask\":5,\"strokeContentPaint\":6,\"effectStack\":1,\"shadowWidth\":1,\"cjkOpaqueAlphaTest\":0,\"shadowNestedStrokes\":1,\"style\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"w\":1200,\"h\":240,\"mode\":\"camera\"}",
+        "__fccTextFontUrl": "./fonts/msyh.ttf"
+      }
+    },
+    {
+      "uuid": "69077948-827a-4b83-9d6e-ee6f2c99f0ad",
+      "name": "__fccFlower_face",
+      "kind": "mesh",
+      "type": "Mesh",
+      "visible": true,
+      "layers": 4,
+      "parent": "f968580d-ba61-474d-aa2a-3ac3f7bb2912",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -0.001
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          -0.001,
+          1
+        ]
+      },
+      "userData": {
+        "fccHollowFill": false,
+        "fccChainedBeforeRender": true
+      },
+      "geometry": {
+        "uuid": "53f4be99-1ab2-498b-84f3-abbedcd89828",
+        "name": "",
+        "type": "InstancedBufferGeometry",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "aTroikaGlyphBounds",
+          "aTroikaGlyphIndex"
+        ],
+        "indexCount": 6,
+        "data": "geometries/geom_53f4be99.json"
+      },
+      "materials": [
+        {
+          "uuid": "F43A842A-B8E1-4EC7-B622-1C23DFD5F137",
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "transparent": true,
+          "opacity": 1,
+          "side": 2,
+          "depthWrite": false,
+          "depthTest": true,
+          "color": "#ffffff",
+          "emissive": null,
+          "textures": {},
+          "uniforms": {}
+        }
+      ],
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "uuid": "2a268be9-97ad-43a1-aeec-640dca08d49f",
+      "name": "__fccChar_5",
+      "kind": "group",
+      "type": "Group",
+      "visible": true,
+      "layers": 4,
+      "parent": "6c57bb7d-37a6-491a-b03b-ea49b7016428",
+      "transform": {
+        "position": [
+          167.34024047851562,
+          -34.257575757575765,
+          0.01
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          167.34024047851562,
+          -34.257575757575765,
+          0.01,
+          1
+        ]
+      },
+      "userData": {
+        "__fccCharFlowerUI": {
+          "type": "text",
+          "text": "E",
+          "font": "",
+          "fontBold": "",
+          "fontSize": 120,
+          "bold": false,
+          "color": "#ffffff",
+          "letterSpacing": 0.02,
+          "lineHeight": 1.2,
+          "align": "center",
+          "verticalAlign": "middle",
+          "outline": {
+            "enabled": false,
+            "width": 2,
+            "color": "#000000",
+            "opacity": 1
+          },
+          "shadow": {
+            "enabled": false,
+            "offsetX": 2,
+            "offsetY": -2,
+            "blur": 4,
+            "color": "#000000",
+            "opacity": 0.75
+          },
+          "flowerStyle": {
+            "version": 2,
+            "id": null,
+            "fill": {
+              "alpha": 1,
+              "content": {
+                "renderType": "solid",
+                "solid": {
+                  "color": "#ffffff",
+                  "alpha": 1
+                },
+                "gradient": {
+                  "style": "linear",
+                  "angle": 90,
+                  "colors": [
+                    "#ffffff",
+                    "#afafaf"
+                  ],
+                  "alphas": [
+                    1,
+                    1
+                  ],
+                  "stops": [
+                    0,
+                    1
+                  ],
+                  "mode": "character"
+                },
+                "texture": {
+                  "path": "",
+                  "fileName": "",
+                  "alpha": 1,
+                  "angle": 0,
+                  "scale": 1,
+                  "flip": [
+                    false,
+                    false
+                  ],
+                  "wrapMode": "repeat",
+                  "stretchMode": "fit"
+                }
+              },
+              "visible": true
+            },
+            "stack": [
+              {
+                "id": "face",
+                "kind": "face"
+              }
+            ],
+            "strokes": [],
+            "shadows": [],
+            "innerShadows": [],
+            "anims": {
+              "in": null,
+              "out": null,
+              "loop": null
+            }
+          },
+          "anchorMin": [
+            0.5,
+            0.5
+          ],
+          "anchorMax": [
+            0.5,
+            0.5
+          ],
+          "pivot": [
+            0.5,
+            0.5
+          ],
+          "anchoredPosition": [
+            0,
+            40
+          ],
+          "sizeDelta": [
+            1200,
+            240
+          ],
+          "localEulerAngles": [
+            0,
+            0,
+            0
+          ],
+          "localScale": [
+            1,
+            1,
+            1
+          ],
+          "textAnim": {
+            "format": "freecapcut.textanim/3",
+            "enabled": true,
+            "components": [
+              {
+                "id": "c_charIn_1",
+                "type": "charIn",
+                "scope": "char",
+                "enabled": true,
+                "channels": {
+                  "opacity": true,
+                  "offsetX": false,
+                  "offsetY": true,
+                  "scale": true,
+                  "rotateX": false,
+                  "rotateY": false,
+                  "rotateZ": true
+                },
+                "params": {
+                  "opacity": 1,
+                  "offsetX": 0,
+                  "offsetY": -36,
+                  "scale": 1,
+                  "rotateX": 0,
+                  "rotateY": 0,
+                  "rotateZ": 0
+                },
+                "selector": {
+                  "unit": "char",
+                  "order": "ltr",
+                  "start": 0,
+                  "end": 1,
+                  "amount": 1,
+                  "delay": 0.56,
+                  "ease": "linear",
+                  "seed": 1
+                }
+              },
+              {
+                "id": "c_wipeReveal_1",
+                "type": "wipeReveal",
+                "scope": "text",
+                "enabled": true,
+                "channels": {},
+                "params": {
+                  "direction": "ltr",
+                  "soft": 0.08,
+                  "edgeIntensity": 2.5,
+                  "edgeWidth": 0.03,
+                  "fillDim": 1,
+                  "fillRange": 0.12,
+                  "fillPower": 2.5,
+                  "blendMode": "normal",
+                  "invert": false
+                },
+                "selector": null
+              }
+            ],
+            "legacy": null,
+            "legacyRepaired": true,
+            "legacyTimes": {
+              "c_wave_1": {
+                "start": 0,
+                "duration": 1,
+                "loop": "infinite",
+                "timeScale": 1
+              },
+              "c_wipeReveal_1": {
+                "start": 0,
+                "duration": 1.6,
+                "loop": "clamp",
+                "timeScale": 1
+              }
+            }
+          },
+          "rect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "_layoutRect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "textFxStack": {
+            "enabled": false,
+            "effects": [],
+            "_bloomThresholdMigrated": true
+          },
+          "exposed": {},
+          "flowerBaseFontSize": 120
+        },
+        "__fccTextAnimChar": true,
+        "__fccCharBase": {
+          "x": 167.34024047851562,
+          "y": 0,
+          "z": 0.01
+        },
+        "__fccTextSig": "{\"text\":\"E\",\"font\":\"\",\"fontBold\":\"\",\"fontSize\":120,\"bold\":false,\"color\":\"#ffffff\",\"letterSpacing\":0.02,\"lineHeight\":1.2,\"align\":\"center\",\"verticalAlign\":\"middle\",\"outline\":{\"enabled\":false,\"width\":2,\"color\":\"#000000\",\"opacity\":1},\"shadow\":{\"enabled\":false,\"offsetX\":2,\"offsetY\":-2,\"blur\":4,\"color\":\"#000000\",\"opacity\":0.75},\"flowerStyle\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"sdfGlyphSize\":256,\"sdfMargin\":0.125,\"defaultFont\":\"msyh\",\"gpuAccelerateSDF\":0,\"innerFaceMask\":5,\"strokeContentPaint\":6,\"effectStack\":1,\"shadowWidth\":1,\"cjkOpaqueAlphaTest\":0,\"shadowNestedStrokes\":1,\"style\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"w\":1200,\"h\":240,\"mode\":\"camera\"}",
+        "__fccTextFontUrl": "./fonts/msyh.ttf"
+      }
+    },
+    {
+      "uuid": "97817677-7b52-47cc-b83e-2b81e9b54384",
+      "name": "__fccFlower_face",
+      "kind": "mesh",
+      "type": "Mesh",
+      "visible": true,
+      "layers": 4,
+      "parent": "2a268be9-97ad-43a1-aeec-640dca08d49f",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -0.001
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          -0.001,
+          1
+        ]
+      },
+      "userData": {
+        "fccHollowFill": false,
+        "fccChainedBeforeRender": true
+      },
+      "geometry": {
+        "uuid": "d28d9c5a-4f38-4e20-b107-5a1ee390da1c",
+        "name": "",
+        "type": "InstancedBufferGeometry",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "aTroikaGlyphBounds",
+          "aTroikaGlyphIndex"
+        ],
+        "indexCount": 6,
+        "data": "geometries/geom_d28d9c5a.json"
+      },
+      "materials": [
+        {
+          "uuid": "735DE20B-6128-4727-918C-A951B305F092",
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "transparent": true,
+          "opacity": 1,
+          "side": 2,
+          "depthWrite": false,
+          "depthTest": true,
+          "color": "#ffffff",
+          "emissive": null,
+          "textures": {},
+          "uniforms": {}
+        }
+      ],
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "uuid": "257fe6ef-4f0d-4943-830b-703ee857ddd3",
+      "name": "__fccChar_6",
+      "kind": "group",
+      "type": "Group",
+      "visible": true,
+      "layers": 4,
+      "parent": "6c57bb7d-37a6-491a-b03b-ea49b7016428",
+      "transform": {
+        "position": [
+          235.716796875,
+          -36,
+          0.01
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          235.716796875,
+          -36,
+          0.01,
+          1
+        ]
+      },
+      "userData": {
+        "__fccCharFlowerUI": {
+          "type": "text",
+          "text": "E",
+          "font": "",
+          "fontBold": "",
+          "fontSize": 120,
+          "bold": false,
+          "color": "#ffffff",
+          "letterSpacing": 0.02,
+          "lineHeight": 1.2,
+          "align": "center",
+          "verticalAlign": "middle",
+          "outline": {
+            "enabled": false,
+            "width": 2,
+            "color": "#000000",
+            "opacity": 1
+          },
+          "shadow": {
+            "enabled": false,
+            "offsetX": 2,
+            "offsetY": -2,
+            "blur": 4,
+            "color": "#000000",
+            "opacity": 0.75
+          },
+          "flowerStyle": {
+            "version": 2,
+            "id": null,
+            "fill": {
+              "alpha": 1,
+              "content": {
+                "renderType": "solid",
+                "solid": {
+                  "color": "#ffffff",
+                  "alpha": 1
+                },
+                "gradient": {
+                  "style": "linear",
+                  "angle": 90,
+                  "colors": [
+                    "#ffffff",
+                    "#afafaf"
+                  ],
+                  "alphas": [
+                    1,
+                    1
+                  ],
+                  "stops": [
+                    0,
+                    1
+                  ],
+                  "mode": "character"
+                },
+                "texture": {
+                  "path": "",
+                  "fileName": "",
+                  "alpha": 1,
+                  "angle": 0,
+                  "scale": 1,
+                  "flip": [
+                    false,
+                    false
+                  ],
+                  "wrapMode": "repeat",
+                  "stretchMode": "fit"
+                }
+              },
+              "visible": true
+            },
+            "stack": [
+              {
+                "id": "face",
+                "kind": "face"
+              }
+            ],
+            "strokes": [],
+            "shadows": [],
+            "innerShadows": [],
+            "anims": {
+              "in": null,
+              "out": null,
+              "loop": null
+            }
+          },
+          "anchorMin": [
+            0.5,
+            0.5
+          ],
+          "anchorMax": [
+            0.5,
+            0.5
+          ],
+          "pivot": [
+            0.5,
+            0.5
+          ],
+          "anchoredPosition": [
+            0,
+            40
+          ],
+          "sizeDelta": [
+            1200,
+            240
+          ],
+          "localEulerAngles": [
+            0,
+            0,
+            0
+          ],
+          "localScale": [
+            1,
+            1,
+            1
+          ],
+          "textAnim": {
+            "format": "freecapcut.textanim/3",
+            "enabled": true,
+            "components": [
+              {
+                "id": "c_charIn_1",
+                "type": "charIn",
+                "scope": "char",
+                "enabled": true,
+                "channels": {
+                  "opacity": true,
+                  "offsetX": false,
+                  "offsetY": true,
+                  "scale": true,
+                  "rotateX": false,
+                  "rotateY": false,
+                  "rotateZ": true
+                },
+                "params": {
+                  "opacity": 1,
+                  "offsetX": 0,
+                  "offsetY": -36,
+                  "scale": 1,
+                  "rotateX": 0,
+                  "rotateY": 0,
+                  "rotateZ": 0
+                },
+                "selector": {
+                  "unit": "char",
+                  "order": "ltr",
+                  "start": 0,
+                  "end": 1,
+                  "amount": 1,
+                  "delay": 0.56,
+                  "ease": "linear",
+                  "seed": 1
+                }
+              },
+              {
+                "id": "c_wipeReveal_1",
+                "type": "wipeReveal",
+                "scope": "text",
+                "enabled": true,
+                "channels": {},
+                "params": {
+                  "direction": "ltr",
+                  "soft": 0.08,
+                  "edgeIntensity": 2.5,
+                  "edgeWidth": 0.03,
+                  "fillDim": 1,
+                  "fillRange": 0.12,
+                  "fillPower": 2.5,
+                  "blendMode": "normal",
+                  "invert": false
+                },
+                "selector": null
+              }
+            ],
+            "legacy": null,
+            "legacyRepaired": true,
+            "legacyTimes": {
+              "c_wave_1": {
+                "start": 0,
+                "duration": 1,
+                "loop": "infinite",
+                "timeScale": 1
+              },
+              "c_wipeReveal_1": {
+                "start": 0,
+                "duration": 1.6,
+                "loop": "clamp",
+                "timeScale": 1
+              }
+            }
+          },
+          "rect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "_layoutRect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "textFxStack": {
+            "enabled": false,
+            "effects": [],
+            "_bloomThresholdMigrated": true
+          },
+          "exposed": {},
+          "flowerBaseFontSize": 120
+        },
+        "__fccTextAnimChar": true,
+        "__fccCharBase": {
+          "x": 235.716796875,
+          "y": 0,
+          "z": 0.01
+        },
+        "__fccTextSig": "{\"text\":\"E\",\"font\":\"\",\"fontBold\":\"\",\"fontSize\":120,\"bold\":false,\"color\":\"#ffffff\",\"letterSpacing\":0.02,\"lineHeight\":1.2,\"align\":\"center\",\"verticalAlign\":\"middle\",\"outline\":{\"enabled\":false,\"width\":2,\"color\":\"#000000\",\"opacity\":1},\"shadow\":{\"enabled\":false,\"offsetX\":2,\"offsetY\":-2,\"blur\":4,\"color\":\"#000000\",\"opacity\":0.75},\"flowerStyle\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"sdfGlyphSize\":256,\"sdfMargin\":0.125,\"defaultFont\":\"msyh\",\"gpuAccelerateSDF\":0,\"innerFaceMask\":5,\"strokeContentPaint\":6,\"effectStack\":1,\"shadowWidth\":1,\"cjkOpaqueAlphaTest\":0,\"shadowNestedStrokes\":1,\"style\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"w\":1200,\"h\":240,\"mode\":\"camera\"}",
+        "__fccTextFontUrl": "./fonts/msyh.ttf"
+      }
+    },
+    {
+      "uuid": "1e5be13f-f5d8-4801-abc3-9c319f2f89b7",
+      "name": "__fccFlower_face",
+      "kind": "mesh",
+      "type": "Mesh",
+      "visible": true,
+      "layers": 4,
+      "parent": "257fe6ef-4f0d-4943-830b-703ee857ddd3",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -0.001
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          -0.001,
+          1
+        ]
+      },
+      "userData": {
+        "fccHollowFill": false,
+        "fccChainedBeforeRender": true
+      },
+      "geometry": {
+        "uuid": "9e504a1b-1de7-4b51-ba33-3ec5b765e262",
+        "name": "",
+        "type": "InstancedBufferGeometry",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "aTroikaGlyphBounds",
+          "aTroikaGlyphIndex"
+        ],
+        "indexCount": 6,
+        "data": "geometries/geom_9e504a1b.json"
+      },
+      "materials": [
+        {
+          "uuid": "73F3F94B-C715-41E3-8776-3F66CAB35B66",
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "transparent": true,
+          "opacity": 1,
+          "side": 2,
+          "depthWrite": false,
+          "depthTest": true,
+          "color": "#ffffff",
+          "emissive": null,
+          "textures": {},
+          "uniforms": {}
+        }
+      ],
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "uuid": "360cfa03-858d-4fb8-841d-5e1772c5074c",
+      "name": "__fccChar_7",
+      "kind": "group",
+      "type": "Group",
+      "visible": true,
+      "layers": 4,
+      "parent": "6c57bb7d-37a6-491a-b03b-ea49b7016428",
+      "transform": {
+        "position": [
+          307.8140563964844,
+          -36,
+          0.01
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          307.8140563964844,
+          -36,
+          0.01,
+          1
+        ]
+      },
+      "userData": {
+        "__fccCharFlowerUI": {
+          "type": "text",
+          "text": "P",
+          "font": "",
+          "fontBold": "",
+          "fontSize": 120,
+          "bold": false,
+          "color": "#ffffff",
+          "letterSpacing": 0.02,
+          "lineHeight": 1.2,
+          "align": "center",
+          "verticalAlign": "middle",
+          "outline": {
+            "enabled": false,
+            "width": 2,
+            "color": "#000000",
+            "opacity": 1
+          },
+          "shadow": {
+            "enabled": false,
+            "offsetX": 2,
+            "offsetY": -2,
+            "blur": 4,
+            "color": "#000000",
+            "opacity": 0.75
+          },
+          "flowerStyle": {
+            "version": 2,
+            "id": null,
+            "fill": {
+              "alpha": 1,
+              "content": {
+                "renderType": "solid",
+                "solid": {
+                  "color": "#ffffff",
+                  "alpha": 1
+                },
+                "gradient": {
+                  "style": "linear",
+                  "angle": 90,
+                  "colors": [
+                    "#ffffff",
+                    "#afafaf"
+                  ],
+                  "alphas": [
+                    1,
+                    1
+                  ],
+                  "stops": [
+                    0,
+                    1
+                  ],
+                  "mode": "character"
+                },
+                "texture": {
+                  "path": "",
+                  "fileName": "",
+                  "alpha": 1,
+                  "angle": 0,
+                  "scale": 1,
+                  "flip": [
+                    false,
+                    false
+                  ],
+                  "wrapMode": "repeat",
+                  "stretchMode": "fit"
+                }
+              },
+              "visible": true
+            },
+            "stack": [
+              {
+                "id": "face",
+                "kind": "face"
+              }
+            ],
+            "strokes": [],
+            "shadows": [],
+            "innerShadows": [],
+            "anims": {
+              "in": null,
+              "out": null,
+              "loop": null
+            }
+          },
+          "anchorMin": [
+            0.5,
+            0.5
+          ],
+          "anchorMax": [
+            0.5,
+            0.5
+          ],
+          "pivot": [
+            0.5,
+            0.5
+          ],
+          "anchoredPosition": [
+            0,
+            40
+          ],
+          "sizeDelta": [
+            1200,
+            240
+          ],
+          "localEulerAngles": [
+            0,
+            0,
+            0
+          ],
+          "localScale": [
+            1,
+            1,
+            1
+          ],
+          "textAnim": {
+            "format": "freecapcut.textanim/3",
+            "enabled": true,
+            "components": [
+              {
+                "id": "c_charIn_1",
+                "type": "charIn",
+                "scope": "char",
+                "enabled": true,
+                "channels": {
+                  "opacity": true,
+                  "offsetX": false,
+                  "offsetY": true,
+                  "scale": true,
+                  "rotateX": false,
+                  "rotateY": false,
+                  "rotateZ": true
+                },
+                "params": {
+                  "opacity": 1,
+                  "offsetX": 0,
+                  "offsetY": -36,
+                  "scale": 1,
+                  "rotateX": 0,
+                  "rotateY": 0,
+                  "rotateZ": 0
+                },
+                "selector": {
+                  "unit": "char",
+                  "order": "ltr",
+                  "start": 0,
+                  "end": 1,
+                  "amount": 1,
+                  "delay": 0.56,
+                  "ease": "linear",
+                  "seed": 1
+                }
+              },
+              {
+                "id": "c_wipeReveal_1",
+                "type": "wipeReveal",
+                "scope": "text",
+                "enabled": true,
+                "channels": {},
+                "params": {
+                  "direction": "ltr",
+                  "soft": 0.08,
+                  "edgeIntensity": 2.5,
+                  "edgeWidth": 0.03,
+                  "fillDim": 1,
+                  "fillRange": 0.12,
+                  "fillPower": 2.5,
+                  "blendMode": "normal",
+                  "invert": false
+                },
+                "selector": null
+              }
+            ],
+            "legacy": null,
+            "legacyRepaired": true,
+            "legacyTimes": {
+              "c_wave_1": {
+                "start": 0,
+                "duration": 1,
+                "loop": "infinite",
+                "timeScale": 1
+              },
+              "c_wipeReveal_1": {
+                "start": 0,
+                "duration": 1.6,
+                "loop": "clamp",
+                "timeScale": 1
+              }
+            }
+          },
+          "rect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "_layoutRect": {
+            "x": -60,
+            "y": 460,
+            "w": 1200,
+            "h": 240
+          },
+          "textFxStack": {
+            "enabled": false,
+            "effects": [],
+            "_bloomThresholdMigrated": true
+          },
+          "exposed": {},
+          "flowerBaseFontSize": 120
+        },
+        "__fccTextAnimChar": true,
+        "__fccCharBase": {
+          "x": 307.8140563964844,
+          "y": 0,
+          "z": 0.01
+        },
+        "__fccTextSig": "{\"text\":\"P\",\"font\":\"\",\"fontBold\":\"\",\"fontSize\":120,\"bold\":false,\"color\":\"#ffffff\",\"letterSpacing\":0.02,\"lineHeight\":1.2,\"align\":\"center\",\"verticalAlign\":\"middle\",\"outline\":{\"enabled\":false,\"width\":2,\"color\":\"#000000\",\"opacity\":1},\"shadow\":{\"enabled\":false,\"offsetX\":2,\"offsetY\":-2,\"blur\":4,\"color\":\"#000000\",\"opacity\":0.75},\"flowerStyle\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"sdfGlyphSize\":256,\"sdfMargin\":0.125,\"defaultFont\":\"msyh\",\"gpuAccelerateSDF\":0,\"innerFaceMask\":5,\"strokeContentPaint\":6,\"effectStack\":1,\"shadowWidth\":1,\"cjkOpaqueAlphaTest\":0,\"shadowNestedStrokes\":1,\"style\":{\"version\":2,\"id\":null,\"fill\":{\"alpha\":1,\"content\":{\"renderType\":\"solid\",\"solid\":{\"color\":\"#ffffff\",\"alpha\":1},\"gradient\":{\"style\":\"linear\",\"angle\":90,\"colors\":[\"#ffffff\",\"#afafaf\"],\"alphas\":[1,1],\"stops\":[0,1],\"mode\":\"character\"},\"texture\":{\"path\":\"\",\"fileName\":\"\",\"alpha\":1,\"angle\":0,\"scale\":1,\"flip\":[false,false],\"wrapMode\":\"repeat\",\"stretchMode\":\"fit\"}},\"visible\":true},\"stack\":[{\"id\":\"face\",\"kind\":\"face\"}],\"strokes\":[],\"shadows\":[],\"innerShadows\":[],\"anims\":{\"in\":null,\"out\":null,\"loop\":null}},\"w\":1200,\"h\":240,\"mode\":\"camera\"}",
+        "__fccTextFontUrl": "./fonts/msyh.ttf"
+      }
+    },
+    {
+      "uuid": "54b8dfc0-74ea-45d6-8e58-763eab784fb1",
+      "name": "__fccFlower_face",
+      "kind": "mesh",
+      "type": "Mesh",
+      "visible": true,
+      "layers": 4,
+      "parent": "360cfa03-858d-4fb8-841d-5e1772c5074c",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -0.001
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          -0.001,
+          1
+        ]
+      },
+      "userData": {
+        "fccHollowFill": false,
+        "fccChainedBeforeRender": true
+      },
+      "geometry": {
+        "uuid": "71350f1a-5c43-4884-95a1-752339a7324f",
+        "name": "",
+        "type": "InstancedBufferGeometry",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "aTroikaGlyphBounds",
+          "aTroikaGlyphIndex"
+        ],
+        "indexCount": 6,
+        "data": "geometries/geom_71350f1a.json"
+      },
+      "materials": [
+        {
+          "uuid": "CF3620E1-A1FE-47BE-9BC4-36F81A684D08",
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "transparent": true,
+          "opacity": 1,
+          "side": 2,
+          "depthWrite": false,
+          "depthTest": true,
+          "color": "#ffffff",
+          "emissive": null,
+          "textures": {},
+          "uniforms": {}
+        }
+      ],
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "uuid": "7039124e-f804-4d28-ac8f-a991609402ca",
+      "name": "__fccFlower_face",
+      "kind": "mesh",
+      "type": "Mesh",
+      "visible": false,
+      "layers": 4,
+      "parent": "5814ad6b-0d3d-42d2-a4a6-893311e262c8",
+      "transform": {
+        "position": [
+          0,
+          0,
+          -0.001
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          -0.001,
+          1
+        ]
+      },
+      "userData": {
+        "fccHollowFill": false,
+        "fccChainedBeforeRender": true
+      },
+      "geometry": {
+        "uuid": "fa537732-f4dd-4fdb-b3a8-35a44ed11acd",
+        "name": "",
+        "type": "InstancedBufferGeometry",
+        "attributes": [
+          "position",
+          "normal",
+          "uv",
+          "aTroikaGlyphBounds",
+          "aTroikaGlyphIndex"
+        ],
+        "indexCount": 6,
+        "data": "geometries/geom_fa537732.json"
+      },
+      "materials": [
+        {
+          "uuid": "725959DE-E721-4F30-B522-5277A9616463",
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "transparent": true,
+          "opacity": 1,
+          "side": 2,
+          "depthWrite": false,
+          "depthTest": true,
+          "color": "#ffffff",
+          "emissive": null,
+          "textures": {},
+          "uniforms": {}
+        }
+      ],
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "uuid": "4ad321e7-41d3-4683-b508-b4f141779f0f",
+      "name": "PerspectiveCamera",
+      "kind": "camera",
+      "type": "PerspectiveCamera",
+      "visible": true,
+      "layers": 1,
+      "parent": null,
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "userData": {
+        "postProcessStack": {
+          "enabled": true,
+          "effects": [
+            {
+              "id": "f8f62edd-42e1-4a54-84f7-e42345d6162e",
+              "type": "deepGlow",
+              "enabled": false,
+              "params": {
+                "intensity": 0.89,
+                "threshold": 0.06,
+                "radius": 1.08,
+                "color": "#151e66"
+              },
+              "exposed": {}
+            },
+            {
+              "id": "3c99ef3a-df43-47ae-b6e8-f505db4cdc26",
+              "type": "bloom",
+              "enabled": true,
+              "params": {
+                "strength": 0.37,
+                "radius": 0.91,
+                "threshold": 0.9
+              },
+              "exposed": {}
+            }
+          ],
+          "_bloomThresholdMigrated": true
+        }
+      },
+      "cameraType": "PerspectiveCamera",
+      "fov": 50,
+      "aspect": 1,
+      "near": 0.1,
+      "far": 2000,
+      "focus": 10,
+      "zoom": 1,
+      "postProcess": {
+        "enabled": true,
+        "effects": [
+          {
+            "id": "f8f62edd-42e1-4a54-84f7-e42345d6162e",
+            "type": "deepGlow",
+            "enabled": false,
+            "params": {
+              "intensity": 0.89,
+              "threshold": 0.06,
+              "radius": 1.08,
+              "color": "#151e66"
+            },
+            "exposed": {}
+          },
+          {
+            "id": "3c99ef3a-df43-47ae-b6e8-f505db4cdc26",
+            "type": "bloom",
+            "enabled": true,
+            "params": {
+              "strength": 0.37,
+              "radius": 0.91,
+              "threshold": 0.9
+            },
+            "exposed": {}
+          }
+        ]
+      }
+    },
+    {
+      "uuid": "727ef88c-c7fe-4404-aabb-bc70dbed4148",
+      "name": "Timeline",
+      "kind": "timeline",
+      "type": "Object3D",
+      "visible": true,
+      "layers": 1,
+      "parent": null,
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "userData": {
+        "fccTimeline": {
+          "projectPath": "assets/timelines/timeline.timeline.json",
+          "active": true,
+          "fps": 30,
+          "duration": 1,
+          "loop": "clamp"
+        }
+      },
+      "timeline": {
+        "path": "timelines/timeline.timeline.json"
+      }
+    }
+  ],
+  "assets": {
+    "textures": [
+      {
+        "uuid": "8c5c5c23-2f16-42a1-abfc-f584565d9bfb",
+        "name": "PMREM",
+        "path": "textures/tex_0_pmrem.png",
+        "exported": false,
+        "wrapS": 1001,
+        "wrapT": 1001,
+        "magFilter": 1006,
+        "minFilter": 1008,
+        "flipY": false,
+        "colorSpace": "srgb-linear"
+      }
+    ],
+    "shaders": [],
+    "geometries": [
+      {
+        "uuid": "cfe70cb7-6a3c-4562-9b4d-f8117cb9b565",
+        "path": "geometries/geom_cfe70cb7.json"
+      },
+      {
+        "uuid": "3f2a048a-4dd0-4360-b1a7-ddf65245ed7c",
+        "path": "geometries/geom_3f2a048a.json"
+      },
+      {
+        "uuid": "0618fc70-322d-4ec3-a4d5-3d568ec605a5",
+        "path": "geometries/geom_0618fc70.json"
+      },
+      {
+        "uuid": "e6b7a4c6-18d8-4b4d-b59f-3071e577a5ef",
+        "path": "geometries/geom_e6b7a4c6.json"
+      },
+      {
+        "uuid": "2244a99e-c265-4480-88e9-80d412fd60f2",
+        "path": "geometries/geom_2244a99e.json"
+      },
+      {
+        "uuid": "53f4be99-1ab2-498b-84f3-abbedcd89828",
+        "path": "geometries/geom_53f4be99.json"
+      },
+      {
+        "uuid": "d28d9c5a-4f38-4e20-b107-5a1ee390da1c",
+        "path": "geometries/geom_d28d9c5a.json"
+      },
+      {
+        "uuid": "9e504a1b-1de7-4b51-ba33-3ec5b765e262",
+        "path": "geometries/geom_9e504a1b.json"
+      },
+      {
+        "uuid": "71350f1a-5c43-4884-95a1-752339a7324f",
+        "path": "geometries/geom_71350f1a.json"
+      },
+      {
+        "uuid": "fa537732-f4dd-4fdb-b3a8-35a44ed11acd",
+        "path": "geometries/geom_fa537732.json"
+      }
+    ],
+    "animations": [
+      "animations/animation.anim"
+    ],
+    "timelines": [
+      "timelines/timeline.timeline.json"
+    ]
+  },
+  "resolution": {
+    "width": 1080,
+    "height": 1080
+  },
+  "meta": {
+    "generator": "FreeFilmCut Three.js Editor VfxPackExporter",
+    "threeSceneUuid": "9a7a199d-ad32-42e2-a61b-bdb0fdf2ca16",
+    "exportedAt": "2026-10-22T06:44:48.313Z",
+    "nodeCount": 24,
+    "textureCount": 1,
+    "shaderCount": 0,
+    "animationCount": 1,
+    "animationSkippedEmpty": [],
+    "animationSkippedFiltered": [],
+    "timelineCount": 1
+  },
+  "exposedParams": []
+}

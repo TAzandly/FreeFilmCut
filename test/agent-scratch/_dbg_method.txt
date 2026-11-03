@@ -1,0 +1,50 @@
+	/**
+	 * Throttled proof that below input is the FULL canvas composite:
+	 * top-center should be jpg (or bg), mid-center often video when letterboxed.
+	 */
+	private debugBelowRegions(tag: string) {
+		if (this.belowDebugFrames >= 6) return;
+		const renderer = this.renderer;
+		const readRT = this.belowSourceRT ?? this.accumRT;
+		if (!renderer || !readRT) return;
+		this.belowDebugFrames += 1;
+
+		const sample = (cx: number, cy: number, label: string) => {
+			const w = 16;
+			const h = 16;
+			const x = Math.max(0, Math.min(readRT.width - w, Math.floor(cx - w / 2)));
+			const y = Math.max(0, Math.min(readRT.height - h, Math.floor(cy - h / 2)));
+			const buf = new Uint8Array(w * h * 4);
+			renderer.readRenderTargetPixels(readRT, x, y, w, h, buf);
+			let maxRGB = 0;
+			let nonzero = 0;
+			let sumR = 0;
+			let sumG = 0;
+			let sumB = 0;
+			const n = w * h;
+			for (let i = 0; i < buf.length; i += 4) {
+				const m = Math.max(buf[i], buf[i + 1], buf[i + 2]);
+				if (m > 8) nonzero++;
+				if (m > maxRGB) maxRGB = m;
+				sumR += buf[i];
+				sumG += buf[i + 1];
+				sumB += buf[i + 2];
+			}
+			return {
+				label,
+				xy: x + ',' + y,
+				nonzero,
+				maxRGB,
+				avg: Math.round(sumR / n) + ',' + Math.round(sumG / n) + ',' + Math.round(sumB / n),
+			};
+		};
+
+		// WebGL readRenderTargetPixels origin is bottom-left.
+		const top = sample(readRT.width * 0.5, readRT.height * 0.88, 'top');
+		const mid = sample(readRT.width * 0.5, readRT.height * 0.5, 'mid');
+		const bot = sample(readRT.width * 0.5, readRT.height * 0.12, 'bot');
+		console.info(
+			'[FreeFilmCut uInput] ' + tag + ' frame=' + this.belowDebugFrames + ' size=' + readRT.width + 'x' + readRT.height,
+			{ top, mid, bot },
+		);
+	}

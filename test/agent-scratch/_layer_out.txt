@@ -1,0 +1,179 @@
+=== placeRootAmongSiblings count=7
+=== ensureStickersRoots count=2
+=== renderOrder count=1
+=== zBump count=4
+=== layer count=20
+=== stampStickerLayers count=5
+function placeRootAmongSiblings( group, root, where ) {
+
+	if ( ! group || ! root ) return;
+	if ( root.parent !== group ) group.add( root );
+
+	const kids = group.children;
+	const idx = kids.indexOf( root );
+	if ( idx < 0 ) return;
+
+	if ( where === 'front' ) {
+
+		if ( idx !== kids.length - 1 ) {
+
+			kids.splice( idx, 1 );
+			kids.push( root );
+
+		}
+
+	} else if ( idx !== 0 ) {
+
+		kids.splice( idx, 1 );
+		kids.unshift( root );
+
+	}
+
+}
+----
+function ensureStickersRoots( group ) {
+
+	// Legacy single root → treat as behind
+	const legacy = group.getObjectByName( FCC_TEXT_STICKERS_ROOT );
+	const behind = ensureLayerRoot( group, FCC_TEXT_STICKERS_ROOT_BEHIND );
+	const front = ensureLayerRoot( group, FCC_TEXT_STICKERS_ROOT_FRONT );
+	if ( legacy && legacy !== behind ) {
+
+		while ( legacy.children.length ) behind.add( legacy.children[ 0 ] );
+		group.remove( legacy );
+
+	}
+	placeRootAmongSiblings( group, behind, 'behind' );
+	placeRootAmongSiblings( group, front, 'front' );
+	return { behind, front };
+
+}
+----
+function stampStickerLayers( root, group ) {
+
+	const mode = getOwningCanvasRenderMode( group );
+	const layerIndex = mode === RENDER_MODE_CAMERA ? UI_CAMERA_LAYER : UI_LAYER;
+	const depthTest = mode === RENDER_MODE_CAMERA;
+	root.layers.set( layerIndex );
+	root.traverse( ( n ) => {
+
+		n.layers.set( layerIndex );
+		n.frustumCulled = false;
+		if ( n.isMesh && n.material ) {
+
+			const mats = Array.isArray( n.material ) ? n.material : [ n.material ];
+			for ( const m of mats ) {
+
+				if ( ! m ) continue;
+				m.depthTest = depthTest;
+				m.depthWrite = false;
+				m.toneMapped = false;
+
+			}
+
+		}
+
+	} );
+
+}
+----
+isFront = s.layer === 'front';
+		const sortBase = isFront ? 200 : - 200;
+		mesh.renderOrder = sortBase + ( Number( s.sort ) || 0 );
+
+		const zBump = ( isFront ? 0.05 : - 0.05 ) + i * 0.001;
+		const follow = s.followCharAnim !== false && animReady;
+
+		// --- char: 'all' → whole text AABB (visibleBounds / glyph union) ---
+		if ( s.char === 'all' ) {
+
+			let aabb = fullTextAabbFromLayout( layoutSrc, carets, glyphBounds, fs );
+			if ( follow && animRoot && charCount > 0 ) {
+
+				
+##### UIText.js hits 40
+UIText.js:3:* Group holds fccUI (type=text). 花字 = multilayer Effect stack of ephemeral Troika children (__fccFlower_*); not a separate component.
+UIText.js:25:getEffectiveFlowerStyle,
+UIText.js:29:} from './FlowerStyle.js?v=fcc-ui-164';
+UIText.js:34:export const FCC_FLOWER_PREFIX = '__fccFlower_';
+UIText.js:35:export const FCC_FLOWER_FACE = '__fccFlower_face';
+UIText.js:195:disposeFlowerChildren( group );
+UIText.js:212:let sawFlower = false;
+UIText.js:217:sawFlower = true;
+UIText.js:222:return ! sawFlower;
+UIText.js:355:disposeFlowerChildren( group );
+UIText.js:532:* Legacy fill/shadow roles kept for callers; flower path uses applyFlowerPass.
+UIText.js:621:function disposeFlowerChildren( group ) {
+UIText.js:712:function requestFlowerViewportRefresh() {
+UIText.js:735:function loadFlowerTexture( path, onReady ) {
+UIText.js:1153:requestFlowerViewportRefresh();
+UIText.js:1168:requestFlowerViewportRefresh();
+UIText.js:1184:requestFlowerViewportRefresh();
+UIText.js:1198:requestFlowerViewportRefresh();
+UIText.js:1206:requestFlowerViewportRefresh();
+UIText.js:1263:requestFlowerViewportRefresh();
+UIText.js:1271:loadFlowerTexture( path, ( map ) => {
+UIText.js:1694:function applyFlowerPass( troika, ui, rect, pass, z, mode ) {
+UIText.js:1837:function buildFlowerPasses( style ) {
+UIText.js:1840:// Master authoring switch (flowerStyle.effectsEnabled): off = fill only, keep stack data.
+UIText.js:1856:// Defensive: normalizeFlowerStyle always supplies stack; keep legacy path.
+UIText.js:1944:effectStack: 2, // fcc-ui-164 master effectsEnabled gate
+UIText.js:1961:* True when every __fccFlower_* child is a live troika Text. A scene loaded from
+UIText.js:1982:// Char-anim preview Groups stash flower UI on __fccCharFlowerUI (not fccUI),
+UIText.js:1984:const ui = getFccUI( group ) || ( group && group.userData && group.userData.__fccCharFlowerUI ) || null;
+UIText.js:1995:const style = getEffectiveFlowerStyle( ui );
+UIText.js:2010:let wipeFlower = fontChanged || ! flowerIsTroika;
+UIText.js:2011:if ( ! wipeFlower ) {
+UIText.js:2025:wipeFlower = true;
+UIText.js:2031:if ( wipeFlower ) break;
+UIText.js:2034:wipeFlower = true;
+UIText.js:2043:if ( wipeFlower ) {
+UIText.js:2045:disposeFlowerChildren( group );
+UIText.js:2050:const passes = buildFlowerPasses( style );
+UIText.js:2107:applyFlowerPass( mesh, ui, rect, pass, z, mode );
+UIText.js:2214:requestFlowerViewportRefresh();
+
+##### TextLayerRT.js hits 37
+TextLayerRT.js:2:* Editor Text layer → WebGLRenderTarget → shared Registry Fx → blit.
+TextLayerRT.js:7:* renderTextureFx AFTER full Troika/Flower stencil composite.
+TextLayerRT.js:28:let blitMat = null;
+TextLayerRT.js:30:let blitMesh = null;
+TextLayerRT.js:32:let blitCam = null;
+TextLayerRT.js:34:let blitScene = null;
+TextLayerRT.js:45:export function ensureTextLayerRenderTarget( width, height, opts ) {
+TextLayerRT.js:72:pooledTarget.texture.name = 'FreeFilmCut.TextLayerRT';
+TextLayerRT.js:85:export function applyTextLayerFx( args ) {
+TextLayerRT.js:108:/** @deprecated use applyTextLayerFx — kept as Step-2 hook name from audit */
+TextLayerRT.js:109:export function applyTextLayerFxPlaceholder( target ) {
+TextLayerRT.js:122:export function textLayerCompositeSource( target, opts ) {
+TextLayerRT.js:126:return applyTextLayerFx( {
+TextLayerRT.js:134:const fx = applyTextLayerFxPlaceholder( target );
+TextLayerRT.js:143:if ( blitMat ) return;
+TextLayerRT.js:144:blitMat = new THREE.ShaderMaterial( {
+TextLayerRT.js:145:name: 'TextLayerRT.blit',
+TextLayerRT.js:175:blitMesh = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), blitMat );
+TextLayerRT.js:176:blitScene = new THREE.Scene();
+TextLayerRT.js:177:blitScene.add( blitMesh );
+TextLayerRT.js:178:blitCam = new THREE.OrthographicCamera( - 1, 1, 1, - 1, 0, 1 );
+TextLayerRT.js:189:export function blitTextLayerToLetterbox( args ) {
+TextLayerRT.js:198:blitMat.uniforms.tDiffuse.value = texture;
+TextLayerRT.js:199:blitMat.uniforms.uOpacity.value = opacity;
+TextLayerRT.js:208:renderer.render( blitScene, blitCam );
+TextLayerRT.js:211:blitMat.uniforms.tDiffuse.value = null;
+TextLayerRT.js:223:export function renderOverlayTextLayerToRT( args ) {
+TextLayerRT.js:264:* stack and the blit byte-identical between the two modes.
+TextLayerRT.js:346:export function disposeTextLayerRT() {
+TextLayerRT.js:362:if ( blitMat ) {
+TextLayerRT.js:364:blitMat.dispose();
+TextLayerRT.js:365:blitMat = null;
+TextLayerRT.js:369:if ( blitMesh ) {
+TextLayerRT.js:371:blitMesh.geometry.dispose();
+TextLayerRT.js:372:blitMesh = null;
+TextLayerRT.js:376:blitScene = null;
+TextLayerRT.js:377:blitCam = null;
+
+##### UIOverlay.js hits 1
+UIOverlay.js:173:// Stickers after rebind+layout so scale/offset/glyph AABB take effect.
+
+##### TextGeomFx.js hits 0
+

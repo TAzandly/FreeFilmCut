@@ -1,0 +1,120 @@
+
+function normalizeZipPath(p: string): string {
+	return String(p || "").replace(/\\/g, "/").replace(/^\.\//, "");
+}
+
+function stripPackPrefix(p: string): string {
+	const n = normalizeZipPath(p);
+	if (n === "pack" || n.startsWith("pack/")) return n.slice("pack/".length);
+	return n;
+}
+
+function decodeUtf8(bytes: Uint8Array): string {
+	return new TextDecoder("utf-8").decode(bytes);
+}
+
+function findFlowerUiHits(node: unknown, hits: Record<string, unknown>[]): void {
+	if (!node || typeof node !== "object") return;
+	const obj = node as Record<string, unknown>;
+	const ud = obj.userData as Record<string, unknown> | undefined;
+	const fcc = ud?.fccUI as Record<string, unknown> | undefined;
+	if (fcc && fcc.type === "text" && fcc.flowerStyle) hits.push(fcc);
+	else {
+		const ui = obj.ui as Record<string, unknown> | undefined;
+		if (ui && ui.type === "text" && ui.flowerStyle) hits.push(ui);
+		else if (obj.flowerStyle && typeof obj.flowerStyle === "object") {
+			hits.push({
+				flowerStyle: obj.flowerStyle,
+				fontSize: obj.fontSize,
+				flowerBaseFontSize: obj.flowerBaseFontSize,
+			});
+		}
+	}
+	if (Array.isArray(node)) {
+		for (const child of node) findFlowerUiHits(child, hits);
+		return;
+	}
+	for (const key of Object.keys(obj)) {
+		if (key === "flowerStyle") continue;
+		findFlowerUiHits(obj[key], hits);
+	}
+}
+
+/** Parse art-text .vfxpack and return flowerStyle from scene.json (editor-authoritative). */
+export async function extractFlowerStyleFromVfxpackBytes({
+	bytes,
+	packDir,
+}: {
+	bytes: Uint8Array;
+	packDir: string;
+}): Promise<{ style: FlowerStyle; designFontSize: number } | null> {
+	let unzipped: Record<string, Uint8Array>;
+	try {
+		unzipped = unzipSync(bytes);
+	} catch {
+		return null;
+	}
+	const files = new Map<string, Uint8Array>();
+	for (const [raw, data] of Object.entries(unzipped)) {
+		const rel = stripPackPrefix(raw);
+		if (!rel || rel.endsWith("/")) continue;
+		files.set(normalizeZipPath(rel), data);
+		files.set(normalizeZipPath(raw), data);
+	}
+	const manifestKey =
+		[...files.keys()].find(
+			(k) => k === "manifest.json" || k.endsWith("/manifest.json"),
+		) || null;
+	if (!manifestKey) return null;
+	let manifest: Record<string, unknown>;
+	try {
+		manifest = JSON.parse(decodeUtf8(files.get(manifestKey)!)) as Record<string, unknown>;
+	} catch {
+		return null;
+	}
+	const packType = String(manifest.type || "").toLowerCase();
+	if (packType && packType !== "art-text" && packType !== "flower") return null;
+	const entry = manifest.entry as { scene?: string } | undefined;
+	const assets = manifest.assets as { scene?: string } | undefined;
+	const sceneRel = entry?.scene || assets?.scene || "scene.json";
+	const sceneKey =
+		[...files.keys()].find(
+			(k) =>
+				k === normalizeZipPath(sceneRel) ||
+				k.endsWith("/" + String(sceneRel).split("/").pop()),
+		) || null;
+	if (!sceneKey) return null;
+	let scene: unknown;
+	try {
+		scene = JSON.parse(decodeUtf8(files.get(sceneKey)!));
+	} catch {
+		return null;
+	}
+	const hits: Record<string, unknown>[] = [];
+	findFlowerUiHits(scene, hits);
+	if (!hits.length) return null;
+	const ui = hits[0]!;
+	const rawStyle = ui.flowerStyle;
+	if (!rawStyle || typeof rawStyle !== "object") return null;
+	const designFontSize =
+		Number(ui.flowerBaseFontSize) > 0
+			? Number(ui.flowerBaseFontSize)
+			: Number(ui.fontSize) > 0
+				? Number(ui.fontSize)
+				: 48;
+	return {
+		style: bindStyleToPackDir(rawStyle, packDir),
+		designFontSize,
+	};
+}
+
+async function fetchBytes(url: string): Promise<Uint8Array | null> {
+	try {
+		const res = await fetch(url, { cache: "no-cache" });
+		if (!res.ok) return null;
+		return new Uint8Array(await res.arrayBuffer());
+	} catch {
+		return null;
+	}
+}
+

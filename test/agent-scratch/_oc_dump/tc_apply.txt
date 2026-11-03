@@ -1,0 +1,221 @@
+500|			for (let i = 0; i < buf.length; i += 4) {
+501|				const m = Math.max(buf[i], buf[i + 1], buf[i + 2]);
+502|				if (m > 0) nonzero++;
+503|				if (m > maxRGB) maxRGB = m;
+504|			}
+505|			console.info(
+506|				`[FreeFilmCut uInput] ${tag} frame=${this.belowDebugFrames} center ${w}x${h} nonzero=${nonzero} maxRGB=${maxRGB} tex=`,
+507|				tex,
+508|			);
+509|		} catch (err) {
+510|			console.warn("[FreeFilmCut uInput] readPixels failed", err);
+511|		}
+512|	}
+513|
+514|		private bindBelowInputTexture({
+515|		built,
+516|		texture,
+517|	}: {
+518|		built: BuiltPackScene;
+519|		texture: THREE.Texture;
+520|	}) {
+521|		const renderer = this.renderer;
+522|		const names =
+523|			built.belowInputUniformNames.length > 0
+524|				? built.belowInputUniformNames
+525|				: [...BELOW_INPUT_UNIFORM_NAMES];
+526|
+527|		// Do not mutate texture.flipY / colorSpace on shared GPU textures.
+528|		if (renderer) {
+529|			renderer.initTexture(texture);
+530|		}
+531|		this.lastBelowTexture = texture;
+532|
+533|		const applyToMaterial = (mat: THREE.Material | null | undefined) => {
+534|			const shader = mat as THREE.ShaderMaterial;
+535|			if (!shader?.isShaderMaterial || !shader.uniforms) return;
+536|			let touched = false;
+537|			for (const name of names) {
+538|				if (!shader.uniforms[name]) {
+539|					shader.uniforms[name] = { value: texture };
+540|				} else {
+541|					shader.uniforms[name].value = texture;
+542|				}
+543|				touched = true;
+544|			}
+545|			for (const name of BELOW_INPUT_UNIFORM_NAMES) {
+546|				if (shader.uniforms[name]) {
+547|					shader.uniforms[name].value = texture;
+548|					touched = true;
+549|				}
+550|			}
+551|			// Null sibling samplers (e.g. map) make uInput sample black on many GPUs.
+552|			for (const [k, u] of Object.entries(shader.uniforms)) {
+553|				if (!u || u.value) continue;
+554|				if (/map|input|channel|tex|sampler/i.test(k)) {
+555|					u.value = texture;
+556|					touched = true;
+557|				}
+558|			}
+559|			// CommonShader / many Editor defaults sample `map`, not `uInput`.
+560|			// When the author did not supply a map (useMap === false), also feed
+561|			// the below-composite into `map` so those packs show the video.
+562|			const useMapU = shader.uniforms.useMap;
+563|			const mapU = shader.uniforms.map;
+564|			const useMapOn = !!(useMapU && useMapU.value);
+565|			if (mapU && !useMapOn) {
+566|				mapU.value = texture;
+567|				touched = true;
+568|			}
+569|			if (touched) {
+570|				shader.uniformsNeedUpdate = true;
+571|				shader.toneMapped = false;
+572|				if (shader.opacity === undefined || shader.opacity <= 0) {
+573|					shader.opacity = 1;
+574|				}
+575|				if (shader.uniforms.opacity) {
+576|					const o = shader.uniforms.opacity.value;
+577|					if (typeof o === "number" && o <= 0) {
+578|						shader.uniforms.opacity.value = 1;
+579|					}
+580|				}
+581|			}
+582|		};
+583|
+584|		built.root.traverse((obj) => {
+585|			const mesh = obj as THREE.Mesh;
+586|			if (!mesh.isMesh) return;
+587|			const materials = Array.isArray(mesh.material)
+588|				? mesh.material
+589|				: [mesh.material];
+590|			for (const mat of materials) applyToMaterial(mat);
+591|		});
+592|		// Also bind via uuid map (covers materials not currently on a mesh).
+593|		if (built.materialsByUuid) {
+594|			for (const mat of built.materialsByUuid.values()) {
+595|				applyToMaterial(mat);
+596|			}
+597|		}
+598|	}
+599|
+600|
+601|	/** Resolve pack type/scope from the registry for below-input decisions. */
+602|	private lookupPackMeta(
+603|		packId: string,
+604|	): { type: string; scope: string } | null {
+605|		const pack = getPackRegistrySnapshot().packs.find((p) => p.id === packId);
+606|		if (!pack) return null;
+607|		return {
+608|			type: String(pack.type || ""),
+609|			scope: String(pack.scope || ""),
+610|		};
+611|	}
+612|
+613|	private renderOnePack({
+614|		packId,
+615|		width,
+616|		height,
+617|		clearFirst,
+618|		target,
+619|		layersBelowCount = 0,
+620|		liveParams = null,
+621|		clipLocalTime = 0,
+622|	}: {
+623|		packId: string;
+624|		width: number;
+625|		height: number;
+626|		clearFirst: boolean;
+627|		target: THREE.WebGLRenderTarget | null;
+628|		layersBelowCount?: number;
+629|		liveParams?: ParamValues | null;
+630|		/** Clip-local seconds for sampling pack .anim. */
+631|		clipLocalTime?: number;
+632|	}) {
+633|		const renderer = this.renderer;
+634|		const accumRT = this.accumRT;
+635|		const packRT = this.packRT;
+636|		if (!renderer || !accumRT) return;
+637|		const built = this.packScenes.get(packId);
+638|		if (!built) {
+639|			// Scene still building; kick sync and skip this frame.
+640|			this.ensurePackBuilt(packId);
+641|			if (clearFirst && target) {
+642|				renderer.setRenderTarget(target);
+643|				renderer.clear();
+644|			}
+645|			return;
+646|		}
+647|		if (built.camera instanceof THREE.PerspectiveCamera) {
+648|			built.camera.aspect = width / Math.max(1, height);
+649|			built.camera.updateProjectionMatrix();
+650|		}
+651|
+652|		const meta = this.lookupPackMeta(packId);
+653|		const samplesBelow = built.belowInputUniformNames.length > 0;
+654|		const needsBelow =
+655|			samplesBelow ||
+656|			built.needsBelowInput ||
+657|			packNeedsBelowInput({
+658|				type: meta?.type || built.packType,
+659|				scope: meta?.scope || built.packScope,
+660|			});
+661|
+662|		const prevTone = renderer.toneMapping;
+663|		const prevExposure = renderer.toneMappingExposure;
+664|		if (built.render?.toneMapping !== undefined) {
+665|			renderer.toneMapping = built.render.toneMapping as THREE.ToneMapping;
+666|		}
+667|		if (built.render?.toneMappingExposure !== undefined) {
+668|			renderer.toneMappingExposure = built.render.toneMappingExposure;
+669|		}
+670|
+671|		// Global screen uniforms = compositor / pack render resolution (not CSS).
+672|		applyGlobalScreenParamsToObject3D(built.root, width, height);
+673|		if (built.materialsByUuid) {
+674|			for (const mat of built.materialsByUuid.values()) {
+675|				applyGlobalScreenParams(mat, width, height);
+676|			}
+677|		}
+678|
+679|		// Pack .anim first (clip local time); timeline exposedParams may override.
+680|		if (built.animClips && built.animClips.length > 0) {
+681|			for (const clip of built.animClips) {
+682|				applyAnimToRoot(built.root, clip, clipLocalTime, {
+683|					materialsByUuid: built.materialsByUuid,
+684|					postProcess: built.postProcess,
+685|				});
+686|			}
+687|		}
+688|
+689|		applyExposedMaterialParams({
+690|			materialsByUuid: built.materialsByUuid ?? new Map(),
+691|			exposed: built.exposedParams ?? [],
+692|			liveParams,
+693|		});
+694|
+695|		const drawPackTo = (rt: THREE.WebGLRenderTarget | null, opts?: { clearFirst?: boolean; keepDepth?: boolean }) => {
+696|			const clearFirst = opts?.clearFirst ?? true;
+697|			const keepDepth = opts?.keepDepth ?? false;
+698|			if (built.postProcess && stackHasEnabledEffects(built.postProcess)) {
+699|				this.renderPackWithPostProcess({
+700|					packId,
+701|					built,
+702|					width,
+703|					height,
+704|					target: rt,
+705|					liveParams,
+706|					clearFirst,
+707|					keepDepthClear: keepDepth,
+708|				});
+709|				return;
+710|			}
+711|			if (!rt) return;
+712|			renderer.setRenderTarget(rt);
+713|			if (clearFirst) {
+714|				renderer.autoClear = true;
+715|				renderer.clear();
+716|			} else if (keepDepth) {
+717|				renderer.autoClear = false;
+718|				renderer.clearDepth();
+719|			} else {
+720|				renderer.autoClear = false;

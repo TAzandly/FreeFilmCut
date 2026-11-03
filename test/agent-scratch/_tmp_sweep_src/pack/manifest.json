@@ -1,0 +1,111 @@
+{
+  "schema": "vfxpack/1.3",
+  "id": "freecapcut.sweep",
+  "version": "0.1.0",
+  "displayName": "sweep",
+  "engine": {
+    "api": "webgl2",
+    "renderer": "three"
+  },
+  "type": "effect",
+  "scope": "below",
+  "resolution": {
+    "width": 1080,
+    "height": 1080
+  },
+  "render": {
+    "rendererType": "WebGLRenderer",
+    "cameraType": "perspective",
+    "antialias": true,
+    "shadows": false,
+    "shadowType": 1,
+    "toneMapping": 0,
+    "toneMappingName": "NoToneMapping",
+    "toneMappingExposure": 1
+  },
+  "entry": {
+    "scene": "scene.json"
+  },
+  "params": [
+    {
+      "key": "intensity",
+      "label": "Intensity",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "exposedParams": [],
+  "passes": [
+    {
+      "id": "main",
+      "shader": {
+        "vertex": "shaders/placeholder.vert.glsl",
+        "fragment": "shaders/placeholder.frag.glsl"
+      },
+      "inputs": {
+        "uInput": "accumBelow"
+      }
+    }
+  ],
+  "assets": {
+    "scene": "scene.json",
+    "textures": [
+      "textures/tex_0_pmrem.png"
+    ],
+    "shaders": [
+      "shaders/placeholder.vert.glsl",
+      "shaders/placeholder.frag.glsl"
+    ],
+    "animations": [
+      "animations/animation.anim"
+    ],
+    "timelines": [
+      "timelines/timeline.timeline.json"
+    ],
+    "videos": [],
+    "background": null,
+    "environment": "textures/tex_0_pmrem.png"
+  },
+  "animations": [
+    {
+      "name": "Animation",
+      "path": "animations/animation.anim",
+      "fps": 30,
+      "duration": 1,
+      "loop": "loop",
+      "objectUuids": [
+        "5814ad6b-0d3d-42d2-a4a6-893311e262c8"
+      ]
+    }
+  ],
+  "timelines": [
+    {
+      "name": "Timeline",
+      "path": "timelines/timeline.timeline.json",
+      "fps": 30,
+      "duration": 1,
+      "loop": "clamp",
+      "objectUuid": "727ef88c-c7fe-4404-aabb-bc70dbed4148"
+    }
+  ],
+  "i18n": {
+    "zh-CN": {
+      "displayName": "sweep"
+    }
+  },
+  "meta": {
+    "generator": "FreeFilmCut Three.js Editor VfxPackExporter",
+    "exportedAt": "2026-10-22T06:48:42.266Z",
+    "hasCustomShaders": false,
+    "shaderCount": 0,
+    "animationCount": 1,
+    "timelineCount": 1
+  },
+  "duration": 1,
+  "preview": {
+    "poster": "preview/poster.png",
+    "hover": "preview/hover.gif"
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "format": "freecapcut.anim/2",
+  "name": "Canvas",
+  "fps": 30,
+  "duration": 1,
+  "loop": "clamp",
+  "targets": [
+    {
+      "objectUuid": "1bd3ee9f-57c5-4eae-b4dd-9a9ce899c9f9",
+      "tracks": [
+        {
+          "path": "position.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": -0.40393900887676754
+            }
+          ]
+        },
+        {
+          "path": "position.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": -0.7181137935586978
+            }
+          ]
+        },
+        {
+          "path": "position.z",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": -1.54
+            }
+          ]
+        },
+        {
+          "path": "rotation.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "rotation.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "rotation.z",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "scale.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0.0007480352016236435
+            }
+          ]
+        },
+        {
+          "path": "scale.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0.0007480352016236435
+            }
+          ]
+        },
+        {
+          "path": "scale.z",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0.0007480352016236435
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

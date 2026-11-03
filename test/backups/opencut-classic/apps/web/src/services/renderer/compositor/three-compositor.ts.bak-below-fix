@@ -1,0 +1,1062 @@
+﻿import * as THREE from "three";
+import {
+	incrementCounter,
+	isRenderPerfEnabled,
+} from "@/diagnostics/render-perf";
+import type {
+	ExternalTextureDescriptor,
+	FrameDescriptor,
+	FrameItemDescriptor,
+	QuadTransformDescriptor,
+	RenderedTextureDescriptor,
+	TextureUploadDescriptor,
+} from "./types";
+import {
+	buildPackScene,
+	disposeBuiltPackScene,
+	getPackRegistrySnapshot,
+	subscribePackRegistry,
+	type BuiltPackScene,
+} from "@/vfxpack";
+import { parseVfxPackIdFromEffectType } from "@/vfxpack/effect-id";
+import {
+	BELOW_INPUT_UNIFORM_NAMES,
+	packNeedsBelowInput,
+} from "@/vfxpack/below-input";
+
+/**
+ * FreeCapCut Three.js blit compositor (MVP).
+ * - Orthographic textured-quad blit for FrameDescriptor layers
+ * - Timeline .vfxpack sceneEffect clips rendered in track order
+ * - filter/effect + scope below: snapshot accum 鈫?bind uInput/belowInput/iChannel0
+ * - Optional activeOverlayIds still drawn last as a peek
+ *
+ * Toggle via NEXT_PUBLIC_USE_THREE (default ON). Set to "0" for wasm fallback.
+ */
+
+type RenderedCacheEntry = {
+	kind: "rendered";
+	canvas: OffscreenCanvas;
+	texture: THREE.CanvasTexture;
+	contentHash: string;
+	width: number;
+	height: number;
+};
+
+type ExternalCacheEntry = {
+	kind: "external";
+	source: CanvasImageSource;
+	texture: THREE.Texture;
+	width: number;
+	height: number;
+};
+
+type TextureCacheEntry = RenderedCacheEntry | ExternalCacheEntry;
+
+class ThreeCompositor {
+	private renderer: THREE.WebGLRenderer | null = null;
+	private scene: THREE.Scene | null = null;
+	private camera: THREE.OrthographicCamera | null = null;
+	private initializedSize: { width: number; height: number } | null = null;
+	private cache = new Map<string, TextureCacheEntry>();
+	private layerMeshes: THREE.Mesh[] = [];
+	private layerPool: THREE.Mesh[] = [];
+	private packScenes = new Map<string, BuiltPackScene>();
+	private packBuildInFlight = new Set<string>();
+	/** Track LoadedVfxPack identity so re-import rebuilds GPU scene. */
+	private packSource = new Map<string, unknown>();
+	private unsubscribePacks: (() => void) | null = null;
+	/** Pack ids referenced by the latest frame (timeline clips). */
+	private lastFramePackIds = new Set<string>();
+
+	/** Offscreen accum for stack compose + below-input snapshots. */
+	private accumRT: THREE.WebGLRenderTarget | null = null;
+	private belowSourceRT: THREE.WebGLRenderTarget | null = null;
+	/** Ping-pong target: render packs here while sampling accum/below. */
+	private packRT: THREE.WebGLRenderTarget | null = null;
+	/** Stable uInput source: blit of full accum (all layers below). */
+	private belowFbTex: THREE.FramebufferTexture | null = null;
+	private belowDebugFrames = 0;
+	private blitScene: THREE.Scene | null = null;
+	private blitCamera: THREE.OrthographicCamera | null = null;
+	/** RT鈫扲T copy (raw sample, no color-mgmt). */
+	private blitMaterial: THREE.ShaderMaterial | null = null;
+	/** Final present to canvas 鈥?MeshBasic handles sRGB output. */
+	private presentMaterial: THREE.MeshBasicMaterial | null = null;
+	private blitMesh: THREE.Mesh | null = null;
+
+	ensureInitialized({ width, height }: { width: number; height: number }) {
+		if (!this.renderer) {
+			const renderer = new THREE.WebGLRenderer({
+				antialias: false,
+				alpha: true,
+				premultipliedAlpha: false,
+				preserveDrawingBuffer: true,
+				powerPreference: "high-performance",
+			});
+			renderer.setClearColor(0x000000, 1);
+			renderer.autoClear = true;
+			renderer.setPixelRatio(1);
+			renderer.setSize(width, height, false);
+
+			const scene = new THREE.Scene();
+			// Match canvas Y-down coordinate space used by FrameDescriptor.
+			const camera = new THREE.OrthographicCamera(
+				0,
+				width,
+				0,
+				height,
+				-1000,
+				1000,
+			);
+			camera.position.z = 10;
+			camera.updateProjectionMatrix();
+
+			this.renderer = renderer;
+			this.scene = scene;
+			this.camera = camera;
+			this.initializedSize = { width, height };
+			this.ensureComposeTargets(width, height);
+			this.ensureBlitPass();
+
+			if (!this.unsubscribePacks) {
+				this.unsubscribePacks = subscribePackRegistry(() => {
+					this.syncPackScenes();
+				});
+				this.syncPackScenes();
+			}
+			return;
+		}
+
+		if (
+			!this.initializedSize ||
+			this.initializedSize.width !== width ||
+			this.initializedSize.height !== height
+		) {
+			this.renderer.setSize(width, height, false);
+			if (this.camera) {
+				this.camera.left = 0;
+				this.camera.right = width;
+				this.camera.top = 0;
+				this.camera.bottom = height;
+				this.camera.updateProjectionMatrix();
+			}
+			this.initializedSize = { width, height };
+			this.ensureComposeTargets(width, height);
+			this.updatePackCameraAspects(width, height);
+		}
+	}
+
+	getCanvas(): HTMLCanvasElement {
+		if (!this.renderer) {
+			throw new Error("Three compositor is not initialized");
+		}
+		return this.renderer.domElement;
+	}
+
+	syncTextures(textures: TextureUploadDescriptor[]) {
+		const nextIds = new Set(textures.map((texture) => texture.id));
+		for (const previousId of this.cache.keys()) {
+			if (!nextIds.has(previousId)) {
+				const entry = this.cache.get(previousId);
+				entry?.texture.dispose();
+				this.cache.delete(previousId);
+			}
+		}
+
+		for (const texture of textures) {
+			if (texture.kind === "external") {
+				this.syncExternalTexture(texture);
+			} else {
+				this.syncRenderedTexture(texture);
+			}
+		}
+	}
+
+	render(frame: FrameDescriptor) {
+		this.ensureInitialized({ width: frame.width, height: frame.height });
+		const renderer = this.renderer;
+		const scene = this.scene;
+		const camera = this.camera;
+		const accumRT = this.accumRT;
+		if (!renderer || !scene || !camera || !accumRT) {
+			throw new Error("Three compositor is not initialized");
+		}
+
+		const [r, g, b, a] = frame.clear.color;
+		renderer.setRenderTarget(accumRT);
+		renderer.setClearColor(new THREE.Color(r, g, b), a);
+		renderer.autoClear = true;
+		renderer.clear();
+
+		this.clearLayerMeshes();
+
+		const framePackIds = new Set<string>();
+		let z = 0;
+		let didDraw = false;
+		let layersBelow = 0;
+
+		/** Composite one media layer onto accum (bottom → top), so uInput sees full stack. */
+		const compositeOneLayer = (
+			item: Extract<FrameItemDescriptor, { type: "layer" }>,
+		) => {
+			this.clearLayerMeshes();
+			this.addLayerMesh(item, z);
+			z += 1;
+			if (this.layerMeshes.length === 0) return;
+			renderer.setRenderTarget(accumRT);
+			renderer.autoClear = false;
+			renderer.render(scene, camera);
+			didDraw = true;
+			layersBelow += 1;
+			this.clearLayerMeshes();
+		};
+
+		for (const item of frame.items) {
+			if (item.type === "sceneEffect") {
+				const packId = parseVfxPackIdFromEffectType({
+					effectType: item.effectType,
+				});
+				if (packId) {
+					framePackIds.add(packId);
+					// accum holds the FULL blend of every layer below this pack
+					this.renderOnePack({
+						packId,
+						width: frame.width,
+						height: frame.height,
+						clearFirst: !didDraw,
+						target: accumRT,
+						layersBelowCount: layersBelow,
+					});
+					didDraw = true;
+					renderer.autoClear = false;
+					// Pack result becomes part of the stack for anything above
+					layersBelow += 1;
+					continue;
+				}
+				// Built-in scene effects (blur etc.): still no-op in Three MVP.
+				continue;
+			}
+
+			compositeOneLayer(item);
+		}
+		if (!didDraw) {
+			renderer.setRenderTarget(accumRT);
+			renderer.clear();
+		}
+
+		this.lastFramePackIds = framePackIds;
+		this.syncPackScenes();
+
+		// Optional force-overlay peek (packs toggled On in Effects panel).
+		this.renderForcedOverlays({
+			width: frame.width,
+			height: frame.height,
+			skipIds: framePackIds,
+			target: accumRT,
+		});
+
+		// Present accum 鈫?canvas
+		this.presentAccum();
+
+		if (isRenderPerfEnabled()) {
+			incrementCounter({ name: "threeBlitFrames" });
+		}
+	}
+
+	private presentAccum() {
+		const renderer = this.renderer;
+		const accumRT = this.accumRT;
+		const blitScene = this.blitScene;
+		const blitCamera = this.blitCamera;
+		const blitMesh = this.blitMesh;
+		const presentMaterial = this.presentMaterial;
+		if (!renderer || !accumRT || !blitScene || !blitCamera || !blitMesh || !presentMaterial) {
+			return;
+		}
+		const prevMat = blitMesh.material;
+		blitMesh.material = presentMaterial;
+		presentMaterial.map = accumRT.texture;
+		presentMaterial.needsUpdate = true;
+		renderer.setRenderTarget(null);
+		renderer.autoClear = true;
+		renderer.setClearColor(0x000000, 1);
+		renderer.render(blitScene, blitCamera);
+		renderer.autoClear = true;
+		blitMesh.material = prevMat;
+		presentMaterial.map = null;
+	}
+
+	private ensureComposeTargets(width: number, height: number) {
+		const w = Math.max(1, Math.floor(width));
+		const h = Math.max(1, Math.floor(height));
+		const needNew =
+			!this.accumRT ||
+			this.accumRT.width !== w ||
+			this.accumRT.height !== h;
+		if (!needNew) return;
+
+		this.accumRT?.dispose();
+		this.belowSourceRT?.dispose();
+		this.packRT?.dispose();
+		this.belowFbTex?.dispose();
+
+		const opts: THREE.RenderTargetOptions = {
+			minFilter: THREE.LinearFilter,
+			magFilter: THREE.LinearFilter,
+			format: THREE.RGBAFormat,
+			type: THREE.UnsignedByteType,
+			depthBuffer: true,
+			stencilBuffer: false,
+		};
+		const makeRT = (withDepth: boolean) => {
+			const rt = new THREE.WebGLRenderTarget(w, h, {
+				...opts,
+				depthBuffer: withDepth,
+			});
+			// Keep sRGB so MeshBasic present matches video.
+			// Do NOT mutate colorSpace/flipY later — that can invalidate sampling.
+			rt.texture.colorSpace = THREE.SRGBColorSpace;
+			rt.texture.flipY = false;
+			rt.texture.generateMipmaps = false;
+			return rt;
+		};
+		this.accumRT = makeRT(true);
+		this.belowSourceRT = makeRT(false);
+		this.packRT = makeRT(true);
+		const fb = new THREE.FramebufferTexture(w, h);
+		fb.colorSpace = THREE.SRGBColorSpace;
+		fb.minFilter = THREE.LinearFilter;
+		fb.magFilter = THREE.LinearFilter;
+		fb.generateMipmaps = false;
+		this.belowFbTex = fb;
+	}
+
+	private ensureBlitPass() {
+		if (this.blitScene) return;
+		const scene = new THREE.Scene();
+		const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
+		const material = new THREE.ShaderMaterial({
+			uniforms: {
+				tDiffuse: { value: null as THREE.Texture | null },
+				uFlipY: { value: 0 },
+			},
+			vertexShader: /* glsl */ `
+				varying vec2 vUv;
+				void main() {
+					vUv = uv;
+					gl_Position = vec4(position.xy, 0.0, 1.0);
+				}
+			`,
+			fragmentShader: /* glsl */ `
+				uniform sampler2D tDiffuse;
+				uniform float uFlipY;
+				varying vec2 vUv;
+				void main() {
+					vec2 uv = uFlipY > 0.5 ? vec2(vUv.x, 1.0 - vUv.y) : vUv;
+					gl_FragColor = texture2D(tDiffuse, uv);
+				}
+			`,
+			depthTest: false,
+			depthWrite: false,
+			transparent: false,
+			toneMapped: false,
+		});
+		const presentMaterial = new THREE.MeshBasicMaterial({
+			map: null,
+			depthTest: false,
+			depthWrite: false,
+			transparent: false,
+			toneMapped: false,
+		});
+		const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+		scene.add(mesh);
+		this.blitScene = scene;
+		this.blitCamera = camera;
+		this.blitMaterial = material;
+		this.presentMaterial = presentMaterial;
+		this.blitMesh = mesh;
+	}
+
+	/** Blit a texture into a render target (or canvas when target is null). */
+	private blitTextureToTarget({
+		source,
+		target,
+		flipY = false,
+		clear = true,
+		clearColor = 0x000000,
+		clearAlpha = 1,
+	}: {
+		source: THREE.Texture;
+		target: THREE.WebGLRenderTarget | null;
+		flipY?: boolean;
+		clear?: boolean;
+		clearColor?: number;
+		clearAlpha?: number;
+	}) {
+		const renderer = this.renderer;
+		const blitScene = this.blitScene;
+		const blitCamera = this.blitCamera;
+		const blitMaterial = this.blitMaterial;
+		if (!renderer || !blitScene || !blitCamera || !blitMaterial) return;
+
+		const blitMesh = this.blitMesh;
+		if (!blitMesh) return;
+		const prevMat = blitMesh.material;
+		blitMesh.material = blitMaterial;
+		blitMaterial.uniforms.tDiffuse.value = source;
+		blitMaterial.uniforms.uFlipY.value = flipY ? 1 : 0;
+		blitMaterial.uniformsNeedUpdate = true;
+
+		renderer.setRenderTarget(target);
+		renderer.autoClear = clear;
+		if (clear) {
+			renderer.setClearColor(clearColor, clearAlpha);
+			renderer.clear();
+		}
+		renderer.render(blitScene, blitCamera);
+		renderer.autoClear = false;
+		blitMaterial.uniforms.tDiffuse.value = null;
+		blitMesh.material = prevMat;
+	}
+
+	/**
+	 * Snapshot full accum (all layers below) into belowSourceRT for uInput.
+	 * Always blit — more reliable than copyFramebufferToTexture when several
+	 * layers were composited into accum sequentially.
+	 */
+	private snapshotBelowSource(): THREE.Texture | null {
+		const renderer = this.renderer;
+		const accumRT = this.accumRT;
+		const belowSourceRT = this.belowSourceRT;
+		if (!renderer || !accumRT || !belowSourceRT) return null;
+
+		// Unbind accum as draw target, then blit its color into a dedicated RT.
+		this.blitTextureToTarget({
+			source: accumRT.texture,
+			target: belowSourceRT,
+			flipY: false,
+			clear: true,
+		});
+		renderer.initTexture(belowSourceRT.texture);
+		this.debugBelowPixels(belowSourceRT.texture, "belowRT");
+		return belowSourceRT.texture;
+	}
+
+	/** One-shot proof that below input has non-zero pixels (dev console). */
+	private debugBelowPixels(tex: THREE.Texture, tag: string) {
+		if (this.belowDebugFrames >= 3) return;
+		const renderer = this.renderer;
+		const accumRT = this.accumRT;
+		if (!renderer || !accumRT) return;
+		this.belowDebugFrames += 1;
+		const w = Math.min(accumRT.width, 64);
+		const h = Math.min(accumRT.height, 64);
+		const buf = new Uint8Array(w * h * 4);
+		try {
+			// Read center of below snapshot (full composite of layers below).
+			const readRT = this.belowSourceRT ?? accumRT;
+			renderer.readRenderTargetPixels(readRT, Math.max(0, Math.floor(readRT.width/2)-Math.floor(w/2)), Math.max(0, Math.floor(readRT.height/2)-Math.floor(h/2)), w, h, buf);
+			let maxRGB = 0;
+			let nonzero = 0;
+			for (let i = 0; i < buf.length; i += 4) {
+				const m = Math.max(buf[i], buf[i + 1], buf[i + 2]);
+				if (m > 0) nonzero++;
+				if (m > maxRGB) maxRGB = m;
+			}
+			console.info(
+				`[FreeCapCut uInput] ${tag} frame=${this.belowDebugFrames} center ${w}x${h} nonzero=${nonzero} maxRGB=${maxRGB} tex=`,
+				tex,
+			);
+		} catch (err) {
+			console.warn("[FreeCapCut uInput] readPixels failed", err);
+		}
+	}
+
+	private bindBelowInputTexture({
+		built,
+		texture,
+	}: {
+		built: BuiltPackScene;
+		texture: THREE.Texture;
+	}) {
+		const renderer = this.renderer;
+		const names =
+			built.belowInputUniformNames.length > 0
+				? built.belowInputUniformNames
+				: [...BELOW_INPUT_UNIFORM_NAMES];
+
+		// Do not mutate texture.flipY / colorSpace on shared GPU textures.
+		if (renderer) {
+			renderer.initTexture(texture);
+		}
+
+		built.root.traverse((obj) => {
+			const mesh = obj as THREE.Mesh;
+			if (!mesh.isMesh) return;
+			const materials = Array.isArray(mesh.material)
+				? mesh.material
+				: [mesh.material];
+			for (const mat of materials) {
+				const shader = mat as THREE.ShaderMaterial;
+				if (!shader?.isShaderMaterial || !shader.uniforms) continue;
+				let touched = false;
+				for (const name of names) {
+					if (!shader.uniforms[name]) {
+						shader.uniforms[name] = { value: texture };
+					} else {
+						shader.uniforms[name].value = texture;
+					}
+					touched = true;
+				}
+				for (const name of BELOW_INPUT_UNIFORM_NAMES) {
+					if (shader.uniforms[name]) {
+						shader.uniforms[name].value = texture;
+						touched = true;
+					}
+				}
+				// Null sibling samplers (e.g. map) make uInput sample black on many GPUs.
+				for (const [k, u] of Object.entries(shader.uniforms)) {
+					if (!u || u.value) continue;
+					if (/map|input|channel|tex|sampler/i.test(k)) {
+						u.value = texture; // temporary: at least a live sampler
+						touched = true;
+					}
+				}
+				if (touched) {
+					shader.uniformsNeedUpdate = true;
+					shader.toneMapped = false;
+					if (shader.opacity === undefined || shader.opacity <= 0) {
+						shader.opacity = 1;
+					}
+					if (shader.uniforms.opacity) {
+						const o = shader.uniforms.opacity.value;
+						if (typeof o === "number" && o <= 0) {
+							shader.uniforms.opacity.value = 1;
+						}
+					}
+				}
+			}
+		});
+	}
+
+	private lookupPackMeta(packId: string): {
+		type: string;
+		scope: string;
+	} | null {
+		const { packs } = getPackRegistrySnapshot();
+		const pack = packs.find((p) => p.id === packId);
+		if (!pack) return null;
+		return { type: String(pack.type || ""), scope: String(pack.scope || "") };
+	}
+
+	private renderOnePack({
+		packId,
+		width,
+		height,
+		clearFirst,
+		target,
+		layersBelowCount = 0,
+	}: {
+		packId: string;
+		width: number;
+		height: number;
+		clearFirst: boolean;
+		target: THREE.WebGLRenderTarget | null;
+		/** How many media layers were composited into accum before this pack. */
+		layersBelowCount?: number;
+	}) {
+		const renderer = this.renderer;
+		const accumRT = this.accumRT;
+		const packRT = this.packRT;
+		if (!renderer || !accumRT) return;
+		const built = this.packScenes.get(packId);
+		if (!built) {
+			// Scene still building; kick sync and skip this frame.
+			this.ensurePackBuilt(packId);
+			if (clearFirst && target) {
+				renderer.setRenderTarget(target);
+				renderer.clear();
+			}
+			return;
+		}
+		if (built.camera instanceof THREE.PerspectiveCamera) {
+			built.camera.aspect = width / Math.max(1, height);
+			built.camera.updateProjectionMatrix();
+		}
+
+		const meta = this.lookupPackMeta(packId);
+		const samplesBelow = built.belowInputUniformNames.length > 0;
+		const needsBelow =
+			samplesBelow ||
+			built.needsBelowInput ||
+			(meta
+				? packNeedsBelowInput({ type: meta.type, scope: meta.scope })
+				: false);
+
+		const prevTone = renderer.toneMapping;
+		const prevExposure = renderer.toneMappingExposure;
+		if (built.render?.toneMapping !== undefined) {
+			renderer.toneMapping = built.render.toneMapping as THREE.ToneMapping;
+		}
+		if (built.render?.toneMappingExposure !== undefined) {
+			renderer.toneMappingExposure = built.render.toneMappingExposure;
+		}
+
+		if (samplesBelow && packRT && target === accumRT) {
+			// Mesh-UV path: snapshot full below stack, bind uInput, keep composite under the mesh.
+			// Re-arm a few debug logs when multiple below layers are present
+			if (layersBelowCount >= 2 && this.belowDebugFrames > 8) {
+				this.belowDebugFrames = 0;
+			}
+			if (this.belowDebugFrames <= 5) {
+				console.info("[FreeCapCut uInput] snapshot before bind", {
+					packId,
+					layersBelowCount,
+					accumSize: `${accumRT.width}x${accumRT.height}`,
+				});
+			}
+			const belowTex = this.snapshotBelowSource();
+			if (belowTex) {
+				this.bindBelowInputTexture({ built, texture: belowTex });
+				if (this.belowDebugFrames <= 3) {
+					console.info("[FreeCapCut uInput] bound", {
+						packId,
+						layersBelowCount,
+						names: built.belowInputUniformNames,
+						needsBelow: built.needsBelowInput,
+						texType: belowTex.constructor?.name,
+					});
+				}
+			} else {
+				console.warn("[FreeCapCut] below snapshot empty for", packId);
+			}
+
+			// Backdrop = full below composite (all layers). Do NOT clear to black.
+			this.blitTextureToTarget({
+				source: accumRT.texture,
+				target: packRT,
+				flipY: false,
+				clear: true,
+			});
+
+			renderer.setRenderTarget(packRT);
+			renderer.autoClear = false;
+			renderer.clearDepth();
+			renderer.render(built.root, built.camera);
+
+			this.blitTextureToTarget({
+				source: packRT.texture,
+				target: accumRT,
+				flipY: false,
+				clear: true,
+			});
+		} else if (needsBelow && samplesBelow) {
+			const belowTex = this.snapshotBelowSource();
+			if (belowTex) {
+				this.bindBelowInputTexture({ built, texture: belowTex });
+			}
+			renderer.setRenderTarget(target);
+			renderer.autoClear = false;
+			if (clearFirst) {
+				renderer.autoClear = true;
+				renderer.setClearColor(0x000000, 1);
+				renderer.clear();
+			} else {
+				renderer.clearDepth();
+			}
+			renderer.render(built.root, built.camera);
+		} else if (needsBelow && !samplesBelow) {
+			const belowTex = this.snapshotBelowSource();
+			if (belowTex) {
+				this.bindBelowInputTexture({ built, texture: belowTex });
+			}
+			renderer.setRenderTarget(target);
+			if (clearFirst) {
+				renderer.autoClear = true;
+				renderer.clear();
+			} else {
+				renderer.autoClear = false;
+				renderer.clearDepth();
+			}
+			renderer.render(built.root, built.camera);
+		} else if (clearFirst) {
+			renderer.setRenderTarget(target);
+			renderer.autoClear = true;
+			renderer.render(built.root, built.camera);
+		} else {
+			renderer.setRenderTarget(target);
+			renderer.autoClear = false;
+			renderer.clearDepth();
+			renderer.render(built.root, built.camera);
+		}
+
+		renderer.toneMapping = prevTone;
+		renderer.toneMappingExposure = prevExposure;
+		renderer.autoClear = false;
+	}
+
+	private renderForcedOverlays({
+		width,
+		height,
+		skipIds,
+		target,
+	}: {
+		width: number;
+		height: number;
+		skipIds: Set<string>;
+		target: THREE.WebGLRenderTarget | null;
+	}) {
+		const renderer = this.renderer;
+		if (!renderer) return;
+
+		const { activeOverlayIds } = getPackRegistrySnapshot();
+		const toDraw = activeOverlayIds.filter((id) => !skipIds.has(id));
+		if (toDraw.length === 0) return;
+
+		renderer.autoClear = false;
+		for (const packId of toDraw) {
+			this.renderOnePack({
+				packId,
+				width,
+				height,
+				clearFirst: false,
+				target,
+			});
+		}
+		renderer.autoClear = true;
+	}
+
+	private ensurePackBuilt(packId: string) {
+		const { packs } = getPackRegistrySnapshot();
+		const pack = packs.find((p) => p.id === packId);
+		if (!pack?.scene) return;
+
+		// Re-import (same id, new object) must rebuild so uInput shaders refresh.
+		const existing = this.packScenes.get(packId);
+		if (existing && this.packSource.get(packId) === pack) {
+			return;
+		}
+		if (existing) {
+			disposeBuiltPackScene({ built: existing });
+			this.packScenes.delete(packId);
+			this.packSource.delete(packId);
+		}
+		if (this.packBuildInFlight.has(packId)) return;
+
+		this.packBuildInFlight.add(packId);
+		void buildPackScene({ pack })
+			.then((built) => {
+				this.packBuildInFlight.delete(packId);
+				if (!built) return;
+				const stillNeeded =
+					this.lastFramePackIds.has(packId) ||
+					getPackRegistrySnapshot().activeOverlayIds.includes(packId) ||
+					getPackRegistrySnapshot().packs.some((p) => p.id === packId);
+				if (!stillNeeded) {
+					disposeBuiltPackScene({ built });
+					return;
+				}
+				const previous = this.packScenes.get(packId);
+				if (previous) disposeBuiltPackScene({ built: previous });
+				this.packScenes.set(packId, built);
+				this.packSource.set(packId, pack);
+				if (this.initializedSize) {
+					this.updatePackCameraAspects(
+						this.initializedSize.width,
+						this.initializedSize.height,
+					);
+				}
+			})
+			.catch((error) => {
+				this.packBuildInFlight.delete(packId);
+				console.error("[FreeCapCut] failed to build vfxpack scene", error);
+			});
+	}
+
+	private syncPackScenes() {
+		const { packs, activeOverlayIds } = getPackRegistrySnapshot();
+		const keep = new Set<string>([
+			...activeOverlayIds,
+			...this.lastFramePackIds,
+		]);
+
+		for (const [packId, built] of this.packScenes) {
+			if (!keep.has(packId)) {
+				disposeBuiltPackScene({ built });
+				this.packScenes.delete(packId);
+				this.packSource.delete(packId);
+			}
+		}
+
+		for (const packId of keep) {
+			this.ensurePackBuilt(packId);
+		}
+
+		// Also prebuild any registered pack that has a scene (first timeline drop is snappy).
+		for (const pack of packs) {
+			if (pack.scene) this.ensurePackBuilt(pack.id);
+		}
+	}
+
+	private updatePackCameraAspects(width: number, height: number) {
+		for (const built of this.packScenes.values()) {
+			if (built.camera instanceof THREE.PerspectiveCamera) {
+				built.camera.aspect = width / Math.max(1, height);
+				built.camera.updateProjectionMatrix();
+			}
+		}
+	}
+
+	private clearLayerMeshes() {
+		const scene = this.scene;
+		if (!scene) return;
+		for (const mesh of this.layerMeshes) {
+			scene.remove(mesh);
+			this.layerPool.push(mesh);
+		}
+		this.layerMeshes.length = 0;
+	}
+
+	private acquireMesh(): THREE.Mesh {
+		const pooled = this.layerPool.pop();
+		if (pooled) return pooled;
+		const geometry = new THREE.PlaneGeometry(1, 1);
+		const material = new THREE.MeshBasicMaterial({
+			transparent: true,
+			depthTest: false,
+			depthWrite: false,
+			side: THREE.DoubleSide,
+		});
+		return new THREE.Mesh(geometry, material);
+	}
+
+	private addLayerMesh(
+		item: Extract<FrameItemDescriptor, { type: "layer" }>,
+		z: number,
+	) {
+		const scene = this.scene;
+		if (!scene) return;
+
+		const entry = this.cache.get(item.textureId);
+		if (!entry) {
+			return;
+		}
+
+		// Keep video / canvas textures fresh each frame.
+		entry.texture.needsUpdate = true;
+
+		const mesh = this.acquireMesh();
+		const material = mesh.material as THREE.MeshBasicMaterial;
+		material.map = entry.texture;
+		material.opacity = item.opacity;
+		material.transparent = true;
+		material.needsUpdate = true;
+
+		if (item.mask) {
+			const maskEntry = this.cache.get(item.mask.textureId);
+			if (maskEntry) {
+				maskEntry.texture.needsUpdate = true;
+				material.alphaMap = maskEntry.texture;
+			} else {
+				material.alphaMap = null;
+			}
+		} else {
+			material.alphaMap = null;
+		}
+
+		applyQuadTransform(mesh, item.transform, z);
+		scene.add(mesh);
+		this.layerMeshes.push(mesh);
+	}
+
+	private syncExternalTexture(texture: ExternalTextureDescriptor) {
+		const previous = this.cache.get(texture.id);
+		if (
+			previous?.kind === "external" &&
+			previous.source === texture.source &&
+			previous.width === texture.width &&
+			previous.height === texture.height
+		) {
+			incrementCounter({ name: "textureCacheHit" });
+			previous.texture.flipY = false;
+			previous.texture.needsUpdate = true;
+			return;
+		}
+
+		if (previous) {
+			previous.texture.dispose();
+		}
+
+		incrementCounter({ name: "textureUpload" });
+		incrementCounter({
+			name: "textureUploadPixels",
+			by: texture.width * texture.height,
+		});
+
+		const threeTexture = createTextureFromSource(texture.source);
+		threeTexture.colorSpace = THREE.SRGBColorSpace;
+		threeTexture.flipY = false;
+		threeTexture.needsUpdate = true;
+
+		this.cache.set(texture.id, {
+			kind: "external",
+			source: texture.source,
+			texture: threeTexture,
+			width: texture.width,
+			height: texture.height,
+		});
+	}
+
+	private syncRenderedTexture(texture: RenderedTextureDescriptor) {
+		const previous = this.cache.get(texture.id);
+		if (
+			previous?.kind === "rendered" &&
+			previous.contentHash === texture.contentHash &&
+			previous.width === texture.width &&
+			previous.height === texture.height
+		) {
+			incrementCounter({ name: "textureCacheHit" });
+			return;
+		}
+
+		const canvas =
+			previous?.kind === "rendered" &&
+			previous.width === texture.width &&
+			previous.height === texture.height
+				? previous.canvas
+				: createBackingCanvas({
+						width: texture.width,
+						height: texture.height,
+					});
+
+		const ctx = canvas.getContext("2d");
+		if (!ctx) {
+			throw new Error(`Failed to get 2d context for texture ${texture.id}`);
+		}
+		ctx.clearRect(0, 0, texture.width, texture.height);
+		texture.draw(ctx);
+
+		incrementCounter({ name: "textureUpload" });
+		incrementCounter({
+			name: "textureUploadPixels",
+			by: texture.width * texture.height,
+		});
+
+		let threeTexture: THREE.CanvasTexture;
+		if (previous?.kind === "rendered" && previous.canvas === canvas) {
+			threeTexture = previous.texture;
+			threeTexture.flipY = false;
+			threeTexture.needsUpdate = true;
+		} else {
+			previous?.texture.dispose();
+			threeTexture = new THREE.CanvasTexture(
+				canvas as unknown as HTMLCanvasElement,
+			);
+			threeTexture.colorSpace = THREE.SRGBColorSpace;
+			threeTexture.flipY = false;
+			threeTexture.needsUpdate = true;
+		}
+
+		this.cache.set(texture.id, {
+			kind: "rendered",
+			canvas,
+			texture: threeTexture,
+			contentHash: texture.contentHash,
+			width: texture.width,
+			height: texture.height,
+		});
+	}
+}
+
+function applyQuadTransform(
+	mesh: THREE.Mesh,
+	transform: QuadTransformDescriptor,
+	z: number,
+) {
+	const flipX = transform.flipX ? -1 : 1;
+	const flipY = transform.flipY ? -1 : 1;
+	mesh.position.set(transform.centerX, transform.centerY, z);
+	mesh.renderOrder = z;
+	mesh.rotation.set(0, 0, (transform.rotationDegrees * Math.PI) / 180);
+	mesh.scale.set(transform.width * flipX, transform.height * flipY, 1);
+}
+
+function createTextureFromSource(source: CanvasImageSource): THREE.Texture {
+	if (
+		typeof HTMLVideoElement !== "undefined" &&
+		source instanceof HTMLVideoElement
+	) {
+		return new THREE.VideoTexture(source);
+	}
+	if (
+		typeof HTMLCanvasElement !== "undefined" &&
+		source instanceof HTMLCanvasElement
+	) {
+		return new THREE.CanvasTexture(source);
+	}
+	if (typeof ImageBitmap !== "undefined" && source instanceof ImageBitmap) {
+		return new THREE.Texture(source as unknown as HTMLImageElement);
+	}
+	if (
+		typeof OffscreenCanvas !== "undefined" &&
+		source instanceof OffscreenCanvas
+	) {
+		return new THREE.CanvasTexture(source as unknown as HTMLCanvasElement);
+	}
+	if (
+		typeof HTMLImageElement !== "undefined" &&
+		source instanceof HTMLImageElement
+	) {
+		return new THREE.Texture(source);
+	}
+
+	const width = readSourceWidth(source);
+	const height = readSourceHeight(source);
+	const canvas = createBackingCanvas({
+		width: Math.max(1, width),
+		height: Math.max(1, height),
+	});
+	const ctx = canvas.getContext("2d");
+	if (!ctx) {
+		throw new Error("Failed to create fallback texture canvas");
+	}
+	ctx.drawImage(source, 0, 0);
+	return new THREE.CanvasTexture(canvas as unknown as HTMLCanvasElement);
+}
+
+function readSourceWidth(source: CanvasImageSource): number {
+	if ("videoWidth" in source && typeof source.videoWidth === "number") {
+		return source.videoWidth || 1;
+	}
+	if ("width" in source && typeof source.width === "number") {
+		return source.width || 1;
+	}
+	return 1;
+}
+
+function readSourceHeight(source: CanvasImageSource): number {
+	if ("videoHeight" in source && typeof source.videoHeight === "number") {
+		return source.videoHeight || 1;
+	}
+	if ("height" in source && typeof source.height === "number") {
+		return source.height || 1;
+	}
+	return 1;
+}
+
+function createBackingCanvas({
+	width,
+	height,
+}: {
+	width: number;
+	height: number;
+}): OffscreenCanvas {
+	if (typeof OffscreenCanvas === "undefined") {
+		throw new Error("OffscreenCanvas is not supported in this environment");
+	}
+	return new OffscreenCanvas(width, height);
+}
+
+export const threeCompositor = new ThreeCompositor();
+

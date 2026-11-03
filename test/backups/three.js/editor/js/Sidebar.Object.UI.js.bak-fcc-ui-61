@@ -1,0 +1,1189 @@
+/**
+ * FreeCapCut UGUI: RectTransform + Canvas render mode + Image/Text helpers.
+ */
+
+import { UIPanel, UIRow, UIText, UINumber, UIButton, UIDiv, UISelect, UIInput, UIColor, UICheckbox, UITextArea } from './libs/ui.js';
+
+import { SetValueCommand } from './commands/SetValueCommand.js';
+import {
+	isFccUI,
+	isUICanvas,
+	isUIImage,
+	isUIText,
+	getFccUI,
+	stretchFillRectData,
+	RENDER_MODE_OVERLAY,
+	RENDER_MODE_CAMERA,
+	DEFAULT_PLANE_DISTANCE,
+	DEFAULT_TEXT_FONT_URL,
+} from './ui/UIConstants.js?v=fcc-ui-59';
+import { rebindCanvasSubtree } from './ui/UIRectLayout.js?v=fcc-ui-59';
+import { syncUITextContent } from './ui/UIText.js?v=fcc-ui-59';
+import {
+	createDefaultFlowerStyle,
+	createStrokeLayer,
+	createShadowLayer,
+	createSolidContent,
+	createGradientContent,
+	cloneFlowerStyle,
+	normalizeFlowerStyle,
+	flowerStyleFromLegacy,
+	normalizeFillContent,
+} from './ui/FlowerStyle.js?v=fcc-ui-59';
+
+import { isTextParamExposed, setTextParamExposed } from './ExposedParams.js?v=fcc-ui-19';
+
+
+/** Browser-fetchable font URL only (blob/data/http(s)/relative). Not Windows paths. */
+function isUsableFontUrl( url ) {
+
+	if ( ! url || typeof url !== 'string' ) return false;
+	const u = url.trim();
+	if ( ! u ) return false;
+	if ( u.startsWith( 'blob:' ) || u.startsWith( 'data:' ) ) return true;
+	if ( u.startsWith( 'http://' ) || u.startsWith( 'https://' ) ) return true;
+	// file:// and absolute FS paths cannot be fetched by the page
+	if ( u.startsWith( 'file:' ) || /^[a-zA-Z]:[\\/]/.test( u ) || u.startsWith( '\\\\' ) ) return false;
+	// relative pack/editor paths e.g. fonts/foo.ttf
+	if ( u.includes( '/' ) && ! u.includes( '\\\\' ) ) return true;
+	return false;
+
+}
+
+function revokeBlobUrl( url ) {
+
+	if ( url && typeof url === 'string' && url.startsWith( 'blob:' ) ) {
+
+		try { URL.revokeObjectURL( url ); } catch ( e ) { /* ignore */ }
+
+	}
+
+}
+
+function vec2Field( label, onCommit ) {
+
+	const row = new UIRow();
+	row.add( new UIText( label ).setClass( 'Label' ).setWidth( '90px' ) );
+	const x = new UINumber().setPrecision( 3 ).setWidth( '50px' ).onChange( onCommit );
+	const y = new UINumber().setPrecision( 3 ).setWidth( '50px' ).onChange( onCommit );
+	row.add( x );
+	row.add( y );
+	return { row, x, y };
+
+}
+
+function vec3Field( label, onCommit, precision = 3 ) {
+
+	const row = new UIRow();
+	row.add( new UIText( label ).setClass( 'Label' ).setWidth( '90px' ) );
+	const x = new UINumber().setPrecision( precision ).setWidth( '42px' ).onChange( onCommit );
+	const y = new UINumber().setPrecision( precision ).setWidth( '42px' ).onChange( onCommit );
+	const z = new UINumber().setPrecision( precision ).setWidth( '42px' ).onChange( onCommit );
+	row.add( x );
+	row.add( y );
+	row.add( z );
+	return { row, x, y, z };
+
+}
+
+function SidebarObjectUI( editor ) {
+
+	const strings = editor.strings;
+	const signals = editor.signals;
+
+	const container = new UIPanel();
+	container.setBorderTop( '1px solid #444' );
+	container.setMarginTop( '12px' );
+	container.setPaddingTop( '10px' );
+	container.setDisplay( 'none' );
+
+	const title = new UIText( 'UI / RectTransform' ).setFontWeight( 'bold' );
+	container.add( title );
+
+	const typeRow = new UIRow().setMarginTop( '6px' );
+	const typeLabel = new UIText( '' ).setColor( '#aaa' );
+	typeRow.add( new UIText( '类型' ).setClass( 'Label' ) );
+	typeRow.add( typeLabel );
+	container.add( typeRow );
+
+	// ---- Canvas render mode ----
+	const modeRow = new UIRow().setMarginTop( '6px' );
+	modeRow.add( new UIText( '渲染模式' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const modeSelect = new UISelect().setWidth( '150px' ).setOptions( {
+		overlay: 'Overlay',
+		camera: 'SS-Camera',
+	} ).onChange( function () {
+
+		const object = editor.selected;
+		if ( ! isUICanvas( object ) ) return;
+		const ui = { ...getFccUI( object ) };
+		ui.renderMode = modeSelect.getValue() === RENDER_MODE_CAMERA
+			? RENDER_MODE_CAMERA
+			: RENDER_MODE_OVERLAY;
+		if ( ui.planeDistance === undefined || ui.planeDistance === null ) {
+
+			ui.planeDistance = DEFAULT_PLANE_DISTANCE;
+
+		}
+
+		const next = { ...object.userData, fccUI: ui };
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		rebindCanvasSubtree( object );
+		updateModeRows( object );
+		signals.sceneGraphChanged.dispatch();
+
+	} );
+	modeRow.add( modeSelect );
+	container.add( modeRow );
+
+	const camRow = new UIRow();
+	camRow.add( new UIText( '目标相机' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const camSelect = new UISelect().setWidth( '150px' ).onChange( function () {
+
+		const object = editor.selected;
+		if ( ! isUICanvas( object ) ) return;
+		const ui = { ...getFccUI( object ) };
+		const v = camSelect.getValue();
+		ui.cameraUuid = ( ! v || v === '__viewport__' ) ? null : v;
+		const next = { ...object.userData, fccUI: ui };
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		signals.sceneGraphChanged.dispatch();
+
+	} );
+	camRow.add( camSelect );
+	container.add( camRow );
+
+	const distRow = new UIRow();
+	distRow.add( new UIText( '平面距离' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const distNum = new UINumber( DEFAULT_PLANE_DISTANCE ).setPrecision( 2 ).setRange( 0.01, 1e6 ).setWidth( '70px' ).onChange( function () {
+
+		const object = editor.selected;
+		if ( ! isUICanvas( object ) ) return;
+		const ui = { ...getFccUI( object ) };
+		ui.planeDistance = distNum.getValue();
+		const next = { ...object.userData, fccUI: ui };
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		signals.sceneGraphChanged.dispatch();
+
+	} );
+	distRow.add( distNum );
+	container.add( distRow );
+
+	// ---- Text props ----
+	const textBlock = new UIDiv();
+	textBlock.setDisplay( 'none' );
+	container.add( textBlock );
+
+	const exposeBoxes = new Map();
+
+	function addExpose( row, key ) {
+
+		const lab = new UIText( '剪辑端' ).setFontSize( '10px' ).setColor( '#8af' ).setMarginLeft( '6px' );
+		const cb = new UICheckbox( false ).onChange( function () {
+
+			const object = editor.selected;
+			if ( ! isUIText( object ) ) return;
+			const ui = { ...getFccUI( object ) };
+			setTextParamExposed( ui, key, cb.getValue() );
+			const next = { ...object.userData, fccUI: ui };
+			editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+			signals.sceneGraphChanged.dispatch();
+
+		} );
+		row.add( lab );
+		row.add( cb );
+		exposeBoxes.set( key, cb );
+		return cb;
+
+	}
+
+	const basicHeader = new UIRow().setMarginTop( '6px' );
+	basicHeader.add( new UIText( '基础 · 排版' ).setFontWeight( 'bold' ) );
+	textBlock.add( basicHeader );
+
+	const textRow = new UIRow();
+	textRow.add( new UIText( '文本' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const textArea = new UITextArea().setWidth( '150px' ).setHeight( '48px' ).setFontSize( '12px' ).onChange( commitText );
+	textRow.add( textArea );
+	addExpose( textRow, 'text' );
+	textBlock.add( textRow );
+
+	const fontRow = new UIRow();
+	fontRow.add( new UIText( '字体' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const fontInput = new UIInput().setWidth( '110px' ).setFontSize( '11px' );
+	fontInput.dom.readOnly = true;
+	fontInput.dom.title = '请点右侧「文件」选择本地 TTF/OTF/WOFF（不能粘贴 C:\\ 路径）';
+	fontInput.dom.placeholder = '未选择（默认 Noto）';
+	fontRow.add( fontInput );
+	const fontBtn = new UIButton( '文件' ).setMarginLeft( '4px' ).onClick( function () {
+
+		const input = document.createElement( 'input' );
+		input.type = 'file';
+		input.accept = '.ttf,.otf,.woff,font/ttf,font/otf,font/woff';
+		input.addEventListener( 'change', async function () {
+
+			const file = input.files && input.files[ 0 ];
+			if ( ! file ) return;
+			const object = editor.selected;
+			if ( ! isUIText( object ) ) return;
+
+			const lower = ( file.name || '' ).toLowerCase();
+			if ( lower.endsWith( '.woff2' ) ) {
+
+				window.alert( 'Troika 不支持 WOFF2，请选 TTF / OTF / WOFF。' );
+				return;
+
+			}
+
+			let buf;
+			try {
+
+				buf = await file.arrayBuffer();
+
+			} catch ( e ) {
+
+				console.warn( '[FreeCapCut] read font failed', e );
+				window.alert( '读取字体失败：' + ( e && e.message ? e.message : e ) );
+				return;
+
+			}
+
+			if ( ! buf || buf.byteLength < 100 ) {
+
+				window.alert( '字体文件无效或过小。' );
+				return;
+
+			}
+
+			const prevUi = getFccUI( object ) || {};
+			revokeBlobUrl( prevUi.font );
+
+			// Blob URL: browser can fetch; absolute C:\\ paths cannot.
+			const blob = new Blob( [ buf ], { type: 'font/ttf' } );
+			const url = URL.createObjectURL( blob );
+
+			const ui = { ...prevUi };
+			ui.font = url;
+			ui.fontFileName = file.name;
+
+			if ( ! editor._fccFontBytes ) editor._fccFontBytes = new Map();
+			editor._fccFontBytes.set( object.uuid, {
+				name: file.name,
+				buffer: buf,
+				mime: 'font/ttf',
+				blobUrl: url,
+			} );
+
+			// Optional: copy into bound project assets/fonts for persistence.
+			if ( editor.projectFolder && typeof editor.projectFolder.importAssetFile === 'function' ) {
+
+				try {
+
+					const rel = await editor.projectFolder.importAssetFile( file );
+					if ( rel ) ui.fontProjectPath = rel;
+
+				} catch ( e ) {
+
+					console.warn( '[FreeCapCut] import font to project', e );
+
+				}
+
+			}
+
+			fontInput.setValue( file.name );
+			// Force Troika resync even if signature cache races with userData replace.
+			if ( object.userData ) delete object.userData.__fccTextSig;
+
+			const next = { ...object.userData, fccUI: ui };
+			delete next.__fccTextSig;
+			editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+			syncSelectedText();
+			signals.sceneGraphChanged.dispatch();
+			console.info( '[FreeCapCut] font applied via blob URL:', file.name, url.slice( 0, 48 ) + '…' );
+
+		} );
+		input.click();
+
+	} );
+	fontRow.add( fontBtn );
+	const fontClearBtn = new UIButton( '默认' ).setMarginLeft( '4px' ).onClick( function () {
+
+		const object = editor.selected;
+		if ( ! isUIText( object ) ) return;
+		const prevUi = getFccUI( object ) || {};
+		revokeBlobUrl( prevUi.font );
+		if ( editor._fccFontBytes ) editor._fccFontBytes.delete( object.uuid );
+		const ui = { ...prevUi };
+		ui.font = '';
+		ui.fontFileName = '';
+		ui.fontProjectPath = '';
+		fontInput.setValue( '' );
+		if ( object.userData ) delete object.userData.__fccTextSig;
+		const next = { ...object.userData, fccUI: ui };
+		delete next.__fccTextSig;
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		syncSelectedText();
+		signals.sceneGraphChanged.dispatch();
+
+	} );
+	fontRow.add( fontClearBtn );
+	textBlock.add( fontRow );
+
+	const fontSizeRow = new UIRow();
+	fontSizeRow.add( new UIText( '字号' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const fontSizeNum = new UINumber( 48 ).setRange( 1, 1024 ).setWidth( '70px' ).onChange( commitText );
+	fontSizeRow.add( fontSizeNum );
+	addExpose( fontSizeRow, 'fontSize' );
+	textBlock.add( fontSizeRow );
+
+	const boldRow = new UIRow();
+	boldRow.add( new UIText( '加粗' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const boldCheck = new UICheckbox( false ).onChange( commitText );
+	boldRow.add( boldCheck );
+	addExpose( boldRow, 'bold' );
+	textBlock.add( boldRow );
+
+	const colorRow = new UIRow();
+	colorRow.add( new UIText( '颜色' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const colorInput = new UIColor().onInput( commitText );
+	colorRow.add( colorInput );
+	addExpose( colorRow, 'color' );
+	textBlock.add( colorRow );
+
+	const spacingRow = new UIRow();
+	spacingRow.add( new UIText( '字间距' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const letterNum = new UINumber( 0 ).setPrecision( 3 ).setWidth( '50px' ).onChange( commitText );
+	spacingRow.add( letterNum );
+	addExpose( spacingRow, 'letterSpacing' );
+	spacingRow.add( new UIText( '行距' ).setWidth( '36px' ).setMarginLeft( '6px' ) );
+	const lineNum = new UINumber( 1.2 ).setPrecision( 3 ).setWidth( '50px' ).onChange( commitText );
+	spacingRow.add( lineNum );
+	addExpose( spacingRow, 'lineHeight' );
+	textBlock.add( spacingRow );
+
+	const alignRow = new UIRow();
+	alignRow.add( new UIText( '对齐' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const alignSelect = new UISelect().setWidth( '70px' ).setOptions( {
+		left: '左',
+		center: '中',
+		right: '右',
+	} ).onChange( commitText );
+	alignRow.add( alignSelect );
+	const vAlignSelect = new UISelect().setWidth( '70px' ).setMarginLeft( '4px' ).setOptions( {
+		top: '上',
+		middle: '中',
+		bottom: '下',
+	} ).onChange( commitText );
+	alignRow.add( vAlignSelect );
+	textBlock.add( alignRow );
+
+	const outlineEnRow = new UIRow().setMarginTop( '4px' );
+	outlineEnRow.add( new UIText( '描边' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const outlineEn = new UICheckbox( false ).onChange( commitText );
+	outlineEnRow.add( outlineEn );
+	addExpose( outlineEnRow, 'outline.enabled' );
+	textBlock.add( outlineEnRow );
+
+	const outlineRow = new UIRow();
+	outlineRow.add( new UIText( '描边宽' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const outlineWidth = new UINumber( 2 ).setRange( 0, 512 ).setWidth( '50px' ).onChange( commitText );
+	outlineRow.add( outlineWidth );
+	addExpose( outlineRow, 'outline.width' );
+	const outlineColor = new UIColor().onInput( commitText );
+	outlineRow.add( outlineColor );
+	addExpose( outlineRow, 'outline.color' );
+	const outlineOpacity = new UINumber( 1 ).setRange( 0, 1 ).setPrecision( 2 ).setWidth( '45px' ).onChange( commitText );
+	outlineRow.add( outlineOpacity );
+	addExpose( outlineRow, 'outline.opacity' );
+	textBlock.add( outlineRow );
+
+	const shadowEnRow = new UIRow().setMarginTop( '4px' );
+	shadowEnRow.add( new UIText( '阴影' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const shadowEn = new UICheckbox( false ).onChange( commitText );
+	shadowEnRow.add( shadowEn );
+	addExpose( shadowEnRow, 'shadow.enabled' );
+	textBlock.add( shadowEnRow );
+
+	const shadowOffRow = new UIRow();
+	shadowOffRow.add( new UIText( '阴影偏移' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const shadowOX = new UINumber( 2 ).setWidth( '45px' ).onChange( commitText );
+	const shadowOY = new UINumber( - 2 ).setWidth( '45px' ).onChange( commitText );
+	shadowOffRow.add( shadowOX );
+	addExpose( shadowOffRow, 'shadow.offsetX' );
+	shadowOffRow.add( shadowOY );
+	addExpose( shadowOffRow, 'shadow.offsetY' );
+	textBlock.add( shadowOffRow );
+
+	const shadowBlurRow = new UIRow();
+	shadowBlurRow.add( new UIText( '阴影模糊' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const shadowBlur = new UINumber( 4 ).setRange( 0, 64 ).setWidth( '50px' ).onChange( commitText );
+	shadowBlurRow.add( shadowBlur );
+	addExpose( shadowBlurRow, 'shadow.blur' );
+	const shadowColor = new UIColor().onInput( commitText );
+	shadowBlurRow.add( shadowColor );
+	addExpose( shadowBlurRow, 'shadow.color' );
+	textBlock.add( shadowBlurRow );
+
+
+	// ---- 花字 = Text 上的多层 Effect 栈（非独立组件 / 非独立 fccUI.type）----
+	const flowerBlock = new UIDiv();
+	flowerBlock.setMarginTop( '8px' );
+	flowerBlock.setPaddingTop( '6px' );
+	flowerBlock.dom.style.borderTop = '1px solid #444';
+	textBlock.add( flowerBlock );
+
+	function ensureFlowerStyle( ui ) {
+
+		if ( ui.flowerStyle && typeof ui.flowerStyle === 'object' ) {
+
+			return cloneFlowerStyle( ui.flowerStyle );
+
+		}
+
+		return flowerStyleFromLegacy( ui );
+
+	}
+
+	function writeFlowerStyle( style ) {
+
+		const object = editor.selected;
+		if ( ! isUIText( object ) ) return;
+		const ui = { ...getFccUI( object ) };
+		ui.flowerStyle = cloneFlowerStyle( style );
+		// Keep basic color in sync with fill solid/gradient primary
+		const fillC = normalizeFillContent( ui.flowerStyle.fill && ui.flowerStyle.fill.content );
+		if ( fillC.renderType === 'gradient' ) ui.color = fillC.gradient.colors[ 0 ];
+		else ui.color = fillC.solid.color;
+		if ( object.userData ) delete object.userData.__fccTextSig;
+		const next = { ...object.userData, fccUI: ui };
+		delete next.__fccTextSig;
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		syncSelectedText();
+		signals.sceneGraphChanged.dispatch();
+		rebuildFlowerPanel();
+
+	}
+
+	function contentTypeSelect( content, onType ) {
+
+		const row = new UIRow();
+		row.add( new UIText( '填充' ).setClass( 'Label' ).setWidth( '90px' ) );
+		const sel = new UISelect().setWidth( '100px' ).setOptions( {
+			solid: '纯色',
+			gradient: '渐变',
+			texture: '贴图(暂)',
+		} );
+		const rt = ( content && content.renderType ) || 'solid';
+		sel.setValue( rt === 'gradient' ? 'gradient' : ( rt === 'texture' ? 'texture' : 'solid' ) );
+		sel.onChange( function () {
+
+			onType( sel.getValue() );
+
+		} );
+		row.add( sel );
+		return row;
+
+	}
+
+	function solidControls( content, onChange ) {
+
+		const c = normalizeFillContent( content );
+		const row = new UIRow();
+		row.add( new UIText( '颜色' ).setClass( 'Label' ).setWidth( '90px' ) );
+		const col = new UIColor().setValue( c.solid.color );
+		col.onInput( function () {
+
+			onChange( createSolidContent( col.getValue(), c.solid.alpha ) );
+
+		} );
+		row.add( col );
+		return row;
+
+	}
+
+	function gradientControls( content, onChange ) {
+
+		const c = normalizeFillContent( content );
+		const g = c.gradient;
+		const wrap = new UIDiv();
+
+		const row1 = new UIRow();
+		row1.add( new UIText( '渐变色' ).setClass( 'Label' ).setWidth( '90px' ) );
+		const c0 = new UIColor().setValue( g.colors[ 0 ] );
+		const c1 = new UIColor().setValue( g.colors[ 1 ] );
+		function emit() {
+
+			onChange( createGradientContent( {
+				colors: [ c0.getValue(), c1.getValue() ],
+				alphas: g.alphas,
+				stops: [ s0.getValue(), s1.getValue() ],
+				angle: ang.getValue(),
+			} ) );
+
+		}
+		c0.onInput( emit );
+		c1.onInput( emit );
+		row1.add( c0 );
+		row1.add( c1 );
+		wrap.add( row1 );
+
+		const row2 = new UIRow();
+		row2.add( new UIText( '角度' ).setClass( 'Label' ).setWidth( '90px' ) );
+		const ang = new UINumber( g.angle ).setRange( - 360, 360 ).setWidth( '50px' ).onChange( emit );
+		row2.add( ang );
+		row2.add( new UIText( '停点' ).setWidth( '36px' ).setMarginLeft( '6px' ) );
+		const s0 = new UINumber( g.stops[ 0 ] ).setRange( 0, 1 ).setPrecision( 2 ).setWidth( '42px' ).onChange( emit );
+		const s1 = new UINumber( g.stops[ 1 ] ).setRange( 0, 1 ).setPrecision( 2 ).setWidth( '42px' ).onChange( emit );
+		row2.add( s0 );
+		row2.add( s1 );
+		wrap.add( row2 );
+		return wrap;
+
+	}
+
+	function fillEditor( label, fillObj, onFill ) {
+
+		const wrap = new UIDiv();
+		wrap.add( new UIText( label ).setFontWeight( 'bold' ).setMarginTop( '4px' ) );
+		const content = ( fillObj && fillObj.content ) || createSolidContent( '#ffffff', 1 );
+		const alphaRow = new UIRow();
+		alphaRow.add( new UIText( '不透明度' ).setClass( 'Label' ).setWidth( '90px' ) );
+		const alphaNum = new UINumber( fillObj && fillObj.alpha != null ? fillObj.alpha : 1 )
+			.setRange( 0, 1 ).setPrecision( 2 ).setWidth( '50px' );
+		alphaNum.onChange( function () {
+
+			onFill( {
+				alpha: alphaNum.getValue(),
+				content: normalizeFillContent( content ),
+			} );
+
+		} );
+		alphaRow.add( alphaNum );
+		wrap.add( alphaRow );
+
+		function setContent( nextContent ) {
+
+			onFill( {
+				alpha: alphaNum.getValue(),
+				content: nextContent,
+			} );
+
+		}
+
+		wrap.add( contentTypeSelect( content, function ( type ) {
+
+			const cur = normalizeFillContent( content );
+			const keepColor = contentPrimaryOrSolid( cur ) || '#ffffff';
+			if ( type === 'gradient' ) {
+
+				const gColors = ( cur.gradient && cur.gradient.colors && cur.gradient.colors.length >= 2 )
+					? [ cur.gradient.colors[ 0 ], cur.gradient.colors[ 1 ] ]
+					: [ keepColor, '#afafaf' ];
+				// Seed from solid when switching solid->gradient so face never goes empty
+				if ( cur.renderType === 'solid' ) {
+
+					gColors[ 0 ] = keepColor;
+
+				}
+				setContent( createGradientContent( {
+					colors: gColors,
+					alphas: [ 1, 1 ],
+					stops: [ 0, 1 ],
+					angle: ( cur.gradient && cur.gradient.angle != null ) ? cur.gradient.angle : 90,
+				} ) );
+
+			} else if ( type === 'texture' ) {
+
+				// P2 stub: keep previous solid color until a texture is picked
+				setContent( {
+					...createSolidContent( keepColor, 1 ),
+					renderType: 'texture',
+				} );
+
+			} else {
+
+				setContent( createSolidContent( keepColor, 1 ) );
+
+			}
+
+		} ) );
+
+		const rt = normalizeFillContent( content ).renderType;
+		if ( rt === 'gradient' ) wrap.add( gradientControls( content, setContent ) );
+		else wrap.add( solidControls( content, setContent ) );
+		if ( rt === 'texture' ) {
+
+			const hint = new UIDiv();
+			hint.setTextContent( '贴图填充 P2 再做，当前按纯色回退' );
+			hint.setFontSize( '10px' );
+			hint.setColor( '#888' );
+			wrap.add( hint );
+
+		}
+
+		return wrap;
+
+	}
+
+	function contentPrimaryOrSolid( content ) {
+
+		const c = normalizeFillContent( content );
+		if ( c.renderType === 'gradient' ) return c.gradient.colors[ 0 ];
+		return c.solid.color;
+
+	}
+
+	function rebuildFlowerPanel() {
+
+		while ( flowerBlock.dom.firstChild ) {
+
+			flowerBlock.dom.removeChild( flowerBlock.dom.firstChild );
+
+		}
+
+		const object = editor.selected;
+		if ( ! isUIText( object ) ) return;
+		const ui = getFccUI( object ) || {};
+		// 花字 = Effect 栈数据挂在 Text.fccUI.flowerStyle 上，不是独立组件。
+		// 无 flowerStyle 时用 legacy outline/shadow 合成预览；一改就写回 flowerStyle。
+		const style = ensureFlowerStyle( ui );
+		const persisted = !!( ui.flowerStyle && typeof ui.flowerStyle === 'object' );
+
+		const titleRow = new UIRow();
+		titleRow.add( new UIText( '花字 · Effect 栈' ).setFontWeight( 'bold' ) );
+		flowerBlock.add( titleRow );
+
+		const tip = new UIDiv();
+		tip.setTextContent( '多层填充 / 描边 / 投影 / 内投影（挂在当前 Text 上，不是单独物体）' );
+		tip.setFontSize( '11px' );
+		tip.setColor( '#aaa' );
+		tip.setMarginBottom( '4px' );
+		flowerBlock.add( tip );
+
+		const toolRow = new UIRow();
+		toolRow.add( new UIText( persisted ? '已写入' : '未写入(预览)' ).setClass( 'Label' ).setWidth( '90px' ).setColor( '#8af' ) );
+		const resetBtn = new UIButton( '重置特效' ).onClick( function () {
+
+			const cur = getFccUI( editor.selected ) || {};
+			const base = createDefaultFlowerStyle( {
+				fill: {
+					alpha: 1,
+					content: createSolidContent( cur.color || '#ffffff', 1 ),
+				},
+			} );
+			writeFlowerStyle( base );
+
+		} );
+		toolRow.add( resetBtn );
+		if ( persisted ) {
+
+			const clearBtn = new UIButton( '仅排版' ).setMarginLeft( '4px' ).onClick( function () {
+
+				const object = editor.selected;
+				if ( ! isUIText( object ) ) return;
+				const ui = { ...getFccUI( object ) };
+				ui.flowerStyle = null;
+				if ( object.userData ) delete object.userData.__fccTextSig;
+				const next = { ...object.userData, fccUI: ui };
+				delete next.__fccTextSig;
+				editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+				syncSelectedText();
+				signals.sceneGraphChanged.dispatch();
+				rebuildFlowerPanel();
+
+			} );
+			toolRow.add( clearBtn );
+
+		}
+		flowerBlock.add( toolRow );
+
+		flowerBlock.add( fillEditor( '填充', style.fill, function ( fill ) {
+
+			style.fill = fill;
+			writeFlowerStyle( style );
+
+		} ) );
+
+		// Strokes
+		flowerBlock.add( new UIText( '描边' ).setFontWeight( 'bold' ).setMarginTop( '6px' ) );
+		style.strokes.forEach( function ( stroke, idx ) {
+
+			const box = new UIDiv();
+			box.setMarginTop( '4px' );
+			box.dom.style.padding = '4px';
+			box.dom.style.background = '#2a2a2a';
+			const head = new UIRow();
+			head.add( new UIText( '描边 ' + ( idx + 1 ) ).setWidth( '70px' ) );
+			const en = new UICheckbox( !! stroke.enable ).onChange( function () {
+
+				style.strokes[ idx ].enable = en.getValue();
+				writeFlowerStyle( style );
+
+			} );
+			head.add( en );
+			head.add( new UIText( '宽' ).setMarginLeft( '6px' ) );
+			const wNum = new UINumber( stroke.width ).setRange( 0, 256 ).setWidth( '48px' ).onChange( function () {
+
+				style.strokes[ idx ].width = wNum.getValue();
+				writeFlowerStyle( style );
+
+			} );
+			head.add( wNum );
+			const del = new UIButton( '删' ).setMarginLeft( '4px' ).onClick( function () {
+
+				style.strokes.splice( idx, 1 );
+				writeFlowerStyle( style );
+
+			} );
+			head.add( del );
+			box.add( head );
+			box.add( fillEditor( '', { alpha: stroke.alpha, content: stroke.content }, function ( fill ) {
+
+				style.strokes[ idx ].alpha = fill.alpha;
+				style.strokes[ idx ].content = fill.content;
+				writeFlowerStyle( style );
+
+			} ) );
+			flowerBlock.add( box );
+
+		} );
+		const addStroke = new UIButton( '+ 描边' ).setMarginTop( '4px' ).onClick( function () {
+
+			style.strokes.push( createStrokeLayer() );
+			writeFlowerStyle( style );
+
+		} );
+		flowerBlock.add( addStroke );
+
+		function shadowList( title, key ) {
+
+			flowerBlock.add( new UIText( title ).setFontWeight( 'bold' ).setMarginTop( '6px' ) );
+			const arr = style[ key ];
+			arr.forEach( function ( sh, idx ) {
+
+				const box = new UIDiv();
+				box.setMarginTop( '4px' );
+				box.dom.style.padding = '4px';
+				box.dom.style.background = '#2a2a2a';
+				const head = new UIRow();
+				head.add( new UIText( title + ' ' + ( idx + 1 ) ).setWidth( '70px' ) );
+				const en = new UICheckbox( !! sh.enable ).onChange( function () {
+
+					arr[ idx ].enable = en.getValue();
+					writeFlowerStyle( style );
+
+				} );
+				head.add( en );
+				const del = new UIButton( '删' ).setMarginLeft( '4px' ).onClick( function () {
+
+					arr.splice( idx, 1 );
+					writeFlowerStyle( style );
+
+				} );
+				head.add( del );
+				box.add( head );
+
+				const rowA = new UIRow();
+				rowA.add( new UIText( '距离' ).setClass( 'Label' ).setWidth( '90px' ) );
+				const dist = new UINumber( sh.distance ).setRange( 0, 256 ).setWidth( '48px' ).onChange( commitSh );
+				const ang = new UINumber( sh.angle ).setRange( - 180, 180 ).setWidth( '48px' ).onChange( commitSh );
+				rowA.add( dist );
+				rowA.add( new UIText( '角' ).setWidth( '20px' ) );
+				rowA.add( ang );
+				box.add( rowA );
+
+				const rowB = new UIRow();
+				rowB.add( new UIText( '模糊' ).setClass( 'Label' ).setWidth( '90px' ) );
+				const dif = new UINumber( sh.diffuse ).setRange( 0, 64 ).setWidth( '48px' ).onChange( commitSh );
+				const al = new UINumber( sh.alpha ).setRange( 0, 1 ).setPrecision( 2 ).setWidth( '48px' ).onChange( commitSh );
+				rowB.add( dif );
+				rowB.add( new UIText( '透' ).setWidth( '20px' ) );
+				rowB.add( al );
+				box.add( rowB );
+
+				function commitSh() {
+
+					const rad = ang.getValue() * Math.PI / 180;
+					const d = dist.getValue();
+					arr[ idx ].distance = d;
+					arr[ idx ].angle = ang.getValue();
+					arr[ idx ].diffuse = dif.getValue();
+					arr[ idx ].alpha = al.getValue();
+					arr[ idx ].offsetX = Math.cos( rad ) * d;
+					arr[ idx ].offsetY = Math.sin( rad ) * d;
+					writeFlowerStyle( style );
+
+				}
+
+				box.add( fillEditor( '', { alpha: 1, content: sh.content }, function ( fill ) {
+
+					arr[ idx ].content = fill.content;
+					writeFlowerStyle( style );
+
+				} ) );
+				flowerBlock.add( box );
+
+			} );
+			const addBtn = new UIButton( '+ ' + title ).setMarginTop( '4px' ).onClick( function () {
+
+				arr.push( createShadowLayer() );
+				writeFlowerStyle( style );
+
+			} );
+			flowerBlock.add( addBtn );
+
+		}
+
+		shadowList( '投影', 'shadows' );
+		shadowList( '内投影', 'innerShadows' );
+
+	}
+
+	function commitText() {
+
+		const object = editor.selected;
+		if ( ! isUIText( object ) ) return;
+		const ui = { ...getFccUI( object ) };
+		ui.text = textArea.getValue();
+		// Font URL only from「文件」picker (blob:) / http(s) / data:.
+		// Never clear fontFileName / fontProjectPath — reopen needs them.
+		const prevFont = ui.font || '';
+		const cached = editor._fccFontBytes && editor._fccFontBytes.get( object.uuid );
+		if ( isUsableFontUrl( prevFont ) ) {
+
+			ui.font = prevFont;
+			if ( fontInput.getValue().trim() ) ui.fontFileName = fontInput.getValue().trim();
+
+		} else if ( cached && cached.blobUrl && isUsableFontUrl( cached.blobUrl ) ) {
+
+			ui.font = cached.blobUrl;
+			if ( ! ui.fontFileName && cached.name ) ui.fontFileName = cached.name;
+			if ( fontInput.getValue().trim() ) ui.fontFileName = fontInput.getValue().trim();
+
+		} else {
+
+			// Keep metadata; leave font empty so Troika uses CDN until user re-picks / restore runs.
+			ui.font = '';
+			if ( fontInput.getValue().trim() && ! String( fontInput.getValue() ).startsWith( 'blob:' ) ) {
+
+				ui.fontFileName = fontInput.getValue().trim();
+
+			}
+
+		}
+
+		ui.fontSize = fontSizeNum.getValue();
+		ui.bold = !! boldCheck.getValue();
+		ui.color = colorInput.getValue();
+		// Keep Effect-stack fill in sync when flowerStyle already persisted
+		if ( ui.flowerStyle && typeof ui.flowerStyle === 'object' ) {
+			const fs = cloneFlowerStyle( ui.flowerStyle );
+			const fillC = normalizeFillContent( fs.fill && fs.fill.content );
+			if ( fillC.renderType === 'solid' ) {
+				fs.fill = { alpha: fs.fill && fs.fill.alpha != null ? fs.fill.alpha : 1,
+					content: createSolidContent( ui.color, fillC.solid.alpha ) };
+				ui.flowerStyle = fs;
+			}
+		}
+		ui.letterSpacing = letterNum.getValue();
+		ui.lineHeight = lineNum.getValue();
+		ui.align = alignSelect.getValue();
+		ui.verticalAlign = vAlignSelect.getValue();
+		ui.outline = {
+			enabled: !! outlineEn.getValue(),
+			width: outlineWidth.getValue(),
+			color: outlineColor.getValue(),
+			opacity: outlineOpacity.getValue(),
+		};
+		ui.shadow = {
+			enabled: !! shadowEn.getValue(),
+			offsetX: shadowOX.getValue(),
+			offsetY: shadowOY.getValue(),
+			blur: shadowBlur.getValue(),
+			color: shadowColor.getValue(),
+			opacity: 0.75,
+		};
+		const next = { ...object.userData, fccUI: ui };
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		syncSelectedText();
+		signals.sceneGraphChanged.dispatch();
+
+	}
+
+	function syncSelectedText() {
+
+		const object = editor.selected;
+		if ( ! isUIText( object ) ) return;
+		const ui = getFccUI( object );
+		const w = ( ui.sizeDelta && ui.sizeDelta[ 0 ] ) || 400;
+		const h = ( ui.sizeDelta && ui.sizeDelta[ 1 ] ) || 100;
+		try {
+
+			syncUITextContent( object, { x: 0, y: 0, w, h } );
+
+		} catch ( e ) {
+
+			console.warn( '[FreeCapCut] text sync', e );
+
+		}
+
+	}
+
+	function rebuildCameraOptions() {
+
+		const opts = { __viewport__: '当前视口相机' };
+		editor.scene.traverse( function ( o ) {
+
+			if ( o.isPerspectiveCamera || o.isOrthographicCamera ) {
+
+				opts[ o.uuid ] = ( o.name || o.type ) + ' (' + o.uuid.slice( 0, 6 ) + ')';
+
+			}
+
+		} );
+		camSelect.setOptions( opts );
+
+	}
+
+	function updateModeRows( object ) {
+
+		const isCanvas = isUICanvas( object );
+		modeRow.setDisplay( isCanvas ? '' : 'none' );
+		if ( ! isCanvas ) {
+
+			camRow.setDisplay( 'none' );
+			distRow.setDisplay( 'none' );
+			return;
+
+		}
+
+		const ui = getFccUI( object );
+		const isCam = ui && ui.renderMode === RENDER_MODE_CAMERA;
+		camRow.setDisplay( isCam ? '' : 'none' );
+		distRow.setDisplay( isCam ? '' : 'none' );
+
+	}
+
+	function commitRect() {
+
+		const object = editor.selected;
+		if ( ! isFccUI( object ) ) return;
+		const ui = { ...getFccUI( object ) };
+		ui.anchorMin = [ anchorMin.x.getValue(), anchorMin.y.getValue() ];
+		ui.anchorMax = [ anchorMax.x.getValue(), anchorMax.y.getValue() ];
+		ui.pivot = [ pivot.x.getValue(), pivot.y.getValue() ];
+		ui.anchoredPosition = [ anchoredPos.x.getValue(), anchoredPos.y.getValue() ];
+		ui.sizeDelta = [ sizeDelta.x.getValue(), sizeDelta.y.getValue() ];
+		ui.localEulerAngles = [
+			localRot.x.getValue(),
+			localRot.y.getValue(),
+			localRot.z.getValue(),
+		];
+		ui.localScale = [
+			localScale.x.getValue(),
+			localScale.y.getValue(),
+			localScale.z.getValue(),
+		];
+		const next = { ...object.userData, fccUI: ui };
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		if ( isUIText( object ) ) syncSelectedText();
+		signals.sceneGraphChanged.dispatch();
+
+	}
+
+	const anchorMin = vec2Field( '锚点 Min', commitRect );
+	const anchorMax = vec2Field( '锚点 Max', commitRect );
+	const pivot = vec2Field( '轴心 Pivot', commitRect );
+	const anchoredPos = vec2Field( '锚点位置', commitRect );
+	const sizeDelta = vec2Field( '尺寸 Size', commitRect );
+	const localRot = vec3Field( '旋转 °', commitRect, 2 );
+	const localScale = vec3Field( '缩放', commitRect, 3 );
+
+	container.add( anchorMin.row );
+	container.add( anchorMax.row );
+	container.add( pivot.row );
+	container.add( anchoredPos.row );
+	container.add( sizeDelta.row );
+	container.add( localRot.row );
+	container.add( localScale.row );
+
+	const presetRow = new UIRow().setMarginTop( '8px' );
+	const stretchBtn = new UIButton( '铺满屏幕' ).onClick( function () {
+
+		const object = editor.selected;
+		if ( ! isFccUI( object ) ) return;
+		const ui = { ...getFccUI( object ), ...stretchFillRectData() };
+		const next = { ...object.userData, fccUI: ui };
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		refresh( object );
+		signals.sceneGraphChanged.dispatch();
+
+	} );
+	presetRow.add( stretchBtn );
+
+	const centerBtn = new UIButton( '居中 200×200' ).onClick( function () {
+
+		const object = editor.selected;
+		if ( ! isFccUI( object ) ) return;
+		const ui = {
+			...getFccUI( object ),
+			anchorMin: [ 0.5, 0.5 ],
+			anchorMax: [ 0.5, 0.5 ],
+			pivot: [ 0.5, 0.5 ],
+			anchoredPosition: [ 0, 0 ],
+			sizeDelta: [ 200, 200 ],
+		};
+		const next = { ...object.userData, fccUI: ui };
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		refresh( object );
+		signals.sceneGraphChanged.dispatch();
+
+	} );
+	presetRow.add( centerBtn );
+	container.add( presetRow );
+
+	const hint = new UIDiv().setMarginTop( '6px' );
+	hint.setTextContent(
+		'位移用「锚点位置」。宽高只改网格尺寸，勿写进 Scale。旋转/缩放为 localEulerAngles / localScale。字体用「文件」选 TTF。'
+	);
+	hint.setFontSize( '11px' );
+	hint.setColor( '#aaa' );
+	container.add( hint );
+
+	function setVec( field, arr ) {
+
+		field.x.setValue( arr[ 0 ] );
+		field.y.setValue( arr[ 1 ] );
+
+	}
+
+	function setVec3( field, arr, fallback ) {
+
+		const a = Array.isArray( arr ) && arr.length >= 3 ? arr : fallback;
+		field.x.setValue( a[ 0 ] );
+		field.y.setValue( a[ 1 ] );
+		field.z.setValue( a[ 2 ] );
+
+	}
+
+	function refresh( object ) {
+
+		if ( ! isFccUI( object ) ) {
+
+			container.setDisplay( 'none' );
+			return;
+
+		}
+
+		container.setDisplay( '' );
+		const ui = getFccUI( object );
+		textBlock.setDisplay( isUIText( object ) ? '' : 'none' );
+		if ( ! isUIText( object ) ) {
+
+			while ( flowerBlock.dom.firstChild ) flowerBlock.dom.removeChild( flowerBlock.dom.firstChild );
+
+		}
+
+
+		if ( isUICanvas( object ) ) {
+
+			typeLabel.setValue( 'Canvas' );
+			modeSelect.setValue( ui.renderMode === RENDER_MODE_CAMERA ? RENDER_MODE_CAMERA : RENDER_MODE_OVERLAY );
+			rebuildCameraOptions();
+			const camVal = ui.cameraUuid || '__viewport__';
+			camSelect.setValue( camVal );
+			distNum.setValue( ui.planeDistance != null ? ui.planeDistance : DEFAULT_PLANE_DISTANCE );
+
+		} else if ( isUIImage( object ) ) {
+
+			typeLabel.setValue( 'Image' );
+
+		} else if ( isUIText( object ) ) {
+
+			typeLabel.setValue( 'Text' );
+			textArea.setValue( ui.text != null ? String( ui.text ) : '' );
+			fontInput.setValue( ui.fontFileName || ui.font || '' );
+			fontSizeNum.setValue( ui.fontSize != null ? ui.fontSize : 48 );
+			boldCheck.setValue( !! ui.bold );
+			colorInput.setValue( ui.color || '#ffffff' );
+			letterNum.setValue( ui.letterSpacing != null ? ui.letterSpacing : 0 );
+			lineNum.setValue( ui.lineHeight != null ? ui.lineHeight : 1.2 );
+			alignSelect.setValue( ui.align || 'center' );
+			vAlignSelect.setValue( ui.verticalAlign || 'middle' );
+			const ol = ui.outline || {};
+			outlineEn.setValue( !! ol.enabled );
+			outlineWidth.setValue( ol.width != null ? ol.width : 2 );
+			outlineColor.setValue( ol.color || '#000000' );
+			outlineOpacity.setValue( ol.opacity != null ? ol.opacity : 1 );
+			const sh = ui.shadow || {};
+			shadowEn.setValue( !! sh.enabled );
+			shadowOX.setValue( sh.offsetX != null ? sh.offsetX : 2 );
+			shadowOY.setValue( sh.offsetY != null ? sh.offsetY : - 2 );
+			shadowBlur.setValue( sh.blur != null ? sh.blur : 4 );
+			shadowColor.setValue( sh.color || '#000000' );
+			for ( const [ key, cb ] of exposeBoxes ) {
+
+				cb.setValue( isTextParamExposed( ui, key ) );
+
+			}
+
+			rebuildFlowerPanel();
+			// Legacy single outline/shadow UI retired — FX live in 花字 Effect 栈 only.
+			outlineEnRow.setDisplay( 'none' );
+			outlineRow.setDisplay( 'none' );
+			shadowEnRow.setDisplay( 'none' );
+			shadowOffRow.setDisplay( 'none' );
+			shadowBlurRow.setDisplay( 'none' );
+
+
+		} else {
+
+			typeLabel.setValue( ui.type || 'UI' );
+
+		}
+
+		updateModeRows( object );
+
+		setVec( anchorMin, ui.anchorMin || [ 0.5, 0.5 ] );
+		setVec( anchorMax, ui.anchorMax || [ 0.5, 0.5 ] );
+		setVec( pivot, ui.pivot || [ 0.5, 0.5 ] );
+		setVec( anchoredPos, ui.anchoredPosition || [ 0, 0 ] );
+		setVec( sizeDelta, ui.sizeDelta || [ 200, 200 ] );
+		setVec3( localRot, ui.localEulerAngles, [ 0, 0, 0 ] );
+		setVec3( localScale, ui.localScale, [ 1, 1, 1 ] );
+
+	}
+
+	signals.objectSelected.add( function ( object ) {
+
+		refresh( object );
+
+	} );
+
+	signals.objectChanged.add( function ( object ) {
+
+		if ( object !== editor.selected ) return;
+		refresh( object );
+
+	} );
+
+	signals.refreshSidebarObject3D.add( function ( object ) {
+
+		if ( object !== editor.selected ) return;
+		refresh( object );
+
+	} );
+
+	signals.sceneGraphChanged.add( function () {
+
+		if ( isUICanvas( editor.selected ) ) rebuildCameraOptions();
+
+	} );
+
+	refresh( editor.selected );
+
+	return container;
+
+}
+
+export { SidebarObjectUI };

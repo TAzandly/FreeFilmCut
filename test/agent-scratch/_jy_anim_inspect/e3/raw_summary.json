@@ -1,0 +1,1089 @@
+[
+    {
+        "filePath": "file:/Users/apple/Downloads/115b1824caa223c09a178a93f662318b/TextAnim.lua",
+        "fields": [],
+        "methods": [
+            {
+                "params": [
+                    {
+                        "name": "_name",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "_data",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "_type",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "registerParams",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "getRegistedParams",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "_name",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "_data",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "setRegistedVal",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "getRootDir",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "path",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "registerRootDir",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "controls",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "bezier",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "a",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "b",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "x",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "remap01",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "a",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "b",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "x",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "mix",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "file_path",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "CreateJsonFile",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "file_path",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "ReadFromJson",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "input_val_4",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "min_val",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "max_val",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "in_val",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "reverse",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "bezierWithParams",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "test",
+                "attributes": [],
+                "comment": ""
+            }
+        ],
+        "name": "Util",
+        "attributes": [],
+        "comment": ""
+    },
+    {
+        "filePath": "file:/Users/apple/Downloads/115b1824caa223c09a178a93f662318b/lua/abc/TTTT.lua",
+        "fields": [],
+        "methods": [
+            {
+                "params": [
+                    {
+                        "name": "_name",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "_data",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "_type",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "registerParams",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "getRegistedParams",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "_name",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "_data",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "setRegistedVal",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "getRootDir",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "path",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "registerRootDir",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "controls",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "bezier",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "a",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "b",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "x",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "remap01",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "a",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "b",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "x",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "mix",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "file_path",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "CreateJsonFile",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "file_path",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "ReadFromJson",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "input_val_4",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "min_val",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "max_val",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "in_val",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "reverse",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "bezierWithParams",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "test",
+                "attributes": [],
+                "comment": ""
+            }
+        ],
+        "name": "Util",
+        "attributes": [],
+        "comment": ""
+    },
+    {
+        "filePath": "file:/Users/apple/Downloads/115b1824caa223c09a178a93f662318b/Util.lua",
+        "fields": [],
+        "methods": [
+            {
+                "params": [
+                    {
+                        "name": "_name",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "_data",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "_type",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "registerParams",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "getRegistedParams",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "_name",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "_data",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "setRegistedVal",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "getRootDir",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "path",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "registerRootDir",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "controls",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "bezier",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "a",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "b",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "x",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "remap01",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "a",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "b",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "x",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "mix",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "file_path",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "CreateJsonFile",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "file_path",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "ReadFromJson",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "input_val_4",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "min_val",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "max_val",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "in_val",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "reverse",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "bezierWithParams",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "test",
+                "attributes": [],
+                "comment": ""
+            }
+        ],
+        "name": "Util",
+        "attributes": [],
+        "comment": ""
+    },
+    {
+        "super": "ScriptComponent",
+        "filePath": "file:/Users/apple/Downloads/115b1824caa223c09a178a93f662318b/TextAnim.lua",
+        "fields": [
+            {
+                "name": "autoplay",
+                "type": "boolean",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "isBlur",
+                "type": "boolean",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "duration",
+                "type": "number",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "curTime",
+                "type": "number",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "progress",
+                "type": "number",
+                "attributes": [
+                    {
+                        "name": "UI",
+                        "args": [
+                            {
+                                "name": "Range",
+                                "value": "{0, 1}"
+                            },
+                            {
+                                "name": "Slider",
+                                "value": ""
+                            }
+                        ]
+                    }
+                ],
+                "comment": ""
+            },
+            {
+                "name": "blurStep",
+                "type": "number",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "angle",
+                "type": "number",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "rotation",
+                "type": "Vector3f",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "movement",
+                "type": "Vector3f",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "blurInfo",
+                "type": "Vector4f",
+                "attributes": [],
+                "comment": ""
+            }
+        ],
+        "methods": [
+            {
+                "params": [
+                    {
+                        "name": "construct",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "new",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "_name",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "_type",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "registerParams",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "constructor",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "trans",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "transInitial",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "comp",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "onStart",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "initAnim",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "comp",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "time",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "onUpdate",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "CreateJsonFile",
+                "attributes": [
+                    {
+                        "name": "UI",
+                        "args": [
+                            {
+                                "name": "Button",
+                                "value": "\"generate json file\""
+                            }
+                        ]
+                    }
+                ],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "ReadFromJson",
+                "attributes": [
+                    {
+                        "name": "UI",
+                        "args": [
+                            {
+                                "name": "Button",
+                                "value": "\"read from json file\""
+                            }
+                        ]
+                    }
+                ],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "setMovement",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "setAnchor",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "setRotation",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "time",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "seek",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "resetData",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "duration",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "setDuration",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "clear",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "onEnter",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "onLeave",
+                "attributes": [],
+                "comment": ""
+            }
+        ],
+        "name": "TextAnim",
+        "attributes": [],
+        "comment": ""
+    },
+    {
+        "super": "ScriptComponent",
+        "filePath": "file:/Users/apple/Downloads/115b1824caa223c09a178a93f662318b/lua/abc/TTTT.lua",
+        "fields": [
+            {
+                "name": "autoplay",
+                "type": "boolean",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "isBlur",
+                "type": "boolean",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "duration",
+                "type": "number",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "curTime",
+                "type": "number",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "progress",
+                "type": "number",
+                "attributes": [
+                    {
+                        "name": "UI",
+                        "args": [
+                            {
+                                "name": "Range",
+                                "value": "{0, 1}"
+                            },
+                            {
+                                "name": "Slider",
+                                "value": ""
+                            }
+                        ]
+                    }
+                ],
+                "comment": ""
+            },
+            {
+                "name": "blurStep",
+                "type": "number",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "angle",
+                "type": "number",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "rotation",
+                "type": "Vector3f",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "movement",
+                "type": "Vector3f",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "name": "blurInfo",
+                "type": "Vector4f",
+                "attributes": [],
+                "comment": ""
+            }
+        ],
+        "methods": [
+            {
+                "params": [
+                    {
+                        "name": "construct",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "new",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "_name",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "_data",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "_type",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "registerParams",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "constructor",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "trans",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "transInitial",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "comp",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "onStart",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "initAnim",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "comp",
+                        "attributes": [],
+                        "comment": ""
+                    },
+                    {
+                        "name": "time",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "onUpdate",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "CreateJsonFile",
+                "attributes": [
+                    {
+                        "name": "UI",
+                        "args": [
+                            {
+                                "name": "Button",
+                                "value": "\"generate json file\""
+                            }
+                        ]
+                    }
+                ],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "ReadFromJson",
+                "attributes": [
+                    {
+                        "name": "UI",
+                        "args": [
+                            {
+                                "name": "Button",
+                                "value": "\"read from json file\""
+                            }
+                        ]
+                    }
+                ],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "time",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "seek",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "resetData",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [
+                    {
+                        "name": "duration",
+                        "attributes": [],
+                        "comment": ""
+                    }
+                ],
+                "name": "setDuration",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "clear",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "onEnter",
+                "attributes": [],
+                "comment": ""
+            },
+            {
+                "params": [],
+                "name": "onLeave",
+                "attributes": [],
+                "comment": ""
+            }
+        ],
+        "name": "TTTT",
+        "attributes": [],
+        "comment": ""
+    }
+]

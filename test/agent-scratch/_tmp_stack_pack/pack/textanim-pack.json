@@ -1,0 +1,70 @@
+{
+  "format": "freecapcut.textanim-pack/1",
+  "name": "逐字+扫光",
+  "category": "in",
+  "duration": 1.2,
+  "components": [
+    {
+      "id": "c_charIn_1",
+      "type": "charIn",
+      "scope": "char",
+      "enabled": true,
+      "params": {
+        "opacity": 0,
+        "offsetY": -36,
+        "scale": 0.6
+      },
+      "channels": {
+        "opacity": true,
+        "offsetY": true,
+        "scale": true
+      },
+      "selector": {
+        "order": "ltr",
+        "delay": 0.45,
+        "ease": "cubicOut"
+      }
+    },
+    {
+      "id": "c_wipe_1",
+      "type": "wipeReveal",
+      "scope": "text",
+      "enabled": true,
+      "params": {
+        "direction": "ltr",
+        "soft": 0.08,
+        "edgeIntensity": 2.2,
+        "edgeWidth": 0.03,
+        "blendMode": "add"
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "path": "textAnim.c_charIn_1.progress",
+      "keys": [
+        {
+          "t": 0,
+          "v": 0
+        },
+        {
+          "t": 0.9,
+          "v": 1
+        }
+      ]
+    },
+    {
+      "path": "textAnim.c_wipe_1.progress",
+      "keys": [
+        {
+          "t": 0,
+          "v": 0
+        },
+        {
+          "t": 1.2,
+          "v": 1
+        }
+      ]
+    }
+  ]
+}

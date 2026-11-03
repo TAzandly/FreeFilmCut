@@ -1,0 +1,1294 @@
+{
+  "format": "freecapcut.text-template/1",
+  "name": "hello",
+  "text": {
+    "content": "Hello",
+    "font": "",
+    "fontBold": "",
+    "fontFileName": "",
+    "fontSize": 120,
+    "bold": false,
+    "color": "#ffffff",
+    "letterSpacing": 0.02,
+    "lineHeight": 1.2,
+    "align": "center",
+    "verticalAlign": "middle",
+    "outline": {
+      "enabled": false,
+      "width": 2,
+      "color": "#000000",
+      "opacity": 1
+    },
+    "shadow": {
+      "enabled": false,
+      "offsetX": 2,
+      "offsetY": -2,
+      "blur": 4,
+      "color": "#000000",
+      "opacity": 0.75
+    }
+  },
+  "flowerStyle": {
+    "version": 2,
+    "id": "7645318555541638462",
+    "fill": {
+      "alpha": 1,
+      "content": {
+        "renderType": "solid",
+        "solid": {
+          "color": "#ffffff",
+          "alpha": 1
+        },
+        "gradient": {
+          "style": "linear",
+          "angle": 90,
+          "colors": [
+            "#ffffff",
+            "#afafaf"
+          ],
+          "alphas": [
+            1,
+            1
+          ],
+          "stops": [
+            0,
+            1
+          ],
+          "mode": "character"
+        },
+        "texture": {
+          "path": "",
+          "fileName": "",
+          "alpha": 1,
+          "angle": 0,
+          "scale": 1,
+          "flip": [
+            false,
+            false
+          ],
+          "wrapMode": "repeat",
+          "stretchMode": "fit"
+        }
+      }
+    },
+    "effectsEnabled": true,
+    "stack": [
+      {
+        "id": "sh_mvj8aqi0_7",
+        "kind": "shadow",
+        "enable": true,
+        "angle": -89.99,
+        "distance": 11.37040280210159,
+        "width": 0,
+        "diffuse": 7.1803852889667255,
+        "alpha": 0.9,
+        "offsetX": 0.0019845096516744472,
+        "offsetY": -11.370402628920452,
+        "content": {
+          "renderType": "solid",
+          "solid": {
+            "color": "#fb9ffb",
+            "alpha": 1
+          },
+          "gradient": {
+            "style": "linear",
+            "angle": 90,
+            "colors": [
+              "#ffffff",
+              "#afafaf"
+            ],
+            "alphas": [
+              1,
+              1
+            ],
+            "stops": [
+              0,
+              1
+            ],
+            "mode": "character"
+          },
+          "texture": {
+            "path": "",
+            "fileName": "",
+            "alpha": 1,
+            "angle": 0,
+            "scale": 1,
+            "flip": [
+              false,
+              false
+            ],
+            "wrapMode": "repeat",
+            "stretchMode": "fit"
+          }
+        },
+        "strokes": []
+      },
+      {
+        "id": "sh_mvj8aqi0_8",
+        "kind": "shadow",
+        "enable": true,
+        "angle": -89.99,
+        "distance": 6.116462346760083,
+        "width": 0,
+        "diffuse": 0,
+        "alpha": 0,
+        "offsetX": 0.001067524059834118,
+        "offsetY": -6.116462253601034,
+        "content": {
+          "renderType": "solid",
+          "solid": {
+            "color": "#000000",
+            "alpha": 1
+          },
+          "gradient": {
+            "style": "linear",
+            "angle": 90,
+            "colors": [
+              "#ffffff",
+              "#afafaf"
+            ],
+            "alphas": [
+              1,
+              1
+            ],
+            "stops": [
+              0,
+              1
+            ],
+            "mode": "character"
+          },
+          "texture": {
+            "path": "",
+            "fileName": "",
+            "alpha": 1,
+            "angle": 0,
+            "scale": 1,
+            "flip": [
+              false,
+              false
+            ],
+            "wrapMode": "repeat",
+            "stretchMode": "fit"
+          }
+        },
+        "strokes": [
+          {
+            "enable": true,
+            "width": 19.44,
+            "alpha": 1,
+            "side": "outer",
+            "content": {
+              "renderType": "solid",
+              "solid": {
+                "color": "#ffffff",
+                "alpha": 1
+              },
+              "gradient": {
+                "style": "linear",
+                "angle": 90,
+                "colors": [
+                  "#ffffff",
+                  "#afafaf"
+                ],
+                "alphas": [
+                  1,
+                  1
+                ],
+                "stops": [
+                  0,
+                  1
+                ],
+                "mode": "character"
+              },
+              "texture": {
+                "path": "",
+                "fileName": "",
+                "alpha": 1,
+                "angle": 0,
+                "scale": 1,
+                "flip": [
+                  false,
+                  false
+                ],
+                "wrapMode": "repeat",
+                "stretchMode": "fit"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "sh_mvj8aqi0_9",
+        "kind": "shadow",
+        "enable": true,
+        "angle": -89.99,
+        "distance": 7.443082311733802,
+        "width": 0,
+        "diffuse": 0,
+        "alpha": 0,
+        "offsetX": 0.0012990629217737991,
+        "offsetY": -7.443082198369176,
+        "content": {
+          "renderType": "solid",
+          "solid": {
+            "color": "#000000",
+            "alpha": 1
+          },
+          "gradient": {
+            "style": "linear",
+            "angle": 90,
+            "colors": [
+              "#ffffff",
+              "#afafaf"
+            ],
+            "alphas": [
+              1,
+              1
+            ],
+            "stops": [
+              0,
+              1
+            ],
+            "mode": "character"
+          },
+          "texture": {
+            "path": "",
+            "fileName": "",
+            "alpha": 1,
+            "angle": 0,
+            "scale": 1,
+            "flip": [
+              false,
+              false
+            ],
+            "wrapMode": "repeat",
+            "stretchMode": "fit"
+          }
+        },
+        "strokes": [
+          {
+            "enable": true,
+            "width": 14.4,
+            "alpha": 1,
+            "side": "outer",
+            "content": {
+              "renderType": "solid",
+              "solid": {
+                "color": "#024479",
+                "alpha": 1
+              },
+              "gradient": {
+                "style": "linear",
+                "angle": 90,
+                "colors": [
+                  "#ffffff",
+                  "#afafaf"
+                ],
+                "alphas": [
+                  1,
+                  1
+                ],
+                "stops": [
+                  0,
+                  1
+                ],
+                "mode": "character"
+              },
+              "texture": {
+                "path": "",
+                "fileName": "",
+                "alpha": 1,
+                "angle": 0,
+                "scale": 1,
+                "flip": [
+                  false,
+                  false
+                ],
+                "wrapMode": "repeat",
+                "stretchMode": "fit"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "sh_mvj8aqi0_10",
+        "kind": "shadow",
+        "enable": true,
+        "angle": -45,
+        "distance": 0,
+        "width": 0,
+        "diffuse": 0,
+        "alpha": 1,
+        "offsetX": 0,
+        "offsetY": 0,
+        "content": {
+          "renderType": "texture",
+          "solid": {
+            "color": "#d94895",
+            "alpha": 1
+          },
+          "gradient": {
+            "style": "linear",
+            "angle": 90,
+            "colors": [
+              "#ffffff",
+              "#afafaf"
+            ],
+            "alphas": [
+              1,
+              1
+            ],
+            "stops": [
+              0,
+              1
+            ],
+            "mode": "character"
+          },
+          "texture": {
+            "path": "assets/flower/7645/1780131613632.png",
+            "fileName": "1780131613632.png",
+            "alpha": 1,
+            "angle": 0,
+            "scale": 1,
+            "flip": [
+              false,
+              false
+            ],
+            "wrapMode": "repeat",
+            "stretchMode": "fit"
+          }
+        },
+        "strokes": [
+          {
+            "enable": true,
+            "width": 6.893169877408056,
+            "alpha": 1,
+            "side": "outer",
+            "content": {
+              "renderType": "texture",
+              "solid": {
+                "color": "#d94895",
+                "alpha": 1
+              },
+              "gradient": {
+                "style": "linear",
+                "angle": 90,
+                "colors": [
+                  "#ffffff",
+                  "#afafaf"
+                ],
+                "alphas": [
+                  1,
+                  1
+                ],
+                "stops": [
+                  0,
+                  1
+                ],
+                "mode": "character"
+              },
+              "texture": {
+                "path": "assets/flower/7645/1780131613632.png",
+                "fileName": "1780131613632.png",
+                "alpha": 1,
+                "angle": 9,
+                "scale": 1,
+                "flip": [
+                  false,
+                  false
+                ],
+                "wrapMode": "repeat",
+                "stretchMode": "fit"
+              }
+            }
+          },
+          {
+            "enable": true,
+            "width": 12.27320490367776,
+            "alpha": 1,
+            "side": "outer",
+            "content": {
+              "renderType": "texture",
+              "solid": {
+                "color": "#472fd3",
+                "alpha": 1
+              },
+              "gradient": {
+                "style": "linear",
+                "angle": 90,
+                "colors": [
+                  "#ffffff",
+                  "#afafaf"
+                ],
+                "alphas": [
+                  1,
+                  1
+                ],
+                "stops": [
+                  0,
+                  1
+                ],
+                "mode": "character"
+              },
+              "texture": {
+                "path": "assets/flower/7645/1780131838447.png",
+                "fileName": "1780131838447.png",
+                "alpha": 1,
+                "angle": 0,
+                "scale": 1,
+                "flip": [
+                  false,
+                  false
+                ],
+                "wrapMode": "repeat",
+                "stretchMode": "fit"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "sh_mvj8aqi0_11",
+        "kind": "shadow",
+        "enable": true,
+        "angle": -45,
+        "distance": 0,
+        "width": 0,
+        "diffuse": 0.6654991243432574,
+        "alpha": 0.8861646234676007,
+        "offsetX": 0,
+        "offsetY": 0,
+        "content": {
+          "renderType": "gradient",
+          "solid": {
+            "color": "#a018a0",
+            "alpha": 1
+          },
+          "gradient": {
+            "style": "linear",
+            "angle": 90,
+            "colors": [
+              "#a018a0",
+              "#1c000b"
+            ],
+            "alphas": [
+              1,
+              1
+            ],
+            "stops": [
+              0.4668141592920354,
+              0.7411504424778761
+            ],
+            "mode": "character"
+          },
+          "texture": {
+            "path": "",
+            "fileName": "",
+            "alpha": 1,
+            "angle": 0,
+            "scale": 1,
+            "flip": [
+              false,
+              false
+            ],
+            "wrapMode": "repeat",
+            "stretchMode": "fit"
+          }
+        },
+        "strokes": []
+      },
+      {
+        "id": "face",
+        "kind": "face"
+      },
+      {
+        "id": "in_mvj8aqi0_12",
+        "kind": "inner",
+        "enable": true,
+        "angle": -45,
+        "distance": 0,
+        "width": 0,
+        "diffuse": 3.0000000000000004,
+        "alpha": 0.9,
+        "offsetX": 0,
+        "offsetY": 0,
+        "content": {
+          "renderType": "texture",
+          "solid": {
+            "color": "#fdd3ef",
+            "alpha": 1
+          },
+          "gradient": {
+            "style": "linear",
+            "angle": 90,
+            "colors": [
+              "#ffffff",
+              "#afafaf"
+            ],
+            "alphas": [
+              1,
+              1
+            ],
+            "stops": [
+              0,
+              1
+            ],
+            "mode": "character"
+          },
+          "texture": {
+            "path": "assets/flower/7645/1780131462621.png",
+            "fileName": "1780131462621.png",
+            "alpha": 1,
+            "angle": 0,
+            "scale": 1.3,
+            "flip": [
+              false,
+              false
+            ],
+            "wrapMode": "repeat",
+            "stretchMode": "fit"
+          }
+        },
+        "strokes": []
+      }
+    ],
+    "strokes": [],
+    "shadows": [
+      {
+        "enable": true,
+        "angle": -89.99,
+        "distance": 11.37040280210159,
+        "width": 0,
+        "diffuse": 7.1803852889667255,
+        "alpha": 0.9,
+        "offsetX": 0.0019845096516744472,
+        "offsetY": -11.370402628920452,
+        "content": {
+          "renderType": "solid",
+          "solid": {
+            "color": "#fb9ffb",
+            "alpha": 1
+          },
+          "gradient": {
+            "style": "linear",
+            "angle": 90,
+            "colors": [
+              "#ffffff",
+              "#afafaf"
+            ],
+            "alphas": [
+              1,
+              1
+            ],
+            "stops": [
+              0,
+              1
+            ],
+            "mode": "character"
+          },
+          "texture": {
+            "path": "",
+            "fileName": "",
+            "alpha": 1,
+            "angle": 0,
+            "scale": 1,
+            "flip": [
+              false,
+              false
+            ],
+            "wrapMode": "repeat",
+            "stretchMode": "fit"
+          }
+        },
+        "strokes": []
+      },
+      {
+        "enable": true,
+        "angle": -89.99,
+        "distance": 6.116462346760083,
+        "width": 0,
+        "diffuse": 0,
+        "alpha": 0,
+        "offsetX": 0.001067524059834118,
+        "offsetY": -6.116462253601034,
+        "content": {
+          "renderType": "solid",
+          "solid": {
+            "color": "#000000",
+            "alpha": 1
+          },
+          "gradient": {
+            "style": "linear",
+            "angle": 90,
+            "colors": [
+              "#ffffff",
+              "#afafaf"
+            ],
+            "alphas": [
+              1,
+              1
+            ],
+            "stops": [
+              0,
+              1
+            ],
+            "mode": "character"
+          },
+          "texture": {
+            "path": "",
+            "fileName": "",
+            "alpha": 1,
+            "angle": 0,
+            "scale": 1,
+            "flip": [
+              false,
+              false
+            ],
+            "wrapMode": "repeat",
+            "stretchMode": "fit"
+          }
+        },
+        "strokes": [
+          {
+            "enable": true,
+            "width": 19.44,
+            "alpha": 1,
+            "side": "outer",
+            "content": {
+              "renderType": "solid",
+              "solid": {
+                "color": "#ffffff",
+                "alpha": 1
+              },
+              "gradient": {
+                "style": "linear",
+                "angle": 90,
+                "colors": [
+                  "#ffffff",
+                  "#afafaf"
+                ],
+                "alphas": [
+                  1,
+                  1
+                ],
+                "stops": [
+                  0,
+                  1
+                ],
+                "mode": "character"
+              },
+              "texture": {
+                "path": "",
+                "fileName": "",
+                "alpha": 1,
+                "angle": 0,
+                "scale": 1,
+                "flip": [
+                  false,
+                  false
+                ],
+                "wrapMode": "repeat",
+                "stretchMode": "fit"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "enable": true,
+        "angle": -89.99,
+        "distance": 7.443082311733802,
+        "width": 0,
+        "diffuse": 0,
+        "alpha": 0,
+        "offsetX": 0.0012990629217737991,
+        "offsetY": -7.443082198369176,
+        "content": {
+          "renderType": "solid",
+          "solid": {
+            "color": "#000000",
+            "alpha": 1
+          },
+          "gradient": {
+            "style": "linear",
+            "angle": 90,
+            "colors": [
+              "#ffffff",
+              "#afafaf"
+            ],
+            "alphas": [
+              1,
+              1
+            ],
+            "stops": [
+              0,
+              1
+            ],
+            "mode": "character"
+          },
+          "texture": {
+            "path": "",
+            "fileName": "",
+            "alpha": 1,
+            "angle": 0,
+            "scale": 1,
+            "flip": [
+              false,
+              false
+            ],
+            "wrapMode": "repeat",
+            "stretchMode": "fit"
+          }
+        },
+        "strokes": [
+          {
+            "enable": true,
+            "width": 14.4,
+            "alpha": 1,
+            "side": "outer",
+            "content": {
+              "renderType": "solid",
+              "solid": {
+                "color": "#024479",
+                "alpha": 1
+              },
+              "gradient": {
+                "style": "linear",
+                "angle": 90,
+                "colors": [
+                  "#ffffff",
+                  "#afafaf"
+                ],
+                "alphas": [
+                  1,
+                  1
+                ],
+                "stops": [
+                  0,
+                  1
+                ],
+                "mode": "character"
+              },
+              "texture": {
+                "path": "",
+                "fileName": "",
+                "alpha": 1,
+                "angle": 0,
+                "scale": 1,
+                "flip": [
+                  false,
+                  false
+                ],
+                "wrapMode": "repeat",
+                "stretchMode": "fit"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "enable": true,
+        "angle": -45,
+        "distance": 0,
+        "width": 0,
+        "diffuse": 0,
+        "alpha": 1,
+        "offsetX": 0,
+        "offsetY": 0,
+        "content": {
+          "renderType": "texture",
+          "solid": {
+            "color": "#d94895",
+            "alpha": 1
+          },
+          "gradient": {
+            "style": "linear",
+            "angle": 90,
+            "colors": [
+              "#ffffff",
+              "#afafaf"
+            ],
+            "alphas": [
+              1,
+              1
+            ],
+            "stops": [
+              0,
+              1
+            ],
+            "mode": "character"
+          },
+          "texture": {
+            "path": "assets/flower/7645/1780131613632.png",
+            "fileName": "1780131613632.png",
+            "alpha": 1,
+            "angle": 0,
+            "scale": 1,
+            "flip": [
+              false,
+              false
+            ],
+            "wrapMode": "repeat",
+            "stretchMode": "fit"
+          }
+        },
+        "strokes": [
+          {
+            "enable": true,
+            "width": 6.893169877408056,
+            "alpha": 1,
+            "side": "outer",
+            "content": {
+              "renderType": "texture",
+              "solid": {
+                "color": "#d94895",
+                "alpha": 1
+              },
+              "gradient": {
+                "style": "linear",
+                "angle": 90,
+                "colors": [
+                  "#ffffff",
+                  "#afafaf"
+                ],
+                "alphas": [
+                  1,
+                  1
+                ],
+                "stops": [
+                  0,
+                  1
+                ],
+                "mode": "character"
+              },
+              "texture": {
+                "path": "assets/flower/7645/1780131613632.png",
+                "fileName": "1780131613632.png",
+                "alpha": 1,
+                "angle": 9,
+                "scale": 1,
+                "flip": [
+                  false,
+                  false
+                ],
+                "wrapMode": "repeat",
+                "stretchMode": "fit"
+              }
+            }
+          },
+          {
+            "enable": true,
+            "width": 12.27320490367776,
+            "alpha": 1,
+            "side": "outer",
+            "content": {
+              "renderType": "texture",
+              "solid": {
+                "color": "#472fd3",
+                "alpha": 1
+              },
+              "gradient": {
+                "style": "linear",
+                "angle": 90,
+                "colors": [
+                  "#ffffff",
+                  "#afafaf"
+                ],
+                "alphas": [
+                  1,
+                  1
+                ],
+                "stops": [
+                  0,
+                  1
+                ],
+                "mode": "character"
+              },
+              "texture": {
+                "path": "assets/flower/7645/1780131838447.png",
+                "fileName": "1780131838447.png",
+                "alpha": 1,
+                "angle": 0,
+                "scale": 1,
+                "flip": [
+                  false,
+                  false
+                ],
+                "wrapMode": "repeat",
+                "stretchMode": "fit"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "enable": true,
+        "angle": -45,
+        "distance": 0,
+        "width": 0,
+        "diffuse": 0.6654991243432574,
+        "alpha": 0.8861646234676007,
+        "offsetX": 0,
+        "offsetY": 0,
+        "content": {
+          "renderType": "gradient",
+          "solid": {
+            "color": "#a018a0",
+            "alpha": 1
+          },
+          "gradient": {
+            "style": "linear",
+            "angle": 90,
+            "colors": [
+              "#a018a0",
+              "#1c000b"
+            ],
+            "alphas": [
+              1,
+              1
+            ],
+            "stops": [
+              0.4668141592920354,
+              0.7411504424778761
+            ],
+            "mode": "character"
+          },
+          "texture": {
+            "path": "",
+            "fileName": "",
+            "alpha": 1,
+            "angle": 0,
+            "scale": 1,
+            "flip": [
+              false,
+              false
+            ],
+            "wrapMode": "repeat",
+            "stretchMode": "fit"
+          }
+        },
+        "strokes": []
+      }
+    ],
+    "innerShadows": [
+      {
+        "enable": true,
+        "angle": -45,
+        "distance": 0,
+        "width": 0,
+        "diffuse": 3.0000000000000004,
+        "alpha": 0.9,
+        "offsetX": 0,
+        "offsetY": 0,
+        "content": {
+          "renderType": "texture",
+          "solid": {
+            "color": "#fdd3ef",
+            "alpha": 1
+          },
+          "gradient": {
+            "style": "linear",
+            "angle": 90,
+            "colors": [
+              "#ffffff",
+              "#afafaf"
+            ],
+            "alphas": [
+              1,
+              1
+            ],
+            "stops": [
+              0,
+              1
+            ],
+            "mode": "character"
+          },
+          "texture": {
+            "path": "assets/flower/7645/1780131462621.png",
+            "fileName": "1780131462621.png",
+            "alpha": 1,
+            "angle": 0,
+            "scale": 1.3,
+            "flip": [
+              false,
+              false
+            ],
+            "wrapMode": "repeat",
+            "stretchMode": "fit"
+          }
+        },
+        "strokes": []
+      }
+    ],
+    "anims": {
+      "in": null,
+      "out": null,
+      "loop": null
+    }
+  },
+  "flowerBaseFontSize": 120,
+  "textAnim": {
+    "format": "freecapcut.textanim-pack/1",
+    "name": "扫光标题",
+    "category": "in",
+    "duration": 1,
+    "components": [
+      {
+        "id": "c_charIn_1",
+        "type": "charIn",
+        "scope": "char",
+        "enabled": true,
+        "params": {
+          "opacity": 1,
+          "offsetX": 0,
+          "offsetY": -36,
+          "scale": 1,
+          "rotateX": 0,
+          "rotateY": 0,
+          "rotateZ": 0
+        },
+        "channels": {
+          "opacity": true,
+          "offsetX": false,
+          "offsetY": true,
+          "scale": true,
+          "rotateX": false,
+          "rotateY": false,
+          "rotateZ": true
+        },
+        "selector": {
+          "unit": "char",
+          "order": "ltr",
+          "start": 0,
+          "end": 1,
+          "amount": 1,
+          "delay": 0.56,
+          "ease": "linear",
+          "seed": 1
+        }
+      },
+      {
+        "id": "c_wipeReveal_1",
+        "type": "wipeReveal",
+        "scope": "text",
+        "enabled": true,
+        "params": {
+          "direction": "ltr",
+          "soft": 0.08,
+          "edgeIntensity": 2.5,
+          "edgeWidth": 0.03,
+          "fillDim": 1,
+          "fillRange": 0.12,
+          "fillPower": 2.5,
+          "blendMode": "normal",
+          "invert": false
+        },
+        "channels": {},
+        "selector": null
+      }
+    ],
+    "tracks": [
+      {
+        "path": "textAnim.c_charIn_1.progress",
+        "keys": [
+          {
+            "t": 0,
+            "v": 0
+          },
+          {
+            "t": 1,
+            "v": 1
+          }
+        ]
+      },
+      {
+        "path": "textAnim.c_wipeReveal_1.progress",
+        "keys": [
+          {
+            "t": 0,
+            "v": 0
+          },
+          {
+            "t": 1,
+            "v": 1
+          }
+        ]
+      }
+    ]
+  },
+  "stickers": [
+    {
+      "id": "stk_ufydx0g5",
+      "name": "贴纸 1",
+      "enabled": true,
+      "sort": 0,
+      "char": "first",
+      "charIndex": 3,
+      "scaleX": 2.7,
+      "scaleY": 2.28,
+      "offsetX": 0,
+      "offsetY": 150,
+      "rotation": 0,
+      "followCharAnim": true,
+      "layer": "front",
+      "material": "material",
+      "materialUuid": "c3e65843-a36b-463d-826f-a5985538c64c",
+      "texturePath": "",
+      "textureFileName": "cover_icon.png",
+      "opacity": 1,
+      "color": "#ffffff",
+      "texturePackPath": "media/f808075c_final.gif",
+      "rtTargetUuid": "886193d5-2dbe-43f9-b94f-db6e007ccd7c"
+    },
+    {
+      "id": "stk_6vw836dq",
+      "name": "贴纸 2",
+      "enabled": true,
+      "sort": 1,
+      "char": "all",
+      "charIndex": 0,
+      "scaleX": 3,
+      "scaleY": 8,
+      "offsetX": 0,
+      "offsetY": 54.6,
+      "rotation": 0,
+      "followCharAnim": true,
+      "layer": "behind",
+      "material": "material",
+      "materialUuid": "404ade74-77b0-40d1-892e-a53ca3776aa7",
+      "texturePath": "",
+      "textureFileName": "",
+      "opacity": 1,
+      "color": "#ff66aa",
+      "texturePackPath": "sequences/886aed6f_seq/",
+      "rtTargetUuid": "9cd05935-11c7-45e9-afec-cf81438c530f"
+    }
+  ],
+  "mediaPlayers": [
+    {
+      "uuid": "afd61d71-aa75-4232-883e-972933bc6ed0",
+      "name": "VideoPlayer",
+      "kind": "video",
+      "path": "videos/afd61d71_minimaxh3_director_00074_.mp4",
+      "targetUuid": "b4876dba-3791-4cba-a543-ae1895b6747a",
+      "fileName": "MiniMaxH3_Director_00074_.mp4",
+      "loop": false,
+      "muted": false,
+      "volume": 1,
+      "playbackRate": 1,
+      "sequenceFps": 30,
+      "sequenceStart": 0,
+      "sequenceEnd": -1
+    },
+    {
+      "uuid": "f808075c-e4b9-456e-9f3f-fa761abf0a16",
+      "name": "GIFPlayer",
+      "kind": "gif",
+      "path": "media/f808075c_final.gif",
+      "targetUuid": "886193d5-2dbe-43f9-b94f-db6e007ccd7c",
+      "fileName": "final.gif",
+      "loop": true,
+      "muted": false,
+      "volume": 1,
+      "playbackRate": 2,
+      "sequenceFps": 30,
+      "sequenceStart": 0,
+      "sequenceEnd": -1
+    },
+    {
+      "uuid": "886aed6f-2469-4fb6-a93c-be91df43375e",
+      "name": "SeqPlayer",
+      "kind": "imageSequence",
+      "path": "sequences/886aed6f_seq/",
+      "targetUuid": "9cd05935-11c7-45e9-afec-cf81438c530f",
+      "fileName": "sucai02 (50 frames)",
+      "loop": true,
+      "muted": false,
+      "volume": 1,
+      "playbackRate": 1,
+      "sequenceFps": 30,
+      "sequenceStart": 0,
+      "sequenceEnd": -1,
+      "sequenceDir": "sequences/886aed6f_seq/",
+      "frameNames": [
+        "sucai02_00000.png",
+        "sucai02_00001.png",
+        "sucai02_00002.png",
+        "sucai02_00003.png",
+        "sucai02_00004.png",
+        "sucai02_00005.png",
+        "sucai02_00006.png",
+        "sucai02_00007.png",
+        "sucai02_00008.png",
+        "sucai02_00009.png",
+        "sucai02_00010.png",
+        "sucai02_00011.png",
+        "sucai02_00012.png",
+        "sucai02_00013.png",
+        "sucai02_00014.png",
+        "sucai02_00015.png",
+        "sucai02_00016.png",
+        "sucai02_00017.png",
+        "sucai02_00018.png",
+        "sucai02_00019.png",
+        "sucai02_00020.png",
+        "sucai02_00021.png",
+        "sucai02_00022.png",
+        "sucai02_00023.png",
+        "sucai02_00024.png",
+        "sucai02_00025.png",
+        "sucai02_00026.png",
+        "sucai02_00027.png",
+        "sucai02_00028.png",
+        "sucai02_00029.png",
+        "sucai02_00030.png",
+        "sucai02_00031.png",
+        "sucai02_00032.png",
+        "sucai02_00033.png",
+        "sucai02_00034.png",
+        "sucai02_00035.png",
+        "sucai02_00036.png",
+        "sucai02_00037.png",
+        "sucai02_00038.png",
+        "sucai02_00039.png",
+        "sucai02_00040.png",
+        "sucai02_00041.png",
+        "sucai02_00042.png",
+        "sucai02_00043.png",
+        "sucai02_00044.png",
+        "sucai02_00045.png",
+        "sucai02_00046.png",
+        "sucai02_00047.png",
+        "sucai02_00048.png",
+        "sucai02_00049.png"
+      ]
+    }
+  ],
+  "mediaAssets": [
+    "videos/afd61d71_minimaxh3_director_00074_.mp4",
+    "media/f808075c_final.gif",
+    "sequences/886aed6f_seq/"
+  ],
+  "postProcess": {
+    "enabled": true,
+    "effects": [
+      {
+        "id": "3c99ef3a-df43-47ae-b6e8-f505db4cdc26",
+        "type": "bloom",
+        "enabled": true,
+        "params": {
+          "strength": 0,
+          "radius": 0.01,
+          "threshold": 0.9
+        },
+        "exposed": {}
+      }
+    ]
+  },
+  "textFxStack": {
+    "enabled": false,
+    "effects": [],
+    "_bloomThresholdMigrated": true
+  }
+}

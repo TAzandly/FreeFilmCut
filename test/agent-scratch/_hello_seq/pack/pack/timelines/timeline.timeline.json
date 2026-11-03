@@ -1,0 +1,103 @@
+{
+  "format": "freecapcut-timeline/1",
+  "name": "Timeline",
+  "fps": 30,
+  "duration": 1,
+  "loop": "clamp",
+  "tracks": [
+    {
+      "id": "bc9a37b3-6b17-4fab-bcc0-c49f8313af0f",
+      "type": "animation",
+      "name": "Animation",
+      "muted": false,
+      "bindingUuid": "5814ad6b-0d3d-42d2-a4a6-893311e262c8",
+      "clips": [
+        {
+          "id": "b3234b57-bcee-43c7-8f96-83d7c6381748",
+          "start": 0,
+          "duration": 1,
+          "animId": "Animation",
+          "animPath": "",
+          "clipLocalOffset": 0,
+          "loop": false
+        }
+      ]
+    },
+    {
+      "id": "d6027bab-e7d0-4e82-a5c5-2f3714ac86df",
+      "type": "animation",
+      "name": "Animation",
+      "muted": false,
+      "bindingUuid": "4ad321e7-41d3-4683-b508-b4f141779f0f",
+      "clips": [
+        {
+          "id": "ded458e5-b881-4ecd-b2af-fa696a6a3ea9",
+          "start": 0,
+          "duration": 1,
+          "animId": "PerspectiveCamera",
+          "animPath": "",
+          "clipLocalOffset": 0,
+          "loop": false
+        }
+      ]
+    },
+    {
+      "id": "d0b7dce9-08dd-4e37-87a6-3d414a58df51",
+      "type": "video",
+      "name": "Video",
+      "muted": false,
+      "bindingUuid": "afd61d71-aa75-4232-883e-972933bc6ed0",
+      "videoPlayerUuid": "afd61d71-aa75-4232-883e-972933bc6ed0",
+      "clips": [
+        {
+          "id": "d1e85954-4742-4d87-8f9a-9fe87fa8ffc5",
+          "start": 0,
+          "duration": 10.125,
+          "mediaOffset": 0,
+          "loop": false
+        }
+      ]
+    },
+    {
+      "id": "7240c795-6a05-475a-b52e-c270921a7850",
+      "type": "video",
+      "name": "Video",
+      "muted": false,
+      "bindingUuid": "f808075c-e4b9-456e-9f3f-fa761abf0a16",
+      "videoPlayerUuid": "f808075c-e4b9-456e-9f3f-fa761abf0a16",
+      "clips": [
+        {
+          "id": "16b0bb13-04a6-4d66-9d03-9248ac4a9e52",
+          "start": 1,
+          "duration": 0.4,
+          "mediaOffset": 0,
+          "loop": false
+        },
+        {
+          "id": "3e902368-a017-4728-a35e-842d7e66253c",
+          "start": 0,
+          "duration": 1,
+          "mediaOffset": 0,
+          "loop": false
+        }
+      ]
+    },
+    {
+      "id": "3e031c40-4cdb-41dd-a17d-5e40b2f8d2b6",
+      "type": "video",
+      "name": "Video",
+      "muted": false,
+      "bindingUuid": "886aed6f-2469-4fb6-a93c-be91df43375e",
+      "videoPlayerUuid": "886aed6f-2469-4fb6-a93c-be91df43375e",
+      "clips": [
+        {
+          "id": "d0b3e674-6ce2-4ffd-b326-ffb2c1bfa80f",
+          "start": 0,
+          "duration": 1.6666666666666667,
+          "mediaOffset": 0,
+          "loop": false
+        }
+      ]
+    }
+  ]
+}

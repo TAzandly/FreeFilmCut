@@ -1,0 +1,26 @@
+[dependency]
+1\panel=default
+1\id=6895935137255558413
+1\platform=1
+1\path=C:/Users/pc/AppData/Local/JianyingPro/User Data/Cache/artistEffect/6895935137255558413/f45ee709284a528fd5fc4ff58d4d4280
+2\panel=sticker
+2\id=7426689558625930511
+2\platform=1
+2\path=C:/Users/pc/AppData/Local/JianyingPro/User Data/Cache/effect/7426689558625930511/099e15aa3f318f66da1ba940bdb63066
+3\panel=fonts
+3\id=7312718329347576347
+3\platform=2
+3\path=C:/Users/pc/AppData/Local/JianyingPro/User Data/Cache/effect/34549523/ce70e138b40294d5f159ddbdfd2f5e23
+4\panel=text
+4\id=7123116334677758501
+4\platform=1
+4\path=C:/Users/pc/AppData/Local/JianyingPro/User Data/Cache/effect/7123116334677758501/28d9145ead32c23742082a37e511370e
+5\panel=text
+5\id=7210283971316290085
+5\platform=1
+5\path=C:/Users/pc/AppData/Local/JianyingPro/User Data/Cache/effect/7210283971316290085/3c2c6a7f6b8b102e9ae5f918600f83c0
+6\panel=flower
+6\id=7500535155023596824
+6\platform=1
+6\path=C:/Users/pc/AppData/Local/JianyingPro/User Data/Cache/artistEffect/7500535155023596824/1eb5e0fc13e9a4cb8eed46df3fde8061
+size=6

@@ -1,0 +1,146 @@
+{
+  "format": "freecapcut.anim/2",
+  "name": "Plane",
+  "fps": 30,
+  "duration": 1,
+  "loop": "loop",
+  "targets": [
+    {
+      "objectUuid": "fccd07ad-a889-475c-bc06-34b2aae608a1",
+      "tracks": [
+        {
+          "path": "position.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "position.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "position.z",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": -1.9453316337838618
+            }
+          ]
+        },
+        {
+          "path": "rotation.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "rotation.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "rotation.z",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "scale.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1
+            }
+          ]
+        },
+        {
+          "path": "scale.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1
+            }
+          ]
+        },
+        {
+          "path": "scale.z",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1
+            }
+          ]
+        },
+        {
+          "path": "material.9dccc873-8a5c-45ec-b4ef-26c7c6657a84.uniforms.color2.r",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 0.9910714285714286,
+              "v": 1
+            }
+          ]
+        },
+        {
+          "path": "material.9dccc873-8a5c-45ec-b4ef-26c7c6657a84.uniforms.color2.g",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 0.9910714285714286,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "material.9dccc873-8a5c-45ec-b4ef-26c7c6657a84.uniforms.color2.b",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1
+            },
+            {
+              "t": 0.9910714285714286,
+              "v": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

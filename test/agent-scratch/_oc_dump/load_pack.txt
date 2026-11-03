@@ -1,0 +1,134 @@
+1|import { unzipSync } from "fflate";
+2|import type {
+3|	LoadedVfxPack,
+4|	VfxManifest,
+5|	VfxSceneFile,
+6|} from "@/vfxpack/types";
+7|import { normalizeVfxPackType } from "@/vfxpack/pack-placement";
+8|
+9|function defaultScopeForType(type: string): string {
+10|	if (type === "filter" || type === "effect") return "below";
+11|	return "stack";
+12|}
+13|
+14|function normalizeZipPath(path: string): string {
+15|	return path.replace(/\\/g, "/").replace(/^\.\//, "");
+16|}
+17|
+18|function stripPackPrefix(path: string): string {
+19|	const normalized = normalizeZipPath(path);
+20|	if (normalized === "pack" || normalized.startsWith("pack/")) {
+21|		return normalized.slice("pack/".length);
+22|	}
+23|	return normalized;
+24|}
+25|
+26|function decodeText(bytes: Uint8Array): string {
+27|	return new TextDecoder("utf-8").decode(bytes);
+28|}
+29|
+30|function findManifestPath(keys: string[]): string | null {
+31|	const exact = keys.find(
+32|		(k) => k === "manifest.json" || k.endsWith("/manifest.json"),
+33|	);
+34|	return exact ?? null;
+35|}
+36|
+37|/**
+38| * Load a `.vfxpack` (zip) File into memory.
+39| * Accepts either `pack/manifest.json` layout or flat `manifest.json`.
+40| */
+41|export async function loadVfxPackFromFile({
+42|	file,
+43|}: {
+44|	file: File;
+45|}): Promise<LoadedVfxPack> {
+46|	const buffer = new Uint8Array(await file.arrayBuffer());
+47|	let unzipped: Record<string, Uint8Array>;
+48|	try {
+49|		unzipped = unzipSync(buffer);
+50|	} catch (error) {
+51|		throw new Error(
+52|			`Failed to unzip vfxpack (is it a zip?): ${
+53|				error instanceof Error ? error.message : String(error)
+54|			}`,
+55|		);
+56|	}
+57|
+58|	const files = new Map<string, Uint8Array>();
+59|	for (const [rawPath, bytes] of Object.entries(unzipped)) {
+60|		const rel = stripPackPrefix(rawPath);
+61|		if (!rel || rel.endsWith("/")) continue;
+62|		files.set(rel, bytes);
+63|	}
+64|
+65|	const manifestKey =
+66|		findManifestPath([...files.keys()]) ??
+67|		([...files.keys()].find((k) => k.endsWith("manifest.json")) ?? null);
+68|	if (!manifestKey) {
+69|		throw new Error("vfxpack missing manifest.json");
+70|	}
+71|
+72|	const manifest = JSON.parse(
+73|		decodeText(files.get(manifestKey)!),
+74|	) as VfxManifest;
+75|	if (!manifest?.id) {
+76|		throw new Error("vfxpack manifest missing id");
+77|	}
+78|
+79|	const sceneRel =
+80|		manifest.entry?.scene ??
+81|		manifest.assets?.scene ??
+82|		(files.has("scene.json") ? "scene.json" : null);
+83|
+84|	let scene: VfxSceneFile | null = null;
+85|	if (sceneRel && files.has(sceneRel)) {
+86|		scene = JSON.parse(decodeText(files.get(sceneRel)!)) as VfxSceneFile;
+87|	}
+88|
+89|	const objectUrls = new Map<string, string>();
+90|	for (const [path, bytes] of files) {
+91|		const lower = path.toLowerCase();
+92|		const isImage = /\.(png|jpe?g|webp|gif|bmp)$/i.test(lower);
+93|		const isShader =
+94|			/\.(glsl|vert|frag|vs|fs)$/i.test(lower) ||
+95|			lower.includes(".vert.") ||
+96|			lower.includes(".frag.");
+97|		if (!isImage && !isShader) continue;
+98|		const copy = bytes.slice();
+99|		const blob = new Blob([copy], {
+100|			type: isImage ? guessImageMime(path) : "text/plain",
+101|		});
+102|		objectUrls.set(path, URL.createObjectURL(blob));
+103|	}
+104|
+105|	const type = normalizeVfxPackType(manifest.type);
+106|
+107|	return {
+108|		id: manifest.id,
+109|		displayName: manifest.displayName || manifest.id,
+110|		type,
+111|		scope: String(manifest.scope || defaultScopeForType(type)),
+112|		manifest,
+113|		scene,
+114|		files,
+115|		objectUrls,
+116|		sourceFileName: file.name,
+117|	};
+118|}
+119|
+120|function guessImageMime(path: string): string {
+121|	const lower = path.toLowerCase();
+122|	if (lower.endsWith(".png")) return "image/png";
+123|	if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+124|	if (lower.endsWith(".webp")) return "image/webp";
+125|	if (lower.endsWith(".gif")) return "image/gif";
+126|	return "application/octet-stream";
+127|}
+128|
+129|export function revokePackObjectUrls({ pack }: { pack: LoadedVfxPack }) {
+130|	for (const url of pack.objectUrls.values()) {
+131|		URL.revokeObjectURL(url);
+132|	}
+133|	pack.objectUrls.clear();
+134|}

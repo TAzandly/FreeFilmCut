@@ -1,0 +1,81 @@
+200|		renderer.autoClear = true;
+201|		renderer.clear();
+202|
+203|		this.clearLayerMeshes();
+204|
+205|		const framePackIds = new Set<string>();
+206|		let z = 0;
+207|		let didDraw = false;
+208|		let layersBelow = 0;
+209|
+210|		/** Composite one media layer onto accum (bottom → top), so uInput sees full stack. */
+211|		const compositeOneLayer = (
+212|			item: Extract<FrameItemDescriptor, { type: "layer" }>,
+213|		) => {
+214|			this.clearLayerMeshes();
+215|			this.addLayerMesh(item, z);
+216|			z += 1;
+217|			if (this.layerMeshes.length === 0) return;
+218|			renderer.setRenderTarget(accumRT);
+219|			renderer.autoClear = false;
+220|			renderer.render(scene, camera);
+221|			didDraw = true;
+222|			layersBelow += 1;
+223|			this.clearLayerMeshes();
+224|		};
+225|
+226|		for (const item of frame.items) {
+227|			if (item.type === "sceneEffect") {
+228|				const packId = parseVfxPackIdFromEffectType({
+229|					effectType: item.effectType,
+230|				});
+231|				if (packId) {
+232|					framePackIds.add(packId);
+233|					// accum holds the FULL blend of every layer below this pack
+234|					this.renderOnePack({
+235|						packId,
+236|						width: frame.width,
+237|						height: frame.height,
+238|						clearFirst: !didDraw,
+239|						target: accumRT,
+240|						layersBelowCount: layersBelow,
+241|						liveParams: item.effectParams,
+242|						clipLocalTime: item.clipLocalTime ?? 0,
+243|					});
+244|					didDraw = true;
+245|					renderer.autoClear = false;
+246|					// Pack result becomes part of the stack for anything above
+247|					layersBelow += 1;
+248|					continue;
+249|				}
+250|				// Built-in scene effects (blur etc.): still no-op in Three MVP.
+251|				continue;
+252|			}
+253|
+254|			compositeOneLayer(item);
+255|		}
+256|		if (!didDraw) {
+257|			renderer.setRenderTarget(accumRT);
+258|			renderer.clear();
+259|		}
+260|
+261|		this.lastFramePackIds = framePackIds;
+262|		this.syncPackScenes();
+263|
+264|		// Optional force-overlay peek (packs toggled On in Effects panel).
+265|		this.renderForcedOverlays({
+266|			width: frame.width,
+267|			height: frame.height,
+268|			skipIds: framePackIds,
+269|			target: accumRT,
+270|		});
+271|
+272|		// Present accum 鈫?canvas
+273|		this.presentAccum();
+274|
+275|		if (isRenderPerfEnabled()) {
+276|			incrementCounter({ name: "threeBlitFrames" });
+277|		}
+278|	}
+279|
+280|	private presentAccum() {

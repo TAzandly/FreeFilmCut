@@ -1,0 +1,80 @@
+1|import * as THREE from "three";
+2|import type { LoadedVfxPack, VfxSceneNode } from "@/vfxpack/types";
+3|import {
+4|	ensureBelowInputUniforms,
+5|	isBelowInputUniformName,
+6|	packNeedsBelowInput,
+7|	type BelowInputUniformName,
+8|} from "@/vfxpack/below-input";
+9|import { ensureGlobalScreenUniforms } from "@/vfxpack/global-screen-params";
+10|import {
+11|	normalizeExposedParams,
+12|	type ExposedParam,
+13|} from "@/vfxpack/exposed-params";
+14|import type { PostProcessStackData } from "@/vfxpack/postprocess";
+15|import {
+16|	normalizeAnim,
+17|	type FreecapcutAnimClip,
+18|} from "@/vfxpack/freecapcut-anim";
+19|
+20|export type BuiltPackScene = {
+21|	packId: string;
+22|	/** Normalized / raw pack type from manifest (filter, effect, ...). */
+23|	packType: string;
+24|	/** Compose scope (below | stack | clip). */
+25|	packScope: string;
+26|	/** True when NLE should bind below-track composite to uInput etc. */
+27|	needsBelowInput: boolean;
+28|	/** Sampler names found on shaders that accept below input. */
+29|	belowInputUniformNames: BelowInputUniformName[];
+30|	root: THREE.Scene;
+31|	camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
+32|	disposables: Array<{ dispose: () => void }>;
+33|	render?: {
+34|		toneMapping?: number;
+35|		toneMappingExposure?: number;
+36|		shadows?: boolean;
+37|		shadowType?: number;
+38|		antialias?: boolean;
+39|	};
+40|	/** Camera post-process stack from Editor export. */
+41|	postProcess?: PostProcessStackData | null;
+42|	/** Materials keyed by exported uuid (for exposed uniform overrides). */
+43|	materialsByUuid: Map<string, THREE.Material>;
+44|	/** Params exposed to OpenCut properties / keyframes. */
+45|	exposedParams: ExposedParam[];
+46|	/** FreeFilmCut .anim clips packed with this scene (sampled by clip local time). */
+47|	animClips: FreecapcutAnimClip[];
+48|};
+49|
+50|/**
+51| * Build a Three.js scene from vfxpack scene.json (MVP subset):
+52| * Scene / Mesh (BoxGeometry + map) / PerspectiveCamera + default lights.
+53| */
+54|export async function buildPackScene({
+55|	pack,
+56|}: {
+57|	pack: LoadedVfxPack;
+58|}): Promise<BuiltPackScene | null> {
+59|	if (!pack.scene) return null;
+60|
+61|	const sceneFile = pack.scene;
+62|	const root = new THREE.Scene();
+63|	root.name = sceneFile.name || pack.displayName;
+64|
+65|	const disposables: Array<{ dispose: () => void }> = [];
+66|	const textureCache = new Map<string, THREE.Texture>();
+67|	const belowInputUniformNames = new Set<BelowInputUniformName>();
+68|	const materialsByUuid = new Map<string, THREE.Material>();
+69|	let postProcess: PostProcessStackData | null = null;
+70|	const needsBelow = packNeedsBelowInput({ type: pack.type, scope: pack.scope });
+71|
+72|	const loadTexture = async (relPath: string): Promise<THREE.Texture | null> => {
+73|		const url = pack.objectUrls.get(relPath);
+74|		if (!url) return null;
+75|		if (textureCache.has(relPath)) return textureCache.get(relPath)!;
+76|
+77|		const texture = await new Promise<THREE.Texture>((resolve, reject) => {
+78|			const loader = new THREE.TextureLoader();
+79|			loader.load(
+80|				url,

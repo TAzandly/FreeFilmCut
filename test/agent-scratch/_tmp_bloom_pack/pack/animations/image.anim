@@ -1,0 +1,140 @@
+{
+  "format": "freecapcut.anim/2",
+  "name": "Image",
+  "fps": 30,
+  "duration": 1,
+  "loop": "clamp",
+  "targets": [
+    {
+      "objectUuid": "17c541ae-a885-4845-b0ed-270380e929eb",
+      "tracks": [
+        {
+          "path": "position.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 540
+            },
+            {
+              "t": 0.9803571428571428,
+              "v": 540
+            }
+          ]
+        },
+        {
+          "path": "position.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 960
+            },
+            {
+              "t": 0.9803571428571428,
+              "v": 960
+            }
+          ]
+        },
+        {
+          "path": "position.z",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 0.9803571428571428,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "rotation.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 0.9803571428571428,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "rotation.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0.8779006137531478
+            },
+            {
+              "t": 0.9803571428571428,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "rotation.z",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 0.9803571428571428,
+              "v": 1.5707963267948966
+            }
+          ]
+        },
+        {
+          "path": "scale.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1
+            },
+            {
+              "t": 0.9803571428571428,
+              "v": 1
+            }
+          ]
+        },
+        {
+          "path": "scale.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1
+            },
+            {
+              "t": 0.9803571428571428,
+              "v": 1
+            }
+          ]
+        },
+        {
+          "path": "scale.z",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1
+            },
+            {
+              "t": 0.9803571428571428,
+              "v": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

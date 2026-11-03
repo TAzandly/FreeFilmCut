@@ -1,0 +1,10 @@
+FreeFilmCut 文字动画包 (text-anim)
+
+1. 将本 .vfxpack 放到剪辑端目录：
+   freefilmcut/apps/web/public/vfxpacks/text-anims/入场/
+2. 在同目录 index.json 数组里加入文件名（如 "freecapcut.text-anim.sweep.vfxpack"）。
+3. 硬刷新 OpenCut → 选中文字 clip → Animation → In/入场
+
+phase/category = in → 文件夹 入场
+含 postProcess（相机 Bloom/DeepGlow 等快照）；不含花字 flowerStyle。
+可选：在 pack/preview/ 放 poster.png / hover.gif。

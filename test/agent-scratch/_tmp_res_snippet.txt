@@ -1,0 +1,53 @@
+materialsAssign = new UIButton( strings.getKey( 'sidebar/project/Assign' ) );
+	materialsAssign.setMarginRight( '4px' );
+	materialsTab.add( materialsAssign );
+
+	const materialsNew = new UIButton( strings.getKey( 'sidebar/project/NewMaterial' ) );
+	materialsNew.setMarginRight( '4px' );
+	materialsTab.add( materialsNew );
+
+	const materialsNewShader = new UIButton( strings.getKey( 'sidebar/project/NewShader' ) );
+	materialsTab.add( materialsNewShader );
+
+	const materialsInfo = new UIText();
+	materialsInfo.dom.style.float = 'right';
+	materialsTab.add( materialsInfo );
+
+	function assignCreatedMaterial( material ) {
+
+		const selectedObject = editor.selected;
+
+		if ( selectedObject === null || selectedObject.material === undefined ) {
+
+			editor.addMaterial( material );
+			refreshMaterialsUI();
+			return;
+
+		}
+
+		const slot = editor.selectedMaterialSlot || 0;
+		const oldMaterial = editor.getObjectMaterial( selectedObject, slot );
+
+		if ( oldMaterial ) editor.removeMaterial( oldMaterial );
+
+		editor.execute( new SetMaterialCommand( editor, selectedObject, material, slot ) );
+		editor.addMaterial( material );
+		refreshMaterialsUI();
+
+	}
+
+	materialsNew.onClick( function () {
+
+		const material = new THREE.MeshStandardMaterial( { color: 0x808080 } );
+		material.name = 'Standard';
+		assignCreatedMaterial( material );
+
+	} );
+
+	materialsNewShader.onClick( function () {
+
+		const selectedObject = editor.selected;
+		const previous = ( selectedObject && selectedObject.material !== undefined )
+			? editor.getObjectMaterial( selectedObject, editor.selectedMaterialSlot || 0 )
+			: null;
+		const ma

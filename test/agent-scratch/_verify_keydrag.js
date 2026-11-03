@@ -1,0 +1,11 @@
+const fs = require('fs');
+const anim = fs.readFileSync('D:/GrokbotWork/FreeFilmCut/three.js/editor/js/Animation.js','utf8');
+const i = anim.indexOf('never rebuildTracks');
+console.log('comment', JSON.stringify(anim.slice(i, i+100)));
+const j = anim.indexOf('keyObj.ease ?');
+console.log('title', JSON.stringify(anim.slice(j, j+90)));
+const html = fs.readFileSync('D:/GrokbotWork/FreeFilmCut/three.js/editor/index.html','utf8');
+console.log('imports', html.match(/(Editor|Viewport|Animation)\.js\?v=[^'"]+/g));
+const rt = fs.readFileSync('D:/GrokbotWork/FreeFilmCut/three.js/editor/js/ui/TextAnimRuntime.js','utf8');
+console.log('wipeLogs', (rt.match(/\[FreeFilmCut wipe\]/g)||[]).length);
+console.log('hasRebuildInMove', /function moveDraggedKey[\s\S]*?rebuildTracks\(\);[\s\S]*?function isKeySelected/.test(anim));

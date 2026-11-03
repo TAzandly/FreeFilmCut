@@ -1,0 +1,183 @@
+{
+  "schema": "vfxpack-scene/1.2",
+  "name": "Slide Left",
+  "background": {
+    "type": "None",
+    "value": null
+  },
+  "environment": {
+    "type": "None"
+  },
+  "fog": null,
+  "render": {
+    "rendererType": "WebGLRenderer",
+    "cameraType": "perspective",
+    "antialias": false,
+    "shadows": false,
+    "shadowType": 0,
+    "toneMapping": 0,
+    "toneMappingName": "NoToneMapping",
+    "toneMappingExposure": 1
+  },
+  "activeCamera": "c2222222-2222-4222-8222-222222222222",
+  "resolution": {
+    "width": 1920,
+    "height": 1080
+  },
+  "assets": {
+    "shaders": [
+      {
+        "name": "ClipSlide",
+        "vertex": "shaders/slide.vert.glsl",
+        "fragment": "shaders/slide.frag.glsl",
+        "raw": false
+      }
+    ],
+    "animations": [
+      "animations/slide.anim"
+    ]
+  },
+  "nodes": [
+    {
+      "uuid": "c1111111-1111-4111-8111-111111111111",
+      "name": "Scene",
+      "kind": "scene",
+      "type": "Scene",
+      "visible": true,
+      "parent": null,
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "uuid": "c2222222-2222-4222-8222-222222222222",
+      "name": "Camera",
+      "kind": "camera",
+      "type": "PerspectiveCamera",
+      "visible": true,
+      "parent": null,
+      "fov": 50,
+      "aspect": 1.7777777777777777,
+      "near": 0.1,
+      "far": 100,
+      "zoom": 1,
+      "transform": {
+        "position": [
+          0,
+          0,
+          2
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "uuid": "c3333333-3333-4333-8333-333333333333",
+      "name": "SlideQuad",
+      "kind": "mesh",
+      "type": "Mesh",
+      "visible": true,
+      "parent": null,
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "geometry": {
+        "uuid": "c5555555-5555-4555-8555-555555555555",
+        "name": "SlideQuad",
+        "type": "PlaneGeometry",
+        "parameters": {
+          "width": 32,
+          "height": 32,
+          "widthSegments": 1,
+          "heightSegments": 1
+        }
+      },
+      "materials": [
+        {
+          "uuid": "c4444444-4444-4444-8444-444444444444",
+          "name": "ClipSlide",
+          "type": "ShaderMaterial",
+          "transparent": true,
+          "opacity": 1,
+          "side": 2,
+          "depthWrite": false,
+          "depthTest": false,
+          "color": "#ffffff",
+          "textures": {},
+          "uniforms": {
+            "uInput": {
+              "type": "t",
+              "value": null,
+              "binding": "accumBelow"
+            },
+            "uSlideX": 0,
+            "uSlideY": 0
+          },
+          "shader": {
+            "vertex": "shaders/slide.vert.glsl",
+            "fragment": "shaders/slide.frag.glsl",
+            "raw": false
+          }
+        }
+      ]
+    }
+  ],
+  "exposedParams": [],
+  "meta": {
+    "duration": 0.5
+  }
+}

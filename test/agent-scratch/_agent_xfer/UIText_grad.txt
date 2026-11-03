@@ -1,0 +1,342 @@
+	troika.maxWidth = rect && rect.w > 0 ? rect.w : ( ui.sizeDelta && ui.sizeDelta[ 0 ] ) || 400;
+	troika.overflowWrap = 'break-word';
+	troika.frustumCulled = false;
+	troika.text = ui.text != null ? String( ui.text ) : '';
+
+}
+
+/**
+ * Apply fccUI text fields + layout rect onto a Troika Text instance.
+ * Legacy fill/shadow roles kept for callers; flower path uses applyFlowerPass.
+ * @param {import('troika-three-text').Text} troika
+ * @param {object} ui
+ * @param {{w:number,h:number}|null} rect
+ * @param {'fill'|'shadow'} role
+ */
+export function applyTroikaFromUI( troika, ui, rect, role = 'fill' ) {
+
+	baseLayoutOnTroika( troika, ui, rect );
+	troika.depthOffset = role === 'shadow' ? 0.1 : 0;
+
+	if ( role === 'shadow' ) {
+
+		const sh = ui.shadow || {};
+		troika.color = colorToTroika( sh.color || '#000000' );
+		troika.fillOpacity = sh.opacity != null ? Number( sh.opacity ) : 0.75;
+		troika.outlineWidth = 0;
+		troika.outlineOpacity = 0;
+		troika.outlineBlur = Math.max( 0, Number( sh.blur ) || 0 );
+		troika.outlineOffsetX = 0;
+		troika.outlineOffsetY = 0;
+		const ox = Number( sh.offsetX ) || 0;
+		const oy = Number( sh.offsetY ) || 0;
+		troika.position.set( ox, oy, - 0.01 );
+
+	} else {
+
+		troika.color = colorToTroika( ui.color || '#ffffff' );
+		troika.fillOpacity = 1;
+		troika.position.set( 0, 0, 0 );
+
+		const ol = ui.outline || {};
+		if ( ol.enabled ) {
+
+			const px = Math.max( 0, Number( ol.width ) || 0 );
+			troika.outlineWidth = px;
+			troika.outlineColor = colorToTroika( ol.color || '#000000' );
+			troika.outlineOpacity = ol.opacity != null ? Number( ol.opacity ) : 1;
+			troika.outlineBlur = 0;
+			troika.outlineOffsetX = 0;
+			troika.outlineOffsetY = 0;
+
+		} else {
+
+			troika.outlineWidth = 0;
+			troika.outlineOpacity = 0;
+			troika.outlineBlur = 0;
+
+		}
+
+	}
+
+}
+
+function tuneMaterial( troika, mode ) {
+
+	const mats = troika.material
+		? ( Array.isArray( troika.material ) ? troika.material : [ troika.material ] )
+		: [];
+	for ( const m of mats ) {
+
+		if ( ! m ) continue;
+		m.depthTest = mode === RENDER_MODE_CAMERA;
+		m.depthWrite = false;
+		m.toneMapped = false;
+		m.transparent = true;
+
+	}
+
+}
+
+function makeTroika( name ) {
+
+	const t = new Text();
+	t.name = name;
+	t.frustumCulled = false;
+	t.castShadow = false;
+	t.receiveShadow = false;
+	return t;
+
+}
+
+function disposeFlowerChildren( group ) {
+
+	const toRemove = [];
+	for ( let i = 0; i < group.children.length; i ++ ) {
+
+		const c = group.children[ i ];
+		if ( ! c || ! c.name ) continue;
+		if ( c.name === FCC_TEXT_MESH || c.name === FCC_TEXT_SHADOW
+			|| c.name.indexOf( FCC_FLOWER_PREFIX ) === 0 ) {
+
+			toRemove.push( c );
+
+		}
+
+	}
+
+	for ( const child of toRemove ) {
+
+		group.remove( child );
+		try {
+
+			if ( typeof child.dispose === 'function' ) child.dispose();
+
+		} catch ( e ) { /* ignore */ }
+
+	}
+
+}
+
+/**
+ * Face material when Troika returns [outline, face] multi-material.
+ */
+function resolveTroikaFaceMaterial( troika ) {
+
+	const m = troika.material;
+	if ( Array.isArray( m ) ) return m.length ? m[ m.length - 1 ] : null;
+	return m || null;
+
+}
+
+/**
+ * Leave gradient mode (or recover from a broken double-wrap) so solid/texture stay visible.
+ */
+function clearGradientMaterial( troika, mode ) {
+
+	const face = resolveTroikaFaceMaterial( troika );
+	if ( face && face.userData && face.userData.fccGradientMat ) {
+
+		const u = face.userData.fccGradientUniforms;
+		if ( u && u.uFccGUse ) u.uFccGUse.value = 0;
+		troika.userData = troika.userData || {};
+		troika.userData.fccHadGradient = true;
+		tuneMaterial( troika, mode );
+		return;
+
+	}
+
+	// Broken state: earlier builds assigned a derived mat without isTroikaTextMaterial,
+	// so Troika re-wrapped it and the glyph SDF path died. Reset to a clean base.
+	const had = troika.userData && troika.userData.fccHadGradient;
+	const base = troika._baseMaterial;
+	const baseIsGrad = !!( base && base.userData && base.userData.fccGradientMat );
+	if ( had || baseIsGrad ) {
+
+		troika.material = new THREE.MeshBasicMaterial( {
+			color: 0xffffff,
+			transparent: true,
+			depthWrite: false,
+			toneMapped: false,
+			side: THREE.DoubleSide,
+		} );
+		if ( troika.userData ) troika.userData.fccHadGradient = false;
+
+	}
+
+	tuneMaterial( troika, mode );
+
+}
+
+/**
+ * Patch Troika material for linear gradient fill (uses vUv ~ totalBounds UV).
+ * Must mark derived as isTroikaTextMaterial so Text's setter does not double-wrap.
+ */
+function applyGradientMaterial( troika, content, opacity, mode ) {
+
+	const c = normalizeFillContent( content );
+	const g = c.gradient;
+	const rgbA = hexToRgb01( g.colors[ 0 ] );
+	const rgbB = hexToRgb01( g.colors[ 1 ] );
+
+	troika.color = g.colors[ 0 ];
+	troika.fillOpacity = Number.isFinite( opacity ) ? opacity : 1;
+	troika.userData = troika.userData || {};
+	troika.userData.fccHadGradient = true;
+
+	let baseMat = resolveTroikaFaceMaterial( troika );
+	if ( ! baseMat || ! baseMat.isTroikaTextMaterial ) {
+
+		// Force Troika to build a real text material, then retry once.
+		troika.material = new THREE.MeshBasicMaterial( {
+			color: 0xffffff,
+			transparent: true,
+			depthWrite: false,
+			toneMapped: false,
+			side: THREE.DoubleSide,
+		} );
+		baseMat = resolveTroikaFaceMaterial( troika );
+
+	}
+
+	if ( ! baseMat || ! baseMat.isTroikaTextMaterial ) {
+
+		tuneMaterial( troika, mode );
+		return;
+
+	}
+
+	if ( baseMat.userData && baseMat.userData.fccGradientMat ) {
+
+		const u = baseMat.userData.fccGradientUniforms;
+		if ( u ) {
+
+			u.uFccGA.value.setRGB( rgbA[ 0 ], rgbA[ 1 ], rgbA[ 2 ] );
+			u.uFccGB.value.setRGB( rgbB[ 0 ], rgbB[ 1 ], rgbB[ 2 ] );
+			u.uFccGAngle.value = Number( g.angle ) || 90;
+			u.uFccGStop0.value = Number( g.stops[ 0 ] ) || 0;
+			u.uFccGStop1.value = Number( g.stops[ 1 ] ) || 1;
+			u.uFccGUse.value = 1;
+
+		}
+
+		tuneMaterial( troika, mode );
+		return;
+
+	}
+
+	const uniforms = {
+		uFccGA: { value: new THREE.Color().setRGB( rgbA[ 0 ], rgbA[ 1 ], rgbA[ 2 ] ) },
+		uFccGB: { value: new THREE.Color().setRGB( rgbB[ 0 ], rgbB[ 1 ], rgbB[ 2 ] ) },
+		uFccGAngle: { value: Number( g.angle ) || 90 },
+		uFccGStop0: { value: Number( g.stops[ 0 ] ) || 0 },
+		uFccGStop1: { value: Number( g.stops[ 1 ] ) || 1 },
+		uFccGUse: { value: 1 },
+	};
+
+	let derived;
+	try {
+
+		derived = createDerivedMaterial( baseMat, {
+			chained: true,
+			uniforms,
+			fragmentDefs: `
+uniform vec3 uFccGA;
+uniform vec3 uFccGB;
+uniform float uFccGAngle;
+uniform float uFccGStop0;
+uniform float uFccGStop1;
+uniform float uFccGUse;
+`,
+			fragmentColorTransform: `
+if (uFccGUse > 0.5) {
+  float rad = radians(uFccGAngle);
+  vec2 dir = vec2(cos(rad), sin(rad));
+  vec2 fccUv = vUv;
+  float t = dot(fccUv - vec2(0.5), dir) + 0.5;
+  t = (t - uFccGStop0) / max(uFccGStop1 - uFccGStop0, 1e-5);
+  t = clamp(t, 0.0, 1.0);
+  gl_FragColor.rgb = mix(uFccGA, uFccGB, t);
+}
+`,
+		} );
+
+	} catch ( e ) {
+
+		console.warn( '[FreeFilmCut] gradient material failed, solid fallback', e );
+		clearGradientMaterial( troika, mode );
+		return;
+
+	}
+
+	derived.userData = derived.userData || {};
+	derived.userData.fccGradientMat = true;
+	derived.userData.fccGradientUniforms = uniforms;
+	derived.transparent = true;
+	derived.depthWrite = false;
+	derived.toneMapped = false;
+	derived.depthTest = mode === RENDER_MODE_CAMERA;
+	// Critical: Text.material setter only keeps a custom mat if isTroikaTextMaterial.
+	// Otherwise it treats our derived as a new base and Troika wraps again 鈫?invisible glyphs.
+	Object.defineProperty( derived, 'isTroikaTextMaterial', { value: true } );
+	troika.material = derived;
+	tuneMaterial( troika, mode );
+
+}
+
+function applyContentToTroika( troika, content, layerAlpha, mode ) {
+
+	const c = normalizeFillContent( content );
+	const solidA = c.solid && c.solid.alpha != null ? Number( c.solid.alpha ) : 1;
+	const layerA = layerAlpha != null ? Number( layerAlpha ) : 1;
+	const opacity = Math.max( 0, Math.min( 1,
+		( Number.isFinite( layerA ) ? layerA : 1 ) * ( Number.isFinite( solidA ) ? solidA : 1 ) ) );
+
+	if ( c.renderType === 'gradient' ) {
+
+		applyGradientMaterial( troika, c, opacity, mode );
+		return;
+
+	}
+
+	// solid + texture stub: keep previous solid color, disable/recover gradient mat
+	clearGradientMaterial( troika, mode );
+	troika.color = colorToTroika( contentPrimaryColor( c ) || '#ffffff' );
+	troika.fillOpacity = opacity > 0 ? opacity : 1;
+	if ( c.renderType === 'texture' ) {
+
+		const texA = ( c.texture && c.texture.alpha != null ) ? Number( c.texture.alpha ) : 1;
+		troika.fillOpacity *= Number.isFinite( texA ) ? texA : 1;
+		if ( ! ( troika.fillOpacity > 0 ) ) troika.fillOpacity = 1;
+
+	}
+
+	tuneMaterial( troika, mode );
+
+}
+
+function applyFlowerPass( troika, ui, rect, pass, z, mode ) {
+
+	baseLayoutOnTroika( troika, ui, rect );
+	troika.depthOffset = 0;
+	troika.outlineWidth = 0;
+	troika.outlineOpacity = 0;
+	troika.outlineBlur = 0;
+	troika.outlineOffsetX = 0;
+	troika.outlineOffsetY = 0;
+	troika.position.set( 0, 0, z );
+
+	if ( pass.kind === 'shadow' || pass.kind === 'inner' ) {
+
+		const sh = pass.layer;
+		troika.position.set( Number( sh.offsetX ) || 0, Number( sh.offsetY ) || 0, z );
+		troika.outlineBlur = Math.max( 0, Number( sh.diffuse ) || 0 );
+		troika.outlineWidth = 0;
+		applyContentToTroika( troika, sh.content, sh.alpha, mode );
+		return;
+
+	}
+
+	if ( pass.kind === 'stroke' ) {
+
+

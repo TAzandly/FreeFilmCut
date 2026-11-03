@@ -1,0 +1,42 @@
+{
+  "format": "freecapcut.anim/2",
+  "name": "Animation",
+  "fps": 30,
+  "duration": 1,
+  "loop": "loop",
+  "targets": [
+    {
+      "objectUuid": "5814ad6b-0d3d-42d2-a4a6-893311e262c8",
+      "tracks": [
+        {
+          "path": "textAnim.c_charIn_1.progress",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 1,
+              "v": 1
+            }
+          ]
+        },
+        {
+          "path": "textAnim.c_wipeReveal_1.progress",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 1,
+              "v": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

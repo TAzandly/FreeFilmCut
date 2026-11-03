@@ -1,0 +1,307 @@
+/**
+ * FreeFilmCut UGUI: RectTransform + Canvas render mode + Image helpers.
+ */
+
+import { UIPanel, UIRow, UIText, UINumber, UIButton, UIDiv, UISelect } from './libs/ui.js';
+
+import { SetValueCommand } from './commands/SetValueCommand.js';
+import {
+	isFccUI,
+	isUICanvas,
+	isUIImage,
+	getFccUI,
+	stretchFillRectData,
+	RENDER_MODE_OVERLAY,
+	RENDER_MODE_CAMERA,
+	DEFAULT_PLANE_DISTANCE,
+} from './ui/UIConstants.js?v=fcc-ui-4';
+import { rebindCanvasSubtree } from './ui/UIRectLayout.js?v=fcc-ui-4';
+
+function vec2Field( label, onCommit ) {
+
+	const row = new UIRow();
+	row.add( new UIText( label ).setClass( 'Label' ).setWidth( '90px' ) );
+	const x = new UINumber().setPrecision( 3 ).setWidth( '50px' ).onChange( onCommit );
+	const y = new UINumber().setPrecision( 3 ).setWidth( '50px' ).onChange( onCommit );
+	row.add( x );
+	row.add( y );
+	return { row, x, y };
+
+}
+
+function SidebarObjectUI( editor ) {
+
+	const strings = editor.strings;
+	const signals = editor.signals;
+
+	const container = new UIPanel();
+	container.setBorderTop( '1px solid #444' );
+	container.setMarginTop( '12px' );
+	container.setPaddingTop( '10px' );
+	container.setDisplay( 'none' );
+
+	const title = new UIText(
+		strings.getKey( 'sidebar/object/ui' ) || 'UI / RectTransform'
+	).setFontWeight( 'bold' );
+	container.add( title );
+
+	const typeRow = new UIRow().setMarginTop( '6px' );
+	const typeLabel = new UIText( '' ).setColor( '#aaa' );
+	typeRow.add( new UIText( strings.getKey( 'sidebar/object/ui/type' ) || '类型' ).setClass( 'Label' ) );
+	typeRow.add( typeLabel );
+	container.add( typeRow );
+
+	// —— Canvas render mode (Unity-like) ——
+	const modeRow = new UIRow().setMarginTop( '6px' );
+	modeRow.add( new UIText( strings.getKey( 'sidebar/object/ui/renderMode' ) || '渲染模式' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const modeSelect = new UISelect().setWidth( '150px' ).setOptions( {
+		overlay: strings.getKey( 'sidebar/object/ui/mode/overlay' ) || 'Overlay',
+		camera: strings.getKey( 'sidebar/object/ui/mode/camera' ) || 'Screen Space-Camera',
+	} ).onChange( function () {
+
+		const object = editor.selected;
+		if ( ! isUICanvas( object ) ) return;
+		const ui = { ...getFccUI( object ) };
+		ui.renderMode = modeSelect.getValue() === RENDER_MODE_CAMERA
+			? RENDER_MODE_CAMERA
+			: RENDER_MODE_OVERLAY;
+		if ( ui.planeDistance === undefined || ui.planeDistance === null ) {
+
+			ui.planeDistance = DEFAULT_PLANE_DISTANCE;
+
+		}
+
+		const next = { ...object.userData, fccUI: ui };
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		rebindCanvasSubtree( object );
+		updateModeRows( object );
+		signals.sceneGraphChanged.dispatch();
+
+	} );
+	modeRow.add( modeSelect );
+	container.add( modeRow );
+
+	const camRow = new UIRow();
+	camRow.add( new UIText( strings.getKey( 'sidebar/object/ui/camera' ) || '目标相机' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const camSelect = new UISelect().setWidth( '150px' ).onChange( function () {
+
+		const object = editor.selected;
+		if ( ! isUICanvas( object ) ) return;
+		const ui = { ...getFccUI( object ) };
+		const v = camSelect.getValue();
+		ui.cameraUuid = ( ! v || v === '__viewport__' ) ? null : v;
+		const next = { ...object.userData, fccUI: ui };
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		signals.sceneGraphChanged.dispatch();
+
+	} );
+	camRow.add( camSelect );
+	container.add( camRow );
+
+	const distRow = new UIRow();
+	distRow.add( new UIText( strings.getKey( 'sidebar/object/ui/planeDistance' ) || '平面距离' ).setClass( 'Label' ).setWidth( '90px' ) );
+	const distNum = new UINumber( DEFAULT_PLANE_DISTANCE ).setPrecision( 2 ).setRange( 0.01, 1e6 ).setWidth( '70px' ).onChange( function () {
+
+		const object = editor.selected;
+		if ( ! isUICanvas( object ) ) return;
+		const ui = { ...getFccUI( object ) };
+		ui.planeDistance = distNum.getValue();
+		const next = { ...object.userData, fccUI: ui };
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		signals.sceneGraphChanged.dispatch();
+
+	} );
+	distRow.add( distNum );
+	container.add( distRow );
+
+	function rebuildCameraOptions() {
+
+		const opts = { __viewport__: strings.getKey( 'sidebar/object/ui/camera/viewport' ) || '当前视口相机' };
+		editor.scene.traverse( function ( o ) {
+
+			if ( o.isPerspectiveCamera || o.isOrthographicCamera ) {
+
+				opts[ o.uuid ] = ( o.name || o.type ) + ' (' + o.uuid.slice( 0, 6 ) + ')';
+
+			}
+
+		} );
+		camSelect.setOptions( opts );
+
+	}
+
+	function updateModeRows( object ) {
+
+		const isCanvas = isUICanvas( object );
+		modeRow.setDisplay( isCanvas ? '' : 'none' );
+		if ( ! isCanvas ) {
+
+			camRow.setDisplay( 'none' );
+			distRow.setDisplay( 'none' );
+			return;
+
+		}
+
+		const ui = getFccUI( object );
+		const isCam = ui && ui.renderMode === RENDER_MODE_CAMERA;
+		camRow.setDisplay( isCam ? '' : 'none' );
+		distRow.setDisplay( isCam ? '' : 'none' );
+
+	}
+
+	function commitRect() {
+
+		const object = editor.selected;
+		if ( ! isFccUI( object ) ) return;
+		const ui = { ...getFccUI( object ) };
+		ui.anchorMin = [ anchorMin.x.getValue(), anchorMin.y.getValue() ];
+		ui.anchorMax = [ anchorMax.x.getValue(), anchorMax.y.getValue() ];
+		ui.pivot = [ pivot.x.getValue(), pivot.y.getValue() ];
+		ui.anchoredPosition = [ anchoredPos.x.getValue(), anchoredPos.y.getValue() ];
+		ui.sizeDelta = [ sizeDelta.x.getValue(), sizeDelta.y.getValue() ];
+		const next = { ...object.userData, fccUI: ui };
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		signals.sceneGraphChanged.dispatch();
+
+	}
+
+	const anchorMin = vec2Field( strings.getKey( 'sidebar/object/ui/anchorMin' ) || '锚点 Min', commitRect );
+	const anchorMax = vec2Field( strings.getKey( 'sidebar/object/ui/anchorMax' ) || '锚点 Max', commitRect );
+	const pivot = vec2Field( strings.getKey( 'sidebar/object/ui/pivot' ) || '轴心 Pivot', commitRect );
+	const anchoredPos = vec2Field( strings.getKey( 'sidebar/object/ui/anchoredPosition' ) || '锚点位置', commitRect );
+	const sizeDelta = vec2Field( strings.getKey( 'sidebar/object/ui/sizeDelta' ) || '宽高 Size', commitRect );
+
+	container.add( anchorMin.row );
+	container.add( anchorMax.row );
+	container.add( pivot.row );
+	container.add( anchoredPos.row );
+	container.add( sizeDelta.row );
+
+	const presetRow = new UIRow().setMarginTop( '8px' );
+	const stretchBtn = new UIButton(
+		strings.getKey( 'sidebar/object/ui/stretchFill' ) || '铺满屏幕'
+	).onClick( function () {
+
+		const object = editor.selected;
+		if ( ! isFccUI( object ) ) return;
+		const ui = { ...getFccUI( object ), ...stretchFillRectData() };
+		const next = { ...object.userData, fccUI: ui };
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		refresh( object );
+		signals.sceneGraphChanged.dispatch();
+
+	} );
+	presetRow.add( stretchBtn );
+
+	const centerBtn = new UIButton(
+		strings.getKey( 'sidebar/object/ui/center200' ) || '居中 200×200'
+	).onClick( function () {
+
+		const object = editor.selected;
+		if ( ! isFccUI( object ) ) return;
+		const ui = {
+			...getFccUI( object ),
+			anchorMin: [ 0.5, 0.5 ],
+			anchorMax: [ 0.5, 0.5 ],
+			pivot: [ 0.5, 0.5 ],
+			anchoredPosition: [ 0, 0 ],
+			sizeDelta: [ 200, 200 ],
+		};
+		const next = { ...object.userData, fccUI: ui };
+		editor.execute( new SetValueCommand( editor, object, 'userData', next ) );
+		refresh( object );
+		signals.sceneGraphChanged.dispatch();
+
+	} );
+	presetRow.add( centerBtn );
+	container.add( presetRow );
+
+	const hint = new UIDiv().setMarginTop( '6px' );
+	hint.setTextContent(
+		strings.getKey( 'sidebar/object/ui/hint' ) ||
+		'Overlay：后处理后叠层。Camera：画在目标相机前（进后处理）。贴图/Shader 见「材质」。'
+	);
+	hint.setFontSize( '11px' );
+	hint.setColor( '#aaa' );
+	container.add( hint );
+
+	function setVec( field, arr ) {
+
+		field.x.setValue( arr[ 0 ] );
+		field.y.setValue( arr[ 1 ] );
+
+	}
+
+	function refresh( object ) {
+
+		if ( ! isFccUI( object ) ) {
+
+			container.setDisplay( 'none' );
+			return;
+
+		}
+
+		container.setDisplay( '' );
+		const ui = getFccUI( object );
+		if ( isUICanvas( object ) ) {
+
+			typeLabel.setValue( strings.getKey( 'sidebar/object/ui/canvas' ) || 'Canvas' );
+			modeSelect.setValue( ui.renderMode === RENDER_MODE_CAMERA ? RENDER_MODE_CAMERA : RENDER_MODE_OVERLAY );
+			rebuildCameraOptions();
+			const camVal = ui.cameraUuid || '__viewport__';
+			camSelect.setValue( camVal );
+			distNum.setValue( ui.planeDistance != null ? ui.planeDistance : DEFAULT_PLANE_DISTANCE );
+
+		} else if ( isUIImage( object ) ) {
+
+			typeLabel.setValue( strings.getKey( 'sidebar/object/ui/image' ) || 'Image' );
+
+		} else {
+
+			typeLabel.setValue( ui.type || 'UI' );
+
+		}
+
+		updateModeRows( object );
+
+		setVec( anchorMin, ui.anchorMin || [ 0.5, 0.5 ] );
+		setVec( anchorMax, ui.anchorMax || [ 0.5, 0.5 ] );
+		setVec( pivot, ui.pivot || [ 0.5, 0.5 ] );
+		setVec( anchoredPos, ui.anchoredPosition || [ 0, 0 ] );
+		setVec( sizeDelta, ui.sizeDelta || [ 200, 200 ] );
+
+	}
+
+	signals.objectSelected.add( function ( object ) {
+
+		refresh( object );
+
+	} );
+
+	signals.objectChanged.add( function ( object ) {
+
+		if ( object !== editor.selected ) return;
+		refresh( object );
+
+	} );
+
+	signals.refreshSidebarObject3D.add( function ( object ) {
+
+		if ( object !== editor.selected ) return;
+		refresh( object );
+
+	} );
+
+	signals.sceneGraphChanged.add( function () {
+
+		if ( isUICanvas( editor.selected ) ) rebuildCameraOptions();
+
+	} );
+
+	refresh( editor.selected );
+
+	return container;
+
+}
+
+export { SidebarObjectUI };

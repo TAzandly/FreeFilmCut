@@ -1,0 +1,74 @@
+{
+  "schema": "vfxpack/1.2",
+  "id": "freecapcut.inputtest",
+  "version": "0.1.0",
+  "displayName": "inputtest",
+  "engine": {
+    "api": "webgl2",
+    "renderer": "three"
+  },
+  "type": "effect",
+  "scope": "below",
+  "resolution": {
+    "width": 1080,
+    "height": 1920
+  },
+  "render": {
+    "rendererType": "WebGLRenderer",
+    "cameraType": "perspective",
+    "antialias": true,
+    "shadows": true,
+    "shadowType": 1,
+    "toneMapping": 7,
+    "toneMappingName": "NeutralToneMapping",
+    "toneMappingExposure": 1
+  },
+  "entry": {
+    "scene": "scene.json"
+  },
+  "params": [
+    {
+      "key": "intensity",
+      "label": "Intensity",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "passes": [
+    {
+      "id": "main",
+      "shader": {
+        "vertex": "shaders/mat_0_customshader.vert.glsl",
+        "fragment": "shaders/mat_0_customshader.frag.glsl"
+      },
+      "inputs": {
+        "uInput": "accumBelow"
+      }
+    }
+  ],
+  "assets": {
+    "scene": "scene.json",
+    "textures": [
+      "textures/tex_0_pmrem.png"
+    ],
+    "shaders": [
+      "shaders/mat_0_customshader.vert.glsl",
+      "shaders/mat_0_customshader.frag.glsl"
+    ],
+    "background": null,
+    "environment": "textures/tex_0_pmrem.png"
+  },
+  "i18n": {
+    "zh-CN": {
+      "displayName": "inputtest"
+    }
+  },
+  "meta": {
+    "generator": "FreeFilmCut Three.js Editor VfxPackExporter",
+    "exportedAt": "2026-10-13T10:01:37.478Z",
+    "hasCustomShaders": true,
+    "shaderCount": 1
+  }
+}

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>chroma verify</title>
+		<script type="importmap">
+			{ "imports": { "three": "./three.module.js" } }
+		</script>
+	</head>
+	<body>
+		<pre id="out">running</pre>
+		<script type="module">
+			import * as THREE from "three";
+			import { FRAGMENT } from "./fragment.js";
+			import { CASES } from "./cases.js";
+
+			const W = 256;
+			const H = 64;
+
+			// Bands, left to right:
+			//  [0,64)   hard edge  green-screen(31,158,51) | skin(219,174,148)   x=32
+			//  [64,128) hard edge  pure green(0,255,0)     | skin                 x=96
+			//  [128,192) solid dark green(0,64,0)                                shadow probe
+			//  [192,256) solid greenish skin(153,140,102)                        spill probe
+			const GREEN_SCREEN = [31, 158, 51];
+			const PURE_GREEN = [0, 255, 0];
+			const SKIN = [219, 174, 148];
+			const DARK_GREEN = [0, 64, 0];
+			const SPILL = [153, 140, 102];
+
+			const data = new Uint8Array(W * H * 4);
+			for (let y = 0; y < H; y++) {
+				for (let x = 0; x < W; x++) {
+					const colour =
+						x < 64
+							? x < 32
+								? GREEN_SCREEN
+								: SKIN
+							: x < 128
+								? x < 96
+									? PURE_GREEN
+									: SKIN
+								: x < 192
+									? DARK_GREEN
+									: SPILL;
+					const i = (y * W + x) * 4;
+					data[i] = colour[0];
+					data[i + 1] = colour[1];
+					data[i + 2] = colour[2];
+					data[i + 3] = 255;
+				}
+			}
+
+			const texture = new THREE.DataTexture(data, W, H, THREE.RGBAFormat);
+			// Same tag the real layer textures carry: the GPU decodes to linear,
+			// the keyer converts back to sRGB before measuring distance.
+			texture.colorSpace = THREE.SRGBColorSpace;
+			texture.minFilter = THREE.NearestFilter;
+			texture.magFilter = THREE.NearestFilter;
+			texture.needsUpdate = true;
+
+			const canvas = document.createElement("canvas");
+			canvas.width = W;
+			canvas.height = H;
+			const renderer = new THREE.WebGLRenderer({
+				canvas,
+				antialias: false,
+				preserveDrawingBuffer: true,
+			});
+			renderer.setSize(W, H, false);
+			renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+			renderer.toneMapping = THREE.NoToneMapping;
+			renderer.setClearColor(0x000000, 0);
+
+			const uniforms = {
+				uChromaEnabled: { value: 0 },
+				uChromaKeyColor: { value: new THREE.Vector3(0, 1, 0) },
+				uChromaSimilarity: { value: 0.4 },
+				uChromaSmoothness: { value: 0.08 },
+				uChromaSoften: { value: 0 },
+				uChromaSpill: { value: 0 },
+				uChromaShadow: { value: 0 },
+				uChromaTexel: { value: new THREE.Vector2(1 / W, 1 / H) },
+			};
+
+			const material = new THREE.MeshBasicMaterial({
+				map: texture,
+				transparent: true,
+				depthTest: false,
+			});
+			material.onBeforeCompile = (shader) => {
+				shader.fragmentShader = FRAGMENT;
+				for (const [name, uniform] of Object.entries(uniforms)) {
+					shader.uniforms[name] = uniform;
+				}
+			};
+			material.customProgramCacheKey = () => "chroma-verify";
+
+			const scene = new THREE.Scene();
+			// Flip V so the plane's UV matches the data array's row order.
+			const geometry = new THREE.PlaneGeometry(2, 2);
+			const uv = geometry.attributes.uv;
+			for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));
+			scene.add(new THREE.Mesh(geometry, material));
+
+			const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+			camera.position.z = 1;
+			const gl = renderer.getContext();
+			const pixels = new Uint8Array(W * H * 4);
+
+			const linearToSrgb = (c) =>
+				c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055;
+
+			function probe(name) {
+				const row = 32;
+				const at = (x) => {
+					const i = (row * W + x) * 4;
+					return {
+						rgb: [pixels[i], pixels[i + 1], pixels[i + 2]],
+						a: pixels[i + 3],
+					};
+				};
+				// Edge softness = how many pixels *straddling the step* are
+				// neither fully keyed nor fully kept. Measuring the whole band
+				// would also count a subject that 羽化 turned semi-transparent,
+				// which is a different (bad) thing — hence the 16px window
+				// around the step plus the separate subjectAlpha probe.
+				function rampPixels(stepX) {
+					let count = 0;
+					for (let x = stepX - 10; x < stepX + 10; x++) {
+						const a = at(x).a;
+						if (a > 2 && a < 253) count += 1;
+					}
+					return count;
+				}
+				const spill = at(220);
+				return {
+					name,
+					edgeRampGreenScreen: rampPixels(32),
+					edgeRampPureGreen: rampPixels(96),
+					backgroundAlpha: at(14).a,
+					subjectAlpha: at(50).a,
+					pureGreenAlpha: at(78).a,
+					darkGreenAlpha: at(160).a,
+					spillProbeSrgb: spill.rgb.map((v) =>
+						Math.round(linearToSrgb(v / 255) * 255),
+					),
+					profile: Array.from({ length: 21 }, (_, i) => at(26 + i).a),
+				};
+			}
+
+			const results = [];
+			const logs = [];
+			const originalError = console.error;
+			console.error = (...args) => {
+				logs.push(args.map((arg) => String(arg)).join(" ").slice(0, 600));
+				originalError(...args);
+			};
+
+			for (const testCase of CASES) {
+				const v = testCase.values;
+				uniforms.uChromaEnabled.value = 1;
+				uniforms.uChromaKeyColor.value.set(...testCase.keyColor);
+				uniforms.uChromaSimilarity.value = v.similarity;
+				uniforms.uChromaSmoothness.value = v.smoothness;
+				uniforms.uChromaSoften.value = v.soften;
+				uniforms.uChromaSpill.value = v.spill;
+				uniforms.uChromaShadow.value = v.shadow;
+
+				renderer.render(scene, camera);
+				gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+				results.push(probe(testCase.name));
+			}
+
+			document.getElementById("out").textContent = JSON.stringify(
+				{
+					ok: true,
+					renderer: gl.getParameter(gl.VERSION),
+					diagnostics: {
+						logs,
+						drawCalls: renderer.info.render.calls,
+						programs: renderer.info.programs?.length ?? -1,
+						map: material.map ? "set" : "missing",
+						contextAttributes: gl.getContextAttributes(),
+					},
+					results,
+				},
+				null,
+				1,
+			);
+		</script>
+	</body>
+</html>

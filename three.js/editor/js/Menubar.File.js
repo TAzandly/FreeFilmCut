@@ -1,0 +1,1464 @@
+import { UIPanel, UIRow, UIHorizontalRule } from './libs/ui.js';
+import { FileLoader, PropertyBinding } from 'three';
+import { exportVfxPack, formatVfxPackExportMessage, promptExportOptions } from './VfxPackExporter.js?v=fcc-ui-221';
+import { exportFlowerPack, formatFlowerPackExportMessage, promptFlowerPackOptions } from './FlowerPackExporter.js?v=fcc-ui-106';
+import { exportTextAnimPack, formatTextAnimPackExportMessage, promptTextAnimPackOptions } from './TextAnimPackExporter.js?v=fcc-ui-164';
+import { exportTextTemplatePack, formatTextTemplatePackExportMessage, promptTextTemplatePackOptions } from './TextTemplatePackExporter.js?v=fcc-ui-217';
+import { suggestProjectTitle } from './ProjectFolder.js?v=fcc-ui-106';
+import { flushFreecapcutAnimsToProject } from './anim/FreeCapCutAnimCore.js?v=fcc-anim-20';
+import { flushUITextFontsToProject } from './ui/UIText.js?v=fcc-ui-234';
+import { flushFccVideosToProject } from './media/FccVideo.js?v=fcc-ui-207';
+import { flushTimelinesToProject } from './timeline/FccTimelineIO.js?v=fcc-ui-138';
+
+function MenubarFile( editor ) {
+
+	const strings = editor.strings;
+
+	const saveArrayBuffer = editor.utils.saveArrayBuffer;
+	const saveString = editor.utils.saveString;
+
+
+	function countProjectSceneNodes( json ) {
+
+		try {
+
+			const root = json && json.scene && json.scene.object;
+			if ( ! root ) return 0;
+			let n = 0;
+			( function walk( o ) {
+
+				if ( ! o ) return;
+				n ++;
+				const kids = o.children || [];
+				for ( let i = 0; i < kids.length; i ++ ) walk( kids[ i ] );
+
+			} )( root );
+			return n;
+
+		} catch ( e ) {
+
+			return 0;
+
+		}
+
+	}
+
+	async function loadJsonProject( json ) {
+
+		return new Promise( ( resolve, reject ) => {
+
+			async function onEditorCleared() {
+
+				editor.signals.editorCleared.remove( onEditorCleared );
+				try {
+
+					await editor.fromJSON( json );
+					resolve();
+
+				} catch ( e ) {
+
+					reject( e );
+
+				}
+
+			}
+
+			editor.signals.editorCleared.add( onEditorCleared );
+			editor.clear();
+
+		} );
+
+	}
+
+	/**
+	 * Bind a project folder. If project.json exists, OPEN it (do not silently overwrite).
+	 * Pass { forceSave: true } to write current editor state into the folder.
+	 */
+	async function bindProjectFolderAndSync( handle, opts = {} ) {
+
+		const pf = editor.projectFolder;
+		if ( ! pf || ! handle ) return false;
+		await pf.setDirectoryHandle( handle );
+		try { await pf.ensureAssetSubdirs(); } catch ( e ) { /* ignore */ }
+
+		const existing = await pf.readProjectJson();
+		const existingNodes = countProjectSceneNodes( existing );
+		const currentNodes = countProjectSceneNodes( editor.toJSON() );
+		const forceSave = opts.forceSave === true;
+
+		if ( existing && existing.scene && ! forceSave ) {
+
+			const openLabel = ( strings.getKey( 'prompt/file/openExistingProject' ) )
+				|| 'Open project.json from this folder?\nOK = open folder project\nCancel = overwrite folder with current editor scene';
+			let openExisting = true;
+			if ( existingNodes > 0 ) {
+
+				openExisting = confirm( openLabel );
+
+			}
+			// Never silently overwrite a richer folder project with an empty editor
+			if ( ! openExisting && existingNodes > currentNodes && currentNodes <= 1 ) {
+
+				alert( strings.getKey( 'prompt/file/refuseOverwriteRicher' )
+					|| 'Folder project has more objects. Opening folder project instead.' );
+				openExisting = true;
+
+			}
+			if ( openExisting ) {
+
+				await loadJsonProject( existing );
+				if ( editor.storage ) editor.storage.set( existing );
+				return true;
+
+			}
+
+		}
+
+		// Save current editor into folder (new folder or user chose overwrite)
+		try {
+
+			await flushFreecapcutAnimsToProject( editor );
+		} catch ( e ) { console.warn( e ); }
+		try {
+
+			await flushUITextFontsToProject( editor );
+		} catch ( e ) { console.warn( e ); }
+		try {
+
+			await flushFccVideosToProject( editor );
+		} catch ( e ) { console.warn( e ); }
+		try {
+
+			const flushedTimelines = await flushTimelinesToProject( editor );
+			if ( flushedTimelines && flushedTimelines.saved ) {
+
+				console.log( '[FreeFilmCut] flushed', flushedTimelines.saved, 'timeline file(s)' );
+
+			}
+
+		} catch ( e ) { console.warn( e ); }
+		const json = editor.toJSON();
+		await pf.saveProjectJson( json );
+		if ( editor.storage ) editor.storage.set( json );
+		return true;
+
+	}
+
+
+	const container = new UIPanel();
+	container.setClass( 'menu' );
+
+	const title = new UIPanel();
+	title.setClass( 'title' );
+	title.setTextContent( strings.getKey( 'menubar/file' ) );
+	container.add( title );
+
+	const options = new UIPanel();
+	options.setClass( 'options' );
+	container.add( options );
+
+	// New Project
+	// FreeFilmCut: 「新建项目— Empty both — confirm — showDirectoryPicker — clear.
+	// Cancel picker or missing API — abort (do not clear scene).
+
+	async function beginNewEmptyProject() {
+
+		if ( ! confirm( strings.getKey( 'prompt/file/open' ) ) ) return;
+
+		const pf = editor.projectFolder;
+
+		if ( ! pf || ! pf.isSupported() ) {
+
+			alert( strings.getKey( 'prompt/file/folderUnsupported' ) );
+			return;
+
+		}
+
+		// 1) Pick PARENT folder (not the project root yet)
+		let parentHandle = null;
+
+		try {
+
+			parentHandle = await pf.pickParentDirectory();
+
+		} catch ( e ) {
+
+			alert( strings.getKey( 'prompt/file/folderPickFailed' ) );
+			console.error( e );
+			return;
+
+		}
+
+		if ( ! parentHandle ) {
+
+			// User cancelled folder picker — do not clear the scene
+			return;
+
+		}
+
+		const untitled = strings.getKey( 'prompt/file/untitledProject' );
+		const parentName = parentHandle.name || '';
+		const suggested = suggestProjectTitle( parentName, untitled );
+
+		// 2) Enter 特效项目名称
+		const entered = window.prompt( strings.getKey( 'prompt/file/enterProjectName' ), suggested );
+		if ( entered === null ) {
+
+			// Cancel name — abort new project (scene untouched)
+			return;
+
+		}
+
+		const projectName = entered.trim() || suggested;
+
+		// 3) Create {safeName}/ + asset subdirs under parent; bind to that subfolder
+		let created = null;
+
+		try {
+
+			created = await pf.createProjectUnderParent( parentHandle, projectName );
+
+		} catch ( e ) {
+
+			alert( strings.getKey( 'prompt/file/projectLayoutFailed' ) );
+			console.error( e );
+			return;
+
+		}
+
+		if ( ! created ) {
+
+			alert( strings.getKey( 'prompt/file/projectLayoutFailed' ) );
+			return;
+
+		}
+
+		editor.clear();
+		editor.storage.clear();
+
+		if ( editor.setProjectTitle ) {
+
+			editor.setProjectTitle( projectName );
+
+		} else {
+
+			editor.config.setKey( 'project/title', projectName );
+			if ( editor.signals.projectTitleChanged ) editor.signals.projectTitleChanged.dispatch( projectName );
+
+		}
+
+		try {
+
+			await pf.saveProjectJson( editor.toJSON() );
+
+		} catch ( e ) {
+
+			console.warn( '[FreeFilmCut] initial project.json write failed:', e );
+
+		}
+
+	}
+
+	/**
+	 * Confirm — pick project folder — then run `afterBound` (e.g. load example).
+	 * Cancel / unsupported — abort without clearing.
+	 */
+	async function beginNewWithFolderThen( afterBound ) {
+
+		if ( ! confirm( strings.getKey( 'prompt/file/open' ) ) ) return;
+
+		const pf = editor.projectFolder;
+
+		if ( ! pf || ! pf.isSupported() ) {
+
+			alert( strings.getKey( 'prompt/file/folderUnsupported' ) );
+			return;
+
+		}
+
+		let parentHandle = null;
+
+		try {
+
+			parentHandle = await pf.pickParentDirectory();
+
+		} catch ( e ) {
+
+			alert( strings.getKey( 'prompt/file/folderPickFailed' ) );
+			console.error( e );
+			return;
+
+		}
+
+		if ( ! parentHandle ) return;
+
+		const untitled = strings.getKey( 'prompt/file/untitledProject' );
+		const suggested = suggestProjectTitle( parentHandle.name || '', untitled );
+		const entered = window.prompt( strings.getKey( 'prompt/file/enterProjectName' ), suggested );
+		if ( entered === null ) return;
+
+		const projectName = entered.trim() || suggested;
+
+		try {
+
+			const created = await pf.createProjectUnderParent( parentHandle, projectName );
+			if ( ! created ) {
+
+				alert( strings.getKey( 'prompt/file/projectLayoutFailed' ) );
+				return;
+
+			}
+
+		} catch ( e ) {
+
+			alert( strings.getKey( 'prompt/file/projectLayoutFailed' ) );
+			console.error( e );
+			return;
+
+		}
+
+		if ( editor.setProjectTitle ) editor.setProjectTitle( projectName );
+
+		await afterBound( pf );
+
+	}
+
+	const newProjectSubmenuTitle = new UIRow().setTextContent( strings.getKey( 'menubar/file/new' ) ).addClass( 'option' ).addClass( 'submenu-title' );
+	newProjectSubmenuTitle.onMouseOver( function () {
+
+		const { top, right } = this.dom.getBoundingClientRect();
+		const { paddingTop } = getComputedStyle( this.dom );
+		newProjectSubmenu.setLeft( right + 'px' );
+		newProjectSubmenu.setTop( top - parseFloat( paddingTop ) + 'px' );
+		newProjectSubmenu.setDisplay( 'block' );
+
+	} );
+	newProjectSubmenuTitle.onMouseOut( function () {
+
+		newProjectSubmenu.setDisplay( 'none' );
+
+	} );
+	// Clicking 「新建项目」itself (not a submenu child) starts empty + folder pick
+	newProjectSubmenuTitle.onClick( async function ( event ) {
+
+		if ( newProjectSubmenu.dom.contains( event.target ) ) return;
+
+		await beginNewEmptyProject();
+
+	} );
+	options.add( newProjectSubmenuTitle );
+
+	const newProjectSubmenu = new UIPanel().setPosition( 'fixed' ).addClass( 'options' ).setDisplay( 'none' );
+	newProjectSubmenuTitle.add( newProjectSubmenu );
+
+	// New Project / Empty (explicit folder pick)
+
+	let option = new UIRow().setTextContent( strings.getKey( 'menubar/file/new/empty' ) ).setClass( 'option' );
+	option.onClick( async function ( event ) {
+
+		event.stopPropagation();
+		await beginNewEmptyProject();
+
+	} );
+	newProjectSubmenu.add( option );
+
+	//
+
+	newProjectSubmenu.add( new UIHorizontalRule() );
+
+	// New Project / examples — also pick folder before clearing
+
+	const examples = [
+		{ title: 'menubar/file/new/Arkanoid', file: 'arkanoid.app.json' },
+		{ title: 'menubar/file/new/Camera', file: 'camera.app.json' },
+		{ title: 'menubar/file/new/Particles', file: 'particles.app.json' },
+		{ title: 'menubar/file/new/Pong', file: 'pong.app.json' },
+		{ title: 'menubar/file/new/Shaders', file: 'shaders.app.json' }
+	];
+
+	const loader = new FileLoader();
+
+	for ( let i = 0; i < examples.length; i ++ ) {
+
+		( function ( i ) {
+
+			const example = examples[ i ];
+
+			const option = new UIRow();
+			option.setClass( 'option' );
+			option.setTextContent( strings.getKey( example.title ) );
+			option.onClick( function ( event ) {
+
+				event.stopPropagation();
+
+				beginNewWithFolderThen( async function ( pf ) {
+
+					loader.load( 'examples/' + example.file, async function ( text ) {
+
+						editor.clear();
+						editor.fromJSON( JSON.parse( text ) );
+
+						if ( ! ( editor.config.getKey( 'project/title' ) || '' ).trim() ) {
+
+							const fallback = ( pf.getName && pf.getName() ) || strings.getKey( 'prompt/file/untitledProject' );
+							if ( editor.setProjectTitle ) editor.setProjectTitle( fallback );
+							else editor.config.setKey( 'project/title', fallback );
+
+						}
+
+						try {
+
+							await pf.saveProjectJson( editor.toJSON() );
+
+						} catch ( e ) {
+
+							console.warn( '[FreeFilmCut] example project.json write failed:', e );
+
+						}
+
+					} );
+
+				} );
+
+			} );
+			newProjectSubmenu.add( option );
+
+		} )( i );
+
+	}
+
+	// Open
+
+	const openProjectForm = document.createElement( 'form' );
+	openProjectForm.style.display = 'none';
+	document.body.appendChild( openProjectForm );
+
+	const openProjectInput = document.createElement( 'input' );
+	openProjectInput.multiple = false;
+	openProjectInput.type = 'file';
+	openProjectInput.accept = '.json';
+	openProjectInput.addEventListener( 'change', async function () {
+
+		const file = openProjectInput.files[ 0 ];
+
+		if ( file === undefined ) return;
+
+		try {
+
+			const json = JSON.parse( await file.text() );
+
+			async function onEditorCleared() {
+
+				await editor.fromJSON( json );
+
+				editor.signals.editorCleared.remove( onEditorCleared );
+
+			}
+
+			editor.signals.editorCleared.add( onEditorCleared );
+
+			editor.clear();
+
+		} catch ( e ) {
+
+			alert( strings.getKey( 'prompt/file/failedToOpenProject' ) );
+			console.error( e );
+
+		} finally {
+
+			form.reset();
+
+		}
+
+	} );
+
+	openProjectForm.appendChild( openProjectInput );
+
+	option = new UIRow()
+		.addClass( 'option' )
+		.setTextContent( strings.getKey( 'menubar/file/open' ) )
+		.onClick( function () {
+
+			if ( confirm( strings.getKey( 'prompt/file/open' ) ) ) {
+
+				openProjectInput.click();
+
+			}
+
+		} );
+
+	options.add( option );
+
+	// Save
+
+	option = new UIRow()
+		.addClass( 'option' )
+		.setTextContent( strings.getKey( 'menubar/file/save' ) )
+		.onClick( async function () {
+
+			const pf = editor.projectFolder;
+
+			function cacheEditorState( json ) {
+
+				// Never let IndexedDB cache failure abort a successful folder write
+				// (DataCloneError on HTMLImageElement used to fall through to the
+				// folder picker and look like Save was asking for a new path).
+				if ( ! editor.storage ) return;
+				try {
+
+					editor.storage.set( json );
+
+				} catch ( e ) {
+
+					console.warn( '[FreeFilmCut] IndexedDB cache after save failed', e );
+
+				}
+
+			}
+
+			async function saveToFolder() {
+
+				try {
+
+					const flushed = await flushFreecapcutAnimsToProject( editor );
+					if ( flushed && flushed.saved ) {
+
+						console.log( '[FreeFilmCut] flushed', flushed.saved, '.anim file(s)' );
+
+					}
+
+				} catch ( e ) {
+
+					console.warn( '[FreeFilmCut] flush anims before save failed', e );
+
+				}
+				try {
+
+					const flushedFonts = await flushUITextFontsToProject( editor );
+					if ( flushedFonts && flushedFonts.saved ) {
+
+						console.log( '[FreeFilmCut] flushed', flushedFonts.saved, 'font file(s)' );
+
+					}
+
+				} catch ( e ) {
+
+					console.warn( '[FreeFilmCut] flush fonts before save failed', e );
+
+				}
+				try {
+
+					const flushedVideos = await flushFccVideosToProject( editor );
+					if ( flushedVideos && flushedVideos.saved ) {
+
+						console.log( '[FreeFilmCut] flushed', flushedVideos.saved, 'video file(s)' );
+
+					}
+
+				} catch ( e ) {
+
+					console.warn( '[FreeFilmCut] flush videos before save failed', e );
+
+				}
+				try {
+
+					const flushedTimelines = await flushTimelinesToProject( editor );
+					if ( flushedTimelines && flushedTimelines.saved ) {
+
+						console.log( '[FreeFilmCut] flushed', flushedTimelines.saved, 'timeline file(s)' );
+
+					}
+
+				} catch ( e ) {
+
+					console.warn( '[FreeFilmCut] flush timelines before save failed', e );
+
+				}
+				// Rebuild JSON so freecapcut.index paths reflect flushed files
+				const json2 = editor.toJSON();
+				try {
+
+					const existing = await pf.readProjectJson();
+					const exN = countProjectSceneNodes( existing );
+					const curN = countProjectSceneNodes( json2 );
+					if ( existing && exN > curN && curN <= 1 ) {
+
+						const msg = strings.getKey( 'prompt/file/refuseOverwriteRicher' )
+							|| 'Folder project.json has more objects than the editor. Save aborted to prevent data loss.';
+						alert( msg );
+						return false;
+
+					}
+
+				} catch ( e ) { /* ignore guard errors */ }
+				const ok = await pf.saveProjectJson( json2 );
+				if ( ok ) {
+
+					cacheEditorState( json2 );
+					return true;
+
+				}
+
+				return false;
+
+			}
+
+			// Already bound to a project folder — write there directly (CapCut-like Save).
+			// Do NOT fall through to pickFolder on cache errors or partial failures.
+			if ( pf && pf.hasFolder() ) {
+
+				try {
+
+					await pf.requestPermissionOnGesture();
+					if ( await saveToFolder() ) return;
+
+					console.warn( '[FreeFilmCut] save to bound folder returned false; downloading project.json' );
+
+				} catch ( e ) {
+
+					console.warn( '[FreeFilmCut] save to bound folder failed; downloading project.json:', e );
+
+				}
+
+				try {
+
+					const blob = new Blob( [ JSON.stringify( editor.toJSON() ) ], { type: 'application/json' } );
+					editor.utils.save( blob, 'project.json' );
+
+				} catch ( e2 ) {
+
+					console.error( '[FreeFilmCut] download fallback failed', e2 );
+					alert( strings.getKey( 'prompt/file/failedToOpenProject' ) || 'Save failed' );
+
+				}
+
+				return;
+
+			}
+
+			// First save / no folder yet — offer to pick one (Chrome), else download.
+			// Save As remains the path for choosing a different folder later.
+			if ( pf && pf.isSupported() && confirm( strings.getKey( 'prompt/file/pickFolderToSave' ) ) ) {
+
+				const handle = await pf.pickDirectory();
+				if ( handle ) {
+
+					try {
+
+						if ( await saveToFolder() ) return;
+
+					} catch ( e ) {
+
+						console.error( e );
+
+					}
+
+				}
+
+			}
+
+			const blob = new Blob( [ JSON.stringify( editor.toJSON() ) ], { type: 'application/json' } );
+			editor.utils.save( blob, 'project.json' );
+
+		} );
+
+	options.add( option );
+
+	// Save As — new folder + copy assets, then keep editing the copy
+
+	option = new UIRow()
+		.addClass( 'option' )
+		.setTextContent( strings.getKey( 'menubar/file/saveAs' ) || 'Save As…' )
+		.onClick( async function () {
+
+			const pf = editor.projectFolder;
+			if ( ! pf || ! pf.isSupported() ) {
+
+				alert( strings.getKey( 'prompt/file/folderUnsupported' ) );
+				return;
+
+			}
+
+			const sourceHandle = pf.hasFolder() ? pf.getHandle() : null;
+			if ( sourceHandle ) {
+
+				try {
+
+					await pf.requestPermissionOnGesture();
+
+				} catch ( e ) {
+
+					console.warn( '[FreeFilmCut] save-as source permission', e );
+
+				}
+
+			}
+
+			let parentHandle = null;
+			try {
+
+				parentHandle = await pf.pickParentDirectory();
+
+			} catch ( e ) {
+
+				alert( strings.getKey( 'prompt/file/folderPickFailed' ) );
+				console.error( e );
+				return;
+
+			}
+
+			if ( ! parentHandle ) return;
+
+			const untitled = strings.getKey( 'prompt/file/untitledProject' );
+			const currentTitle = ( editor.config && editor.config.getKey( 'project/title' ) ) || '';
+			const suggested = ( currentTitle && String( currentTitle ).trim() )
+				? ( String( currentTitle ).trim() + '_copy' )
+				: suggestProjectTitle( parentHandle.name || '', untitled );
+			const entered = window.prompt(
+				strings.getKey( 'prompt/file/enterSaveAsName' )
+					|| strings.getKey( 'prompt/file/enterProjectName' ),
+				suggested
+			);
+			if ( entered === null ) return;
+
+			const projectName = entered.trim() || suggested;
+
+			let created = null;
+			try {
+
+				created = await pf.createProjectUnderParent( parentHandle, projectName );
+
+			} catch ( e ) {
+
+				alert( strings.getKey( 'prompt/file/projectLayoutFailed' ) );
+				console.error( e );
+				return;
+
+			}
+
+			if ( ! created ) {
+
+				alert( strings.getKey( 'prompt/file/projectLayoutFailed' ) );
+				return;
+
+			}
+
+			if ( sourceHandle && sourceHandle !== created.projectHandle ) {
+
+				const copied = await pf.copyDirectoryContents( sourceHandle, created.projectHandle, {
+					skipNames: [ 'project.json' ],
+				} );
+				if ( ! copied ) {
+
+					console.warn( '[FreeFilmCut] save-as asset copy incomplete; flushing scene assets next' );
+
+				}
+
+			}
+
+			if ( editor.setProjectTitle ) {
+
+				editor.setProjectTitle( projectName );
+
+			} else {
+
+				editor.config.setKey( 'project/title', projectName );
+				if ( editor.signals.projectTitleChanged ) editor.signals.projectTitleChanged.dispatch( projectName );
+
+			}
+
+			try {
+
+				await flushFreecapcutAnimsToProject( editor );
+
+			} catch ( e ) {
+
+				console.warn( '[FreeFilmCut] save-as flush anims', e );
+
+			}
+			try {
+
+				await flushUITextFontsToProject( editor );
+
+			} catch ( e ) {
+
+				console.warn( '[FreeFilmCut] save-as flush fonts', e );
+
+			}
+			try {
+
+				await flushFccVideosToProject( editor );
+
+			} catch ( e ) {
+
+				console.warn( '[FreeFilmCut] save-as flush videos', e );
+
+			}
+			try {
+
+				await flushTimelinesToProject( editor );
+
+			} catch ( e ) {
+
+				console.warn( '[FreeFilmCut] save-as flush timelines', e );
+
+			}
+
+			const json = editor.toJSON();
+			const ok = await pf.saveProjectJson( json );
+			if ( ! ok ) {
+
+				alert( strings.getKey( 'prompt/file/projectLayoutFailed' ) );
+				return;
+
+			}
+
+			if ( editor.storage ) {
+
+				try { editor.storage.set( json ); } catch ( e ) { console.warn( '[FreeFilmCut] IndexedDB cache after save-as failed', e ); }
+
+			}
+
+			const done = ( strings.getKey( 'prompt/file/saveAsDone' ) || 'Saved as {name}' )
+				.replace( '{name}', projectName );
+			alert( done );
+
+		} );
+
+	options.add( option );
+
+	// Save / change project folder
+
+	option = new UIRow()
+		.addClass( 'option' )
+		.setTextContent( strings.getKey( 'menubar/file/setFolder' ) )
+		.onClick( async function () {
+
+			const pf = editor.projectFolder;
+			if ( ! pf || ! pf.isSupported() ) {
+
+				alert( strings.getKey( 'prompt/file/folderUnsupported' ) );
+				return;
+
+			}
+
+			const handle = await pf.pickDirectory();
+			if ( ! handle ) return;
+
+			try {
+
+				await bindProjectFolderAndSync( handle );
+
+			} catch ( e ) {
+
+				alert( strings.getKey( 'prompt/file/folderPickFailed' ) );
+				console.error( e );
+
+			}
+
+		} );
+
+	options.add( option );
+
+	// Open project folder (always load project.json when present)
+	option = new UIRow()
+		.addClass( 'option' )
+		.setTextContent( strings.getKey( 'menubar/file/openFolder' ) || '\u6253\u5f00\u9879\u76ee\u6587\u4ef6\u5939' )
+		.onClick( async function () {
+
+			const pf = editor.projectFolder;
+			if ( ! pf || ! pf.isSupported() ) {
+
+				alert( strings.getKey( 'prompt/file/folderUnsupported' ) );
+				return;
+
+			}
+
+			if ( ! confirm( strings.getKey( 'prompt/file/open' ) ) ) return;
+
+			const handle = await pf.pickDirectory();
+			if ( ! handle ) return;
+
+			try {
+
+				await pf.setDirectoryHandle( handle );
+				try { await pf.ensureAssetSubdirs(); } catch ( e ) { /* ignore */ }
+				const existing = await pf.readProjectJson();
+				if ( ! existing || ! existing.scene ) {
+
+					alert( strings.getKey( 'prompt/file/noProjectJson' ) || 'No project.json in folder' );
+					return;
+
+				}
+				await loadJsonProject( existing );
+				if ( editor.storage ) editor.storage.set( existing );
+
+			} catch ( e ) {
+
+				alert( strings.getKey( 'prompt/file/failedToOpenProject' ) );
+				console.error( e );
+
+			}
+
+		} );
+
+	options.add( option );
+
+	//
+
+	options.add( new UIHorizontalRule() );
+
+	// Import
+
+	const form = document.createElement( 'form' );
+	form.style.display = 'none';
+	document.body.appendChild( form );
+
+	const fileInput = document.createElement( 'input' );
+	fileInput.multiple = true;
+	fileInput.type = 'file';
+	fileInput.addEventListener( 'change', function () {
+
+		editor.loader.loadFiles( fileInput.files );
+		form.reset();
+
+	} );
+	form.appendChild( fileInput );
+
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( strings.getKey( 'menubar/file/import' ) );
+	option.onClick( function () {
+
+		fileInput.click();
+
+	} );
+	options.add( option );
+
+	// Export
+
+	const fileExportSubmenuTitle = new UIRow().setTextContent( strings.getKey( 'menubar/file/export' ) ).addClass( 'option' ).addClass( 'submenu-title' );
+	fileExportSubmenuTitle.onMouseOver( function () {
+
+		const { top, right } = this.dom.getBoundingClientRect();
+		const { paddingTop } = getComputedStyle( this.dom );
+		fileExportSubmenu.setLeft( right + 'px' );
+		fileExportSubmenu.setTop( top - parseFloat( paddingTop ) + 'px' );
+		fileExportSubmenu.setDisplay( 'block' );
+
+	} );
+	fileExportSubmenuTitle.onMouseOut( function () {
+
+		fileExportSubmenu.setDisplay( 'none' );
+
+	} );
+	options.add( fileExportSubmenuTitle );
+
+	const fileExportSubmenu = new UIPanel().setPosition( 'fixed' ).addClass( 'options' ).setDisplay( 'none' );
+	fileExportSubmenuTitle.add( fileExportSubmenu );
+
+	// Export DRC
+
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( 'DRC' );
+	option.onClick( async function () {
+
+		const object = editor.selected;
+
+		if ( object === null || object.isMesh === undefined ) {
+
+			alert( strings.getKey( 'prompt/file/export/noMeshSelected' ) );
+			return;
+
+		}
+
+		const { DRACOExporter } = await import( 'three/addons/exporters/DRACOExporter.js' );
+
+		const exporter = new DRACOExporter();
+
+		const options = {
+			decodeSpeed: 5,
+			encodeSpeed: 5,
+			encoderMethod: DRACOExporter.MESH_EDGEBREAKER_ENCODING,
+			quantization: [ 16, 8, 8, 8, 8 ],
+			exportUvs: true,
+			exportNormals: true,
+			exportColor: object.geometry.hasAttribute( 'color' )
+		};
+
+		const result = await exporter.parseAsync( object, options );
+		saveArrayBuffer( result, 'model.drc' );
+
+	} );
+	fileExportSubmenu.add( option );
+
+	// Export GLB
+
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( 'GLB' );
+	option.onClick( async function () {
+
+		const scene = editor.scene;
+
+		if ( needsUniqueNames( scene ) ) { // see #25179
+
+			if ( confirm( strings.getKey( 'prompt/file/export/duplicateNames' ) ) === false ) return;
+
+			ensureUniqueNames( scene );
+
+		}
+
+		const animations = getAnimations( scene );
+
+		const optimizedAnimations = [];
+
+		for ( const animation of animations ) {
+
+			optimizedAnimations.push( animation.clone().optimize() );
+
+		}
+
+		const { GLTFExporter } = await import( 'three/addons/exporters/GLTFExporter.js' );
+
+		const exporter = new GLTFExporter();
+
+		exporter.parse( scene, function ( result ) {
+
+			saveArrayBuffer( result, 'scene.glb' );
+
+		}, undefined, { binary: true, animations: optimizedAnimations } );
+
+	} );
+	fileExportSubmenu.add( option );
+
+	// Export GLTF
+
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( 'GLTF' );
+	option.onClick( async function () {
+
+		const scene = editor.scene;
+
+		if ( needsUniqueNames( scene ) ) { // see #25179
+
+			if ( confirm( strings.getKey( 'prompt/file/export/duplicateNames' ) ) === false ) return;
+
+			ensureUniqueNames( scene );
+
+		}
+
+		const animations = getAnimations( scene );
+
+		const optimizedAnimations = [];
+
+		for ( const animation of animations ) {
+
+			optimizedAnimations.push( animation.clone().optimize() );
+
+		}
+
+		const { GLTFExporter } = await import( 'three/addons/exporters/GLTFExporter.js' );
+
+		const exporter = new GLTFExporter();
+
+		exporter.parse( scene, function ( result ) {
+
+			saveString( JSON.stringify( result, null, 2 ), 'scene.gltf' );
+
+		}, undefined, { animations: optimizedAnimations } );
+
+
+	} );
+	fileExportSubmenu.add( option );
+
+	// Export OBJ
+
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( 'OBJ' );
+	option.onClick( async function () {
+
+		const object = editor.selected;
+
+		if ( object === null ) {
+
+			alert( strings.getKey( 'prompt/file/export/noObjectSelected' ) );
+			return;
+
+		}
+
+		const { OBJExporter } = await import( 'three/addons/exporters/OBJExporter.js' );
+
+		const exporter = new OBJExporter();
+
+		saveString( exporter.parse( object ), 'model.obj' );
+
+	} );
+	fileExportSubmenu.add( option );
+
+	// Export PLY (ASCII)
+
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( 'PLY' );
+	option.onClick( async function () {
+
+		const { PLYExporter } = await import( 'three/addons/exporters/PLYExporter.js' );
+
+		const exporter = new PLYExporter();
+
+		exporter.parse( editor.scene, function ( result ) {
+
+			saveArrayBuffer( result, 'model.ply' );
+
+		} );
+
+	} );
+	fileExportSubmenu.add( option );
+
+	// Export PLY (BINARY)
+
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( 'PLY (BINARY)' );
+	option.onClick( async function () {
+
+		const { PLYExporter } = await import( 'three/addons/exporters/PLYExporter.js' );
+
+		const exporter = new PLYExporter();
+
+		exporter.parse( editor.scene, function ( result ) {
+
+			saveArrayBuffer( result, 'model-binary.ply' );
+
+		}, { binary: true } );
+
+	} );
+	fileExportSubmenu.add( option );
+
+	// Export STL (ASCII)
+
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( 'STL' );
+	option.onClick( async function () {
+
+		const { STLExporter } = await import( 'three/addons/exporters/STLExporter.js' );
+
+		const exporter = new STLExporter();
+
+		saveString( exporter.parse( editor.scene ), 'model.stl' );
+
+	} );
+	fileExportSubmenu.add( option );
+
+	// Export STL (BINARY)
+
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( 'STL (BINARY)' );
+	option.onClick( async function () {
+
+		const { STLExporter } = await import( 'three/addons/exporters/STLExporter.js' );
+
+		const exporter = new STLExporter();
+
+		saveArrayBuffer( exporter.parse( editor.scene, { binary: true } ), 'model-binary.stl' );
+
+	} );
+	fileExportSubmenu.add( option );
+
+	// Export USDZ
+
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( 'USDZ' );
+	option.onClick( async function () {
+
+		const { USDZExporter } = await import( 'three/addons/exporters/USDZExporter.js' );
+
+		const exporter = new USDZExporter();
+
+		saveArrayBuffer( await exporter.parseAsync( editor.scene ), 'model.usdz' );
+
+	} );
+	fileExportSubmenu.add( option );
+
+	// Export FreeFilmCut VfxPack
+
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( strings.getKey( 'menubar/file/export/vfxpack' ) );
+	option.onClick( async function () {
+
+		const packType = ( editor.config && editor.config.getKey( 'project/vfxpack/type' ) ) || 'effect';
+		// 文字动画: dedicated exporter only — never silent scene/effect pack.
+		if ( packType === 'text-template' ) {
+
+			const opts = promptTextTemplatePackOptions( editor );
+			if ( opts === null ) return;
+			try {
+
+				const result = await exportTextTemplatePack( editor, editor.utils.save, opts );
+				console.log( '[FreeFilmCut] Text Template pack exported (via VfxPack menu)', result );
+				alert( 'Text template pack exported\n' + formatTextTemplatePackExportMessage( result ) );
+
+			} catch ( e ) {
+
+				console.error( e );
+				alert( 'Text template pack export failed\n' + ( e && e.message ? e.message : e ) );
+
+			}
+			return;
+
+		}
+
+		if ( packType === 'text-anim' ) {
+
+			const opts = promptTextAnimPackOptions( editor );
+			if ( opts === null ) return;
+			try {
+
+				const phaseRaw = ( editor.config && editor.config.getKey( 'project/vfxpack/stickerAnimPhase' ) ) || 'in';
+				const category = phaseRaw === 'out' || phaseRaw === 'loop' ? phaseRaw : 'in';
+				const result = await exportTextAnimPack( editor, editor.utils.save, { ...opts, category } );
+				console.log( '[FreeFilmCut] Text Anim pack exported (via VfxPack menu)', result );
+				alert( '文字动画包已导出\n' + formatTextAnimPackExportMessage( result ) );
+
+			} catch ( e ) {
+
+				console.error( e );
+				alert( '文字动画包导出失败\n' + ( e && e.message ? e.message : e ) );
+
+			}
+			return;
+
+		}
+
+		const opts = promptExportOptions( editor );
+		if ( opts === null ) return;
+
+		try {
+
+			const result = await exportVfxPack( editor, editor.utils.save, opts );
+			console.log( '[FreeFilmCut] Exported', result.filename, result.manifest, 'anims=', result.animationCount );
+			const where = result.savedToProject
+				? ( result.projectPath || ( 'exports/' + result.filename ) )
+				: result.filename;
+			alert(
+				strings.getKey( 'prompt/file/export/vfxpackSuccess' ) + '\n' + where
+				+ '\n' + formatVfxPackExportMessage( result, strings )
+			);
+
+		} catch ( e ) {
+
+			console.error( e );
+			alert( strings.getKey( 'prompt/file/export/vfxpackFailed' ) + '\n' + ( e && e.message ? e.message : e ) );
+
+		}
+
+	} );
+	fileExportSubmenu.add( option );
+
+	// Export FreeFilmCut Text Anim pack (clip-side 文字动画 library)
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( 'Export Text Anim pack' );
+	option.onClick( async function () {
+
+		const opts = promptTextAnimPackOptions( editor );
+		if ( opts === null ) return;
+
+		try {
+
+			const phaseRaw = ( editor.config && editor.config.getKey( 'project/vfxpack/stickerAnimPhase' ) ) || opts.category || 'in';
+			const category = phaseRaw === 'out' || phaseRaw === 'loop' ? phaseRaw : ( opts.category === 'out' || opts.category === 'loop' ? opts.category : 'in' );
+			const result = await exportTextAnimPack( editor, editor.utils.save, { ...opts, category } );
+			console.log( '[FreeFilmCut] Text Anim pack exported', result );
+			alert( '文字动画包已导出\n' + formatTextAnimPackExportMessage( result ) );
+
+		} catch ( e ) {
+
+			console.error( e );
+			alert( '文字动画包导出失败\n' + ( e && e.message ? e.message : e ) );
+
+		}
+
+	} );
+	fileExportSubmenu.add( option );
+
+	// Export FreeFilmCut Text Template pack (clip-side text-templates library)
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( 'Export Text Template pack' );
+	option.onClick( async function () {
+
+		const opts = promptTextTemplatePackOptions( editor );
+		if ( opts === null ) return;
+
+		try {
+
+			const result = await exportTextTemplatePack( editor, editor.utils.save, opts );
+			console.log( '[FreeFilmCut] Text Template pack exported', result );
+			alert( 'Text template pack exported\n' + formatTextTemplatePackExportMessage( result ) );
+
+		} catch ( e ) {
+
+			console.error( e );
+			alert( 'Text template pack export failed\n' + ( e && e.message ? e.message : e ) );
+
+		}
+
+	} );
+	fileExportSubmenu.add( option );
+
+	// Export FreeFilmCut Flower pack (OpenCut Effects library)
+	option = new UIRow();
+	option.setClass( 'option' );
+	option.setTextContent( 'Export Flower pack' );
+	option.onClick( async function () {
+
+		const opts = promptFlowerPackOptions( editor );
+		if ( opts === null ) return;
+
+		try {
+
+			const result = await exportFlowerPack( editor, editor.utils.save, opts );
+			console.log( '[FreeFilmCut] Flower pack exported', result );
+			alert( 'Flower pack exported\n' + formatFlowerPackExportMessage( result ) );
+
+		} catch ( e ) {
+
+			console.error( e );
+			alert( 'Flower pack export failed\n' + ( e && e.message ? e.message : e ) );
+
+		}
+
+	} );
+	fileExportSubmenu.add( option );
+
+	//
+
+	function getAnimations( scene ) {
+
+		const animations = [];
+
+		scene.traverse( function ( object ) {
+
+			animations.push( ... object.animations );
+
+		} );
+
+		return animations;
+
+	}
+
+	function needsUniqueNames( scene ) {
+
+		const usedNames = new Set();
+		let duplicate = false;
+		let animated = false;
+
+		scene.traverse( function ( object ) {
+
+			if ( object.animations.length > 0 ) animated = true;
+
+			if ( object.name === '' ) return;
+
+			if ( usedNames.has( object.name ) ) duplicate = true;
+
+			usedNames.add( object.name );
+
+		} );
+
+		return duplicate && animated;
+
+	}
+
+	// Gives every object a unique name and keeps the animation tracks that
+	// reference them by name in sync. The renamed scene mirrors the result of a
+	// glTF round-trip, where the loader makes all names unique, too.
+
+	function ensureUniqueNames( scene ) {
+
+		// Resolve each track's target object up front, scoped to the object that
+		// owns the clip. This disambiguates colliding names before they change.
+
+		const trackBindings = [];
+
+		scene.traverse( function ( owner ) {
+
+			for ( const clip of owner.animations ) {
+
+				for ( const track of clip.tracks ) {
+
+					const nodeName = PropertyBinding.parseTrackName( track.name ).nodeName;
+					const target = PropertyBinding.findNode( owner, nodeName );
+
+					// References by UUID stay valid, so only track name-based ones.
+
+					if ( target !== null && target.name === nodeName ) {
+
+						trackBindings.push( { track, target, nodeName } );
+
+					}
+
+				}
+
+			}
+
+		} );
+
+		// Assign a unique name to every named object.
+
+		let changed = false;
+		const usedNames = new Set();
+
+		scene.traverse( function ( object ) {
+
+			if ( object.name === '' ) return;
+
+			if ( usedNames.has( object.name ) ) {
+
+				let suffix = 1, name;
+				do {
+
+					name = object.name + '_' + ( suffix ++ );
+
+				} while ( usedNames.has( name ) );
+
+				object.name = name;
+				changed = true;
+
+			}
+
+			usedNames.add( object.name );
+
+		} );
+
+		if ( changed === false ) return;
+
+		// Point the affected tracks at their renamed targets.
+
+		for ( const { track, target, nodeName } of trackBindings ) {
+
+			if ( target.name !== nodeName ) {
+
+				track.name = target.name + track.name.slice( nodeName.length );
+
+			}
+
+		}
+
+		editor.signals.sceneGraphChanged.dispatch();
+
+	}
+
+	return container;
+
+}
+
+export { MenubarFile };

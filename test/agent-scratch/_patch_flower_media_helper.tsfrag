@@ -1,0 +1,216 @@
+﻿function listKeysNoPackPrefix(files: Map<string, Uint8Array>): string[] {
+	const keys = new Set<string>();
+	for (const k of files.keys()) {
+		keys.add(stripPackPrefix(k));
+	}
+	return [...keys];
+}
+
+function findPackedMediaPath(
+	fileKeys: string[],
+	uuid: string | undefined,
+	kind: string,
+	fileName: string | undefined,
+): string {
+	const prefix = (uuid || "").slice(0, 8).toLowerCase();
+	const pools =
+		kind === "gif"
+			? fileKeys.filter((f) => f.startsWith("media/"))
+			: kind === "imageSequence"
+				? fileKeys.filter((f) => f.startsWith("sequences/"))
+				: fileKeys.filter((f) => f.startsWith("videos/") || f.startsWith("media/"));
+	if (prefix) {
+		if (kind === "imageSequence") {
+			const folderHits = pools
+				.filter((f) => f.toLowerCase().includes(prefix))
+				.map((f) => {
+					const parts = f.split("/");
+					return parts.length >= 2 ? parts[0] + "/" + parts[1] + "/" : f;
+				});
+			if (folderHits[0]) return folderHits[0];
+		} else {
+			const hit = pools.find((f) => f.toLowerCase().includes(prefix));
+			if (hit) return hit;
+		}
+	}
+	if (fileName) {
+		const base = String(fileName)
+			.split(/[/\\]/)
+			.pop()!
+			.replace(/\.[^.]+$/, "")
+			.toLowerCase();
+		if (base.length >= 3) {
+			const hit = pools.find((f) => f.toLowerCase().includes(base.slice(0, 12)));
+			if (hit) {
+				if (kind === "imageSequence") {
+					const parts = hit.split("/");
+					return parts.length >= 2 ? parts[0] + "/" + parts[1] + "/" : hit;
+				}
+				return hit;
+			}
+		}
+	}
+	return "";
+}
+
+type RtSpec = { width: number; height: number; wrapMode: string };
+
+function collectFlowerMediaFromScene(
+	scene: unknown,
+	files: Map<string, Uint8Array>,
+): {
+	mediaPlayers: Array<Record<string, unknown>>;
+	rtByUuid: Map<string, RtSpec>;
+} {
+	const fileKeys = listKeysNoPackPrefix(files);
+	const mediaPlayers: Array<Record<string, unknown>> = [];
+	const rtByUuid = new Map<string, RtSpec>();
+
+	const walk = (node: unknown) => {
+		if (!node || typeof node !== "object") return;
+		if (Array.isArray(node)) {
+			for (const n of node) walk(n);
+			return;
+		}
+		const n = node as Record<string, unknown>;
+		const uuid = typeof n.uuid === "string" ? n.uuid : "";
+		const ud = (n.userData || {}) as Record<string, unknown>;
+		const rtSpec = ud.fccRenderTexture as
+			| { width?: number; height?: number; wrapMode?: string }
+			| undefined;
+		const kindNode = String(n.kind || "");
+		if (uuid && (rtSpec || kindNode === "renderTexture")) {
+			const wrapRaw = typeof rtSpec?.wrapMode === "string" ? rtSpec.wrapMode : "repeat";
+			rtByUuid.set(uuid, {
+				width: Math.min(4096, Math.max(16, Math.round(Number(rtSpec?.width) || 512))),
+				height: Math.min(4096, Math.max(16, Math.round(Number(rtSpec?.height) || 512))),
+				wrapMode:
+					wrapRaw === "repeat" || wrapRaw === "mirroredRepeat" || wrapRaw === "clamp"
+						? wrapRaw
+						: "repeat",
+			});
+		}
+		const vp = (ud.fccVideoPlayer || n.video) as Record<string, unknown> | undefined;
+		if (vp && uuid) {
+			const kind = String(vp.kind || "video");
+			const packPath =
+				(typeof vp.path === "string" && String(vp.path)) ||
+				findPackedMediaPath(
+					fileKeys,
+					uuid,
+					kind,
+					typeof vp.fileName === "string" ? vp.fileName : undefined,
+				);
+			const targetUuid =
+				typeof vp.targetUuid === "string" && vp.targetUuid ? vp.targetUuid : "";
+			const out: Record<string, unknown> = {
+				uuid,
+				name: typeof n.name === "string" ? n.name : "MediaPlayer",
+				kind,
+				path: packPath,
+				packPath,
+				targetUuid,
+				fileName: vp.fileName,
+				loop: vp.loop !== false,
+				muted: vp.muted === true,
+				volume: Number.isFinite(Number(vp.volume)) ? Number(vp.volume) : 1,
+				playbackRate:
+					Number.isFinite(Number(vp.playbackRate)) && Number(vp.playbackRate) > 0
+						? Number(vp.playbackRate)
+						: 1,
+				...(vp.autoplay !== undefined ? { autoplay: vp.autoplay === true } : {}),
+				sequenceFps: Number(vp.sequenceFps) || 30,
+				sequenceStart: Number(vp.sequenceStart) || 0,
+				sequenceEnd: Number.isFinite(Number(vp.sequenceEnd))
+					? Number(vp.sequenceEnd)
+					: -1,
+			};
+			if (kind === "imageSequence") {
+				const seqDir = String(packPath || vp.sequenceDir || "")
+					.replace(/\\/g, "/")
+					.replace(/\/$/, "");
+				out.sequenceDir = seqDir ? seqDir + "/" : "";
+				out.path = out.sequenceDir || out.path;
+				out.packPath = out.path;
+			}
+			mediaPlayers.push(out);
+		}
+		if (n.children) walk(n.children);
+		if (n.nodes) walk(n.nodes);
+	};
+
+	const roots =
+		(scene as { nodes?: unknown[] })?.nodes ||
+		((scene as { object?: unknown }).object
+			? [(scene as { object: unknown }).object]
+			: []);
+	walk(roots);
+
+	for (const mp of mediaPlayers) {
+		const tu = typeof mp.targetUuid === "string" ? mp.targetUuid : "";
+		const rt = tu ? rtByUuid.get(tu) : undefined;
+		if (rt) {
+			mp.rtWidth = rt.width;
+			mp.rtHeight = rt.height;
+			mp.rtWrapMode = rt.wrapMode;
+		}
+	}
+	return { mediaPlayers, rtByUuid };
+}
+
+function registerArtTextPackFromZip({
+	manifest,
+	scene,
+	files,
+	sourceFileName,
+	blobUrls,
+}: {
+	manifest: Record<string, unknown>;
+	scene: unknown;
+	files: Map<string, Uint8Array>;
+	sourceFileName: string;
+	blobUrls: string[];
+}): LoadedVfxPack | null {
+	const id =
+		typeof manifest.id === "string" && manifest.id.trim()
+			? manifest.id.trim()
+			: "";
+	if (!id) return null;
+	const packFiles = new Map<string, Uint8Array>();
+	for (const [k, bytes] of files) {
+		const rel = stripPackPrefix(k);
+		if (!rel || rel.endsWith("/")) continue;
+		if (!packFiles.has(rel)) packFiles.set(rel, bytes);
+	}
+	const objectUrls = new Map<string, string>();
+	for (const [path, bytes] of packFiles) {
+		const lower = path.toLowerCase();
+		const isMedia =
+			/\.(png|jpe?g|webp|gif|bmp|mp4|webm|mov)$/i.test(lower) ||
+			lower.startsWith("media/") ||
+			lower.startsWith("videos/") ||
+			lower.startsWith("sequences/");
+		if (!isMedia) continue;
+		if (objectUrls.has(path)) continue;
+		const url = blobUrlFromBytes(bytes, path);
+		blobUrls.push(url);
+		objectUrls.set(path, url);
+	}
+	const pack: LoadedVfxPack = {
+		id,
+		displayName:
+			(typeof manifest.displayName === "string" && manifest.displayName) ||
+			(typeof manifest.name === "string" && manifest.name) ||
+			id,
+		type: String(manifest.type || "art-text"),
+		scope: String(manifest.scope || "stack"),
+		manifest: manifest as unknown as VfxManifest,
+		scene: (scene as VfxSceneFile) || null,
+		files: packFiles,
+		objectUrls,
+		sourceFileName,
+	};
+	usePackRegistry.getState().registerPack(pack);
+	return pack;
+}
+

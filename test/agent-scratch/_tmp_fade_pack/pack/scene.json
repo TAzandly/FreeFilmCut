@@ -1,0 +1,583 @@
+{
+  "schema": "vfxpack-scene/1.2",
+  "name": "Scene",
+  "background": {
+    "type": "None",
+    "value": null
+  },
+  "environment": {
+    "type": "Equirectangular",
+    "path": "textures/tex_0_pmrem.png",
+    "uuid": "3557f91e-51a3-4d87-a4d3-16be0763ff0c",
+    "colorSpace": "srgb-linear",
+    "intensity": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "exported": false
+  },
+  "fog": null,
+  "render": {
+    "rendererType": "WebGLRenderer",
+    "cameraType": "perspective",
+    "antialias": true,
+    "shadows": false,
+    "shadowType": 1,
+    "toneMapping": 0,
+    "toneMappingName": "NoToneMapping",
+    "toneMappingExposure": 1
+  },
+  "activeCamera": "09ad81c4-2c23-45c5-a73a-327cf164f127",
+  "nodes": [
+    {
+      "uuid": "d8bc66dc-492a-4fda-a142-9b4b7a67189b",
+      "name": "Scene",
+      "kind": "scene",
+      "type": "Scene",
+      "visible": true,
+      "layers": 1,
+      "parent": null,
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "userData": {
+        "fccAudioListener": {
+          "volume": 1,
+          "muted": false
+        }
+      }
+    },
+    {
+      "uuid": "09ad81c4-2c23-45c5-a73a-327cf164f127",
+      "name": "PerspectiveCamera",
+      "kind": "camera",
+      "type": "PerspectiveCamera",
+      "visible": true,
+      "layers": 1,
+      "parent": null,
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "userData": {
+        "postProcessStack": {
+          "enabled": true,
+          "effects": [],
+          "_bloomThresholdMigrated": true
+        }
+      },
+      "cameraType": "PerspectiveCamera",
+      "fov": 50,
+      "aspect": 0.5625,
+      "near": 0.1,
+      "far": 2000,
+      "focus": 10,
+      "zoom": 1,
+      "postProcess": {
+        "enabled": true,
+        "effects": []
+      }
+    },
+    {
+      "uuid": "2607e0a2-9e7d-4664-9940-c528faeb1597",
+      "name": "Canvas",
+      "kind": "ui",
+      "type": "Group",
+      "visible": true,
+      "layers": 4,
+      "parent": null,
+      "transform": {
+        "position": [
+          -0.26229805771218667,
+          -0.4663076581549986,
+          -1
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          0.00048573714391145684,
+          0.00048573714391145684,
+          0.00048573714391145684
+        ],
+        "matrix": [
+          0.00048573714391145684,
+          0,
+          0,
+          0,
+          0,
+          0.00048573714391145684,
+          0,
+          0,
+          0,
+          0,
+          0.00048573714391145684,
+          0,
+          -0.26229805771218667,
+          -0.4663076581549986,
+          -1,
+          1
+        ]
+      },
+      "userData": {
+        "fccUI": {
+          "type": "canvas",
+          "renderMode": "camera",
+          "cameraUuid": "09ad81c4-2c23-45c5-a73a-327cf164f127",
+          "planeDistance": 1,
+          "anchorMin": [
+            0,
+            0
+          ],
+          "anchorMax": [
+            1,
+            1
+          ],
+          "pivot": [
+            0.5,
+            0.5
+          ],
+          "anchoredPosition": [
+            0,
+            0
+          ],
+          "sizeDelta": [
+            0,
+            0
+          ],
+          "localEulerAngles": [
+            0,
+            0,
+            0
+          ],
+          "localScale": [
+            1,
+            1,
+            1
+          ],
+          "_resolved": {
+            "w": 1080,
+            "h": 1920
+          }
+        }
+      },
+      "ui": {
+        "type": "canvas",
+        "anchorMin": [
+          0,
+          0
+        ],
+        "anchorMax": [
+          1,
+          1
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "anchoredPosition": [
+          0,
+          0
+        ],
+        "sizeDelta": [
+          0,
+          0
+        ],
+        "localEulerAngles": [
+          0,
+          0,
+          0
+        ],
+        "localScale": [
+          1,
+          1,
+          1
+        ],
+        "renderMode": "camera",
+        "cameraUuid": "09ad81c4-2c23-45c5-a73a-327cf164f127",
+        "planeDistance": 1
+      }
+    },
+    {
+      "uuid": "508c4a5b-660d-4aba-b998-6fa6fb7aefab",
+      "name": "Image",
+      "kind": "ui",
+      "type": "Group",
+      "visible": true,
+      "layers": 4,
+      "parent": "2607e0a2-9e7d-4664-9940-c528faeb1597",
+      "transform": {
+        "position": [
+          540,
+          960,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          540,
+          960,
+          0,
+          1
+        ]
+      },
+      "userData": {
+        "fccUI": {
+          "type": "image",
+          "anchorMin": [
+            0,
+            0
+          ],
+          "anchorMax": [
+            1,
+            1
+          ],
+          "pivot": [
+            0.5,
+            0.5
+          ],
+          "anchoredPosition": [
+            0,
+            0
+          ],
+          "sizeDelta": [
+            0,
+            0
+          ],
+          "localEulerAngles": [
+            0,
+            0,
+            0
+          ],
+          "localScale": [
+            1,
+            1,
+            1
+          ],
+          "renderMode": "overlay",
+          "cameraUuid": null,
+          "planeDistance": 100
+        }
+      },
+      "ui": {
+        "type": "image",
+        "anchorMin": [
+          0,
+          0
+        ],
+        "anchorMax": [
+          1,
+          1
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ],
+        "anchoredPosition": [
+          0,
+          0
+        ],
+        "sizeDelta": [
+          0,
+          0
+        ],
+        "localEulerAngles": [
+          0,
+          0,
+          0
+        ],
+        "localScale": [
+          1,
+          1,
+          1
+        ],
+        "renderMode": "overlay",
+        "cameraUuid": null,
+        "planeDistance": 100
+      },
+      "geometry": {
+        "uuid": "eabd6d36-f7e5-4198-9cc2-005dcf95adc0",
+        "type": "PlaneGeometry",
+        "parameters": {
+          "width": 1,
+          "height": 1
+        }
+      },
+      "materials": [
+        {
+          "uuid": "05b6f2fe-561e-4617-858b-b512776edc26",
+          "name": "UIImagetrans",
+          "type": "ShaderMaterial",
+          "transparent": true,
+          "opacity": 1,
+          "side": 0,
+          "depthWrite": false,
+          "depthTest": true,
+          "color": "#4fc3f7",
+          "emissive": null,
+          "textures": {},
+          "uniforms": {
+            "uMix": 0.9666666666666667,
+            "uResolution": [
+              1080,
+              1920
+            ],
+            "uScreenTexelSize": [
+              0.000925925925925926,
+              0.0005208333333333333
+            ],
+            "uScreenParams": [
+              1080,
+              1920,
+              1.000925925925926,
+              1.0005208333333333
+            ],
+            "_ScreenParams": [
+              1080,
+              1920,
+              1.000925925925926,
+              1.0005208333333333
+            ],
+            "color": "#4fc3f7",
+            "color2": "#0000ff",
+            "opacity": 1,
+            "uTime": 0,
+            "useMap": false
+          },
+          "shader": {
+            "vertex": "shaders/mat_0_uiimagetrans.vert.glsl",
+            "fragment": "shaders/mat_0_uiimagetrans.frag.glsl",
+            "raw": false
+          },
+          "exposedUniforms": {}
+        }
+      ],
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "uuid": "2c79816f-97f3-4c4d-b6bb-05894fa97860",
+      "name": "Timeline",
+      "kind": "timeline",
+      "type": "Object3D",
+      "visible": true,
+      "layers": 1,
+      "parent": null,
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "userData": {
+        "fccTimeline": {
+          "projectPath": "assets/timelines/timeline.timeline.json",
+          "active": true,
+          "fps": 30,
+          "duration": 1,
+          "loop": "clamp"
+        }
+      },
+      "timeline": {
+        "path": "timelines/timeline.timeline.json"
+      }
+    }
+  ],
+  "assets": {
+    "textures": [
+      {
+        "uuid": "3557f91e-51a3-4d87-a4d3-16be0763ff0c",
+        "name": "PMREM",
+        "path": "textures/tex_0_pmrem.png",
+        "exported": false,
+        "wrapS": 1001,
+        "wrapT": 1001,
+        "magFilter": 1006,
+        "minFilter": 1008,
+        "flipY": false,
+        "colorSpace": "srgb-linear"
+      }
+    ],
+    "shaders": [
+      {
+        "name": "UIImagetrans",
+        "vertex": "shaders/mat_0_uiimagetrans.vert.glsl",
+        "fragment": "shaders/mat_0_uiimagetrans.frag.glsl",
+        "raw": false
+      }
+    ],
+    "geometries": [],
+    "animations": [
+      "animations/__fccimagemesh.anim",
+      "animations/animation.anim"
+    ],
+    "timelines": [
+      "timelines/timeline.timeline.json"
+    ]
+  },
+  "resolution": {
+    "width": 1080,
+    "height": 1920
+  },
+  "meta": {
+    "generator": "FreeFilmCut Three.js Editor VfxPackExporter",
+    "threeSceneUuid": "d8bc66dc-492a-4fda-a142-9b4b7a67189b",
+    "exportedAt": "2026-10-16T13:43:27.499Z",
+    "nodeCount": 5,
+    "textureCount": 1,
+    "shaderCount": 1,
+    "animationCount": 2,
+    "animationSkippedEmpty": [
+      "Image"
+    ],
+    "animationSkippedFiltered": [],
+    "timelineCount": 1
+  },
+  "exposedParams": []
+}

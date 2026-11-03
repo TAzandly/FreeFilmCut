@@ -1,0 +1,527 @@
+1|import * as THREE from "three";
+2|import type { LoadedVfxPack, VfxSceneNode } from "@/vfxpack/types";
+3|import {
+4|	ensureBelowInputUniforms,
+5|	isBelowInputUniformName,
+6|	packNeedsBelowInput,
+7|	type BelowInputUniformName,
+8|} from "@/vfxpack/below-input";
+9|import { ensureGlobalScreenUniforms } from "@/vfxpack/global-screen-params";
+10|import {
+11|	normalizeExposedParams,
+12|	type ExposedParam,
+13|} from "@/vfxpack/exposed-params";
+14|import type { PostProcessStackData } from "@/vfxpack/postprocess";
+15|import {
+16|	normalizeAnim,
+17|	type FreecapcutAnimClip,
+18|} from "@/vfxpack/freecapcut-anim";
+19|
+20|export type BuiltPackScene = {
+21|	packId: string;
+22|	/** Normalized / raw pack type from manifest (filter, effect, ...). */
+23|	packType: string;
+24|	/** Compose scope (below | stack | clip). */
+25|	packScope: string;
+26|	/** True when NLE should bind below-track composite to uInput etc. */
+27|	needsBelowInput: boolean;
+28|	/** Sampler names found on shaders that accept below input. */
+29|	belowInputUniformNames: BelowInputUniformName[];
+30|	root: THREE.Scene;
+31|	camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
+32|	disposables: Array<{ dispose: () => void }>;
+33|	render?: {
+34|		toneMapping?: number;
+35|		toneMappingExposure?: number;
+36|		shadows?: boolean;
+37|		shadowType?: number;
+38|		antialias?: boolean;
+39|	};
+40|	/** Camera post-process stack from Editor export. */
+41|	postProcess?: PostProcessStackData | null;
+42|	/** Materials keyed by exported uuid (for exposed uniform overrides). */
+43|	materialsByUuid: Map<string, THREE.Material>;
+44|	/** Params exposed to OpenCut properties / keyframes. */
+45|	exposedParams: ExposedParam[];
+46|	/** FreeFilmCut .anim clips packed with this scene (sampled by clip local time). */
+47|	animClips: FreecapcutAnimClip[];
+48|};
+49|
+50|/**
+51| * Build a Three.js scene from vfxpack scene.json (MVP subset):
+52| * Scene / Mesh (BoxGeometry + map) / PerspectiveCamera + default lights.
+53| */
+54|export async function buildPackScene({
+55|	pack,
+56|}: {
+57|	pack: LoadedVfxPack;
+58|}): Promise<BuiltPackScene | null> {
+59|	if (!pack.scene) return null;
+60|
+61|	const sceneFile = pack.scene;
+62|	const root = new THREE.Scene();
+63|	root.name = sceneFile.name || pack.displayName;
+64|
+65|	const disposables: Array<{ dispose: () => void }> = [];
+66|	const textureCache = new Map<string, THREE.Texture>();
+67|	const belowInputUniformNames = new Set<BelowInputUniformName>();
+68|	const materialsByUuid = new Map<string, THREE.Material>();
+69|	let postProcess: PostProcessStackData | null = null;
+70|	const needsBelow = packNeedsBelowInput({ type: pack.type, scope: pack.scope });
+71|
+72|	const loadTexture = async (relPath: string): Promise<THREE.Texture | null> => {
+73|		const url = pack.objectUrls.get(relPath);
+74|		if (!url) return null;
+75|		if (textureCache.has(relPath)) return textureCache.get(relPath)!;
+76|
+77|		const texture = await new Promise<THREE.Texture>((resolve, reject) => {
+78|			const loader = new THREE.TextureLoader();
+79|			loader.load(
+80|				url,
+81|				(tex) => {
+82|					tex.colorSpace = THREE.SRGBColorSpace;
+83|					tex.flipY = true;
+84|					tex.needsUpdate = true;
+85|					resolve(tex);
+86|				},
+87|				undefined,
+88|				reject,
+89|			);
+90|		});
+91|		textureCache.set(relPath, texture);
+92|		disposables.push(texture);
+93|		return texture;
+94|	};
+95|
+96|	await applySceneRenderSettings({ root, sceneFile, loadTexture });
+97|
+98|	// Default lights — exported packs often omit lights; MeshStandard needs them.
+99|	const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+100|	const dir = new THREE.DirectionalLight(0xffffff, 1.1);
+101|	dir.position.set(2, 4, 3);
+102|	root.add(ambient);
+103|	root.add(dir);
+104|
+105|	let camera: THREE.PerspectiveCamera | THREE.OrthographicCamera | null = null;
+106|
+107|	for (const node of sceneFile.nodes) {
+108|		if (node.kind === "scene" || node.type === "Scene") {
+109|			continue;
+110|		}
+111|
+112|		if (node.kind === "camera" || node.type === "PerspectiveCamera") {
+113|			const cam = new THREE.PerspectiveCamera(
+114|				node.fov ?? 50,
+115|				node.aspect ?? 16 / 9,
+116|				node.near ?? 0.1,
+117|				node.far ?? 2000,
+118|			);
+119|			applyTransform(cam, node);
+120|			cam.name = node.name;
+121|			root.add(cam);
+122|			const stackFromNode =
+123|				node.postProcess ||
+124|				(node.userData &&
+125|					(node.userData as { postProcessStack?: PostProcessStackData })
+126|						.postProcessStack) ||
+127|				null;
+128|			if (
+129|				!camera ||
+130|				(sceneFile.activeCamera && sceneFile.activeCamera === node.uuid)
+131|			) {
+132|				camera = cam;
+133|				if (stackFromNode && typeof stackFromNode === "object") {
+134|					postProcess = {
+135|						enabled: stackFromNode.enabled !== false,
+136|						effects: Array.isArray(stackFromNode.effects)
+137|							? stackFromNode.effects.map((e) => ({
+138|									id: e.id,
+139|									type: e.type,
+140|									enabled: e.enabled !== false,
+141|									params: { ...(e.params || {}) },
+142|									exposed: { ...(e.exposed || {}) },
+143|								}))
+144|							: [],
+145|					};
+146|				}
+147|			}
+148|			continue;
+149|		}
+150|
+151|		if (node.kind === "mesh" || node.type === "Mesh") {
+152|			const geometry = createGeometry(node);
+153|			disposables.push(geometry);
+154|			const material = await createMaterial(node, loadTexture, pack, disposables);
+155|			disposables.push(material);
+156|			const matUuid = node.materials?.[0]?.uuid;
+157|			if (matUuid) materialsByUuid.set(matUuid, material);
+158|			collectBelowInputNames(material, belowInputUniformNames);
+159|			const mesh = new THREE.Mesh(geometry, material);
+160|			mesh.name = node.name;
+161|			mesh.visible = node.visible !== false;
+162|			applyTransform(mesh, node);
+163|			root.add(mesh);
+164|		}
+165|	}
+166|
+167|	if (!camera) {
+168|		camera = new THREE.PerspectiveCamera(50, 16 / 9, 0.1, 2000);
+169|		camera.position.set(0, 1.5, 4);
+170|		camera.lookAt(0, 0, 0);
+171|		root.add(camera);
+172|	}
+173|
+174|	const belowNames = Array.from(belowInputUniformNames);
+175|	const exposedParams = normalizeExposedParams({
+176|		manifest: pack.manifest,
+177|		scene: sceneFile,
+178|	});
+179|
+180|
+181|	// Load FreeFilmCut .anim clips listed in manifest (or assets.animations)
+182|	const animClips: FreecapcutAnimClip[] = [];
+183|	const animPaths = new Set<string>();
+184|	for (const entry of pack.manifest.animations || []) {
+185|		if (entry?.path) animPaths.add(String(entry.path).replace(/^pack\//, ""));
+186|	}
+187|	for (const p of pack.manifest.assets?.animations || []) {
+188|		if (p) animPaths.add(String(p).replace(/^pack\//, ""));
+189|	}
+190|	// Also pick up any *.anim under animations/
+191|	for (const key of pack.files.keys()) {
+192|		if (/^animations\/.*\.anim$/i.test(key)) animPaths.add(key);
+193|	}
+194|	const decodeText = (bytes: Uint8Array) => new TextDecoder().decode(bytes);
+195|	for (const rel of animPaths) {
+196|		const bytes = pack.files.get(rel) || pack.files.get(`pack/${rel}`);
+197|		if (!bytes) continue;
+198|		try {
+199|			const raw = JSON.parse(decodeText(bytes));
+200|			const clip = normalizeAnim(raw);
+201|			if (clip) animClips.push(clip);
+202|		} catch (err) {
+203|			console.warn("[FreeFilmCut] failed to parse .anim", rel, err);
+204|		}
+205|	}
+206|
+207|	return {
+208|		packId: pack.id,
+209|		packType: String(pack.type || "effect"),
+210|		packScope: String(pack.scope || (needsBelow ? "below" : "stack")),
+211|		needsBelowInput: needsBelow,
+212|		belowInputUniformNames: belowNames,
+213|		root,
+214|		camera,
+215|		disposables,
+216|		postProcess,
+217|		materialsByUuid,
+218|		animClips,
+219|		exposedParams,
+220|		render: sceneFile.render
+221|			? {
+222|					toneMapping: sceneFile.render.toneMapping,
+223|					toneMappingExposure: sceneFile.render.toneMappingExposure,
+224|					shadows: sceneFile.render.shadows,
+225|					shadowType: sceneFile.render.shadowType,
+226|					antialias: sceneFile.render.antialias,
+227|			  }
+228|			: undefined,
+229|	};
+230|}
+231|
+232|export function disposeBuiltPackScene({ built }: { built: BuiltPackScene }) {
+233|	for (const d of built.disposables) {
+234|		d.dispose();
+235|	}
+236|	built.root.clear();
+237|}
+238|
+239|function applyTransform(obj: THREE.Object3D, node: VfxSceneNode) {
+240|	const t = node.transform;
+241|	if (t.matrix && t.matrix.length === 16) {
+242|		const m = new THREE.Matrix4().fromArray(t.matrix);
+243|		m.decompose(obj.position, obj.quaternion, obj.scale);
+244|		return;
+245|	}
+246|	obj.position.fromArray(t.position);
+247|	obj.quaternion.fromArray(t.quaternion);
+248|	obj.scale.fromArray(t.scale);
+249|}
+250|
+251|
+252|async function readPackText(
+253|	pack: LoadedVfxPack,
+254|	relPath: string | undefined,
+255|): Promise<string | null> {
+256|	if (!relPath) return null;
+257|	const url = pack.objectUrls.get(relPath);
+258|	if (url) {
+259|		try {
+260|			return await fetch(url).then((r) => r.text());
+261|		} catch {
+262|			/* fall through */
+263|		}
+264|	}
+265|	const bytes = pack.files.get(relPath);
+266|	if (!bytes) return null;
+267|	return new TextDecoder("utf-8").decode(bytes);
+268|}
+269|
+270|async function applySceneRenderSettings({
+271|	root,
+272|	sceneFile,
+273|	loadTexture,
+274|}: {
+275|	root: THREE.Scene;
+276|	sceneFile: NonNullable<LoadedVfxPack["scene"]>;
+277|	loadTexture: (rel: string) => Promise<THREE.Texture | null>;
+278|}) {
+279|	const bg = sceneFile.background as
+280|		| {
+281|				type?: string;
+282|				color?: string;
+283|				path?: string | null;
+284|				blurriness?: number;
+285|				intensity?: number;
+286|		  }
+287|		| string
+288|		| null
+289|		| undefined;
+290|
+291|	if (typeof bg === "string") {
+292|		root.background = new THREE.Color(bg);
+293|	} else if (bg && typeof bg === "object") {
+294|		if (bg.type === "Color" && bg.color) {
+295|			root.background = new THREE.Color(bg.color);
+296|		} else if (
+297|			(bg.type === "Texture" || bg.type === "Equirectangular") &&
+298|			bg.path
+299|		) {
+300|			const tex = await loadTexture(bg.path);
+301|			if (tex) {
+302|				if (bg.type === "Equirectangular") {
+303|					tex.mapping = THREE.EquirectangularReflectionMapping;
+304|				}
+305|				root.background = tex;
+306|			}
+307|		} else if (bg.type === "None") {
+308|			root.background = null;
+309|		}
+310|		if (typeof bg.blurriness === "number") {
+311|			root.backgroundBlurriness = bg.blurriness;
+312|		}
+313|		if (typeof bg.intensity === "number") {
+314|			root.backgroundIntensity = bg.intensity;
+315|		}
+316|	}
+317|
+318|	const env = sceneFile.environment as
+319|		| { type?: string; path?: string | null; intensity?: number }
+320|		| null
+321|		| undefined;
+322|	if (env && env.type === "Equirectangular" && env.path) {
+323|		const tex = await loadTexture(env.path);
+324|		if (tex) {
+325|			tex.mapping = THREE.EquirectangularReflectionMapping;
+326|			root.environment = tex;
+327|		}
+328|		if (typeof env.intensity === "number") {
+329|			(
+330|				root as THREE.Scene & { environmentIntensity?: number }
+331|			).environmentIntensity = env.intensity;
+332|		}
+333|	} else if (env && env.type === "None") {
+334|		root.environment = null;
+335|	}
+336|
+337|	const fog = sceneFile.fog;
+338|	if (fog && fog.type === "Fog") {
+339|		root.fog = new THREE.Fog(
+340|			fog.color ?? "#000000",
+341|			fog.near ?? 1,
+342|			fog.far ?? 1000,
+343|		);
+344|	} else if (fog && fog.type === "FogExp2") {
+345|		root.fog = new THREE.FogExp2(
+346|			fog.color ?? "#000000",
+347|			fog.density ?? 0.00025,
+348|		);
+349|	}
+350|}
+351|
+352|function createGeometry(node: VfxSceneNode): THREE.BufferGeometry {
+353|	const g = node.geometry;
+354|	const p = g?.parameters ?? {};
+355|	if (g?.type === "BoxGeometry") {
+356|		return new THREE.BoxGeometry(
+357|			p.width ?? 1,
+358|			p.height ?? 1,
+359|			p.depth ?? 1,
+360|			p.widthSegments ?? 1,
+361|			p.heightSegments ?? 1,
+362|			p.depthSegments ?? 1,
+363|		);
+364|	}
+365|	if (g?.type === "PlaneGeometry") {
+366|		return new THREE.PlaneGeometry(p.width ?? 1, p.height ?? 1);
+367|	}
+368|	if (g?.type === "SphereGeometry") {
+369|		return new THREE.SphereGeometry(
+370|			p.radius ?? 0.5,
+371|			p.widthSegments ?? 32,
+372|			p.heightSegments ?? 16,
+373|		);
+374|	}
+375|	return new THREE.BoxGeometry(1, 1, 1);
+376|}
+377|
+378|async function createMaterial(
+379|	node: VfxSceneNode,
+380|	loadTexture: (rel: string) => Promise<THREE.Texture | null>,
+381|	pack?: LoadedVfxPack,
+382|	disposables?: Array<{ dispose: () => void }>,
+383|): Promise<THREE.Material> {
+384|	const matDef = node.materials?.[0];
+385|	const color = matDef?.color
+386|		? new THREE.Color(matDef.color)
+387|		: new THREE.Color(0xffffff);
+388|	const mapPath = matDef?.textures?.map;
+389|	const map = mapPath ? await loadTexture(mapPath) : null;
+390|
+391|	// Custom ShaderMaterial / RawShaderMaterial from Editor export
+392|	const shaderPaths = matDef?.shader as
+393|		| { vertex?: string; fragment?: string; raw?: boolean }
+394|		| undefined;
+395|	if (
+396|		pack &&
+397|		shaderPaths?.vertex &&
+398|		shaderPaths?.fragment &&
+399|		(matDef?.type === "ShaderMaterial" || matDef?.type === "RawShaderMaterial")
+400|	) {
+401|		const vertexShader = await readPackText(pack, shaderPaths.vertex);
+402|		const fragmentShader = await readPackText(pack, shaderPaths.fragment);
+403|		if (vertexShader && fragmentShader) {
+404|			// WebGL: a null sampler2D uniform often makes ALL samplers sample black
+405|			// (including uInput). Always bind a 1x1 placeholder for empty maps.
+406|			const white1x1 = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+407|			white1x1.needsUpdate = true;
+408|			white1x1.colorSpace = THREE.SRGBColorSpace;
+409|			disposables?.push(white1x1);
+410|			const uniforms: Record<string, { value: unknown }> = {
+411|				map: { value: map ?? white1x1 },
+412|				color: { value: color.clone() },
+413|				opacity: { value: matDef?.opacity ?? 1 },
+414|				uTime: { value: 0 },
+415|				useMap: { value: map !== null },
+416|			};
+417|			const ud = (matDef as { uniforms?: Record<string, unknown> })?.uniforms;
+418|			if (ud) {
+419|				for (const [k, v] of Object.entries(ud)) {
+420|					if (v && typeof v === "object" && (v as { type?: string }).type === "t") {
+421|						// NLE binds below-composite each frame — never treat as packed map.
+422|						const binding = (v as { binding?: string }).binding;
+423|						if (
+424|							isBelowInputUniformName(k) ||
+425|							binding === "accumBelow"
+426|						) {
+427|							uniforms[k] = { value: white1x1 };
+428|							continue;
+429|						}
+430|						const p = (v as { path?: string }).path;
+431|						const loaded = p ? await loadTexture(p) : null;
+432|						uniforms[k] = { value: loaded ?? white1x1 };
+433|					} else if (
+434|						v &&
+435|						typeof v === "object" &&
+436|						"value" in (v as object)
+437|					) {
+438|						const raw = (v as { value: unknown }).value;
+439|						if (typeof raw === "string" && raw.startsWith("#")) {
+440|							uniforms[k] = { value: new THREE.Color(raw) };
+441|						} else {
+442|							uniforms[k] = { value: raw };
+443|						}
+444|					} else if (typeof v === "string" && v.startsWith("#")) {
+445|						uniforms[k] = { value: new THREE.Color(v) };
+446|					} else if (v !== null && v !== undefined) {
+447|						uniforms[k] = { value: v };
+448|					}
+449|					// else: skip null (uInput placeholder / NLE bind)
+450|				}
+451|			}
+452|			// Auto-create sampler slots declared as uInput / belowInput / iChannel0
+453|			const belowNames = ensureBelowInputUniforms({
+454|				uniforms,
+455|				vertexShader,
+456|				fragmentShader,
+457|			});
+458|			// Placeholder so WebGL always has a real sampler (null samples as black).
+459|			for (const name of belowNames) {
+460|				if (!uniforms[name].value) {
+461|					uniforms[name].value = white1x1;
+462|				}
+463|			}
+464|			// Any other sampler left null also breaks sibling samplers on some GPUs.
+465|			for (const [k, u] of Object.entries(uniforms)) {
+466|				if (u.value === null || u.value === undefined) {
+467|					// Heuristic: names used as textures in this material path
+468|					if (/map|input|channel|tex|sampler/i.test(k)) {
+469|						u.value = white1x1;
+470|					}
+471|				}
+472|			}
+473|			const Ctor = shaderPaths.raw ? THREE.RawShaderMaterial : THREE.ShaderMaterial;
+474|			const matBuilt = new Ctor({
+475|				uniforms,
+476|				vertexShader,
+477|				fragmentShader,
+478|				transparent: matDef?.transparent ?? false,
+479|				opacity: matDef?.opacity ?? 1,
+480|				side: matDef?.side ?? THREE.DoubleSide,
+481|				toneMapped: false,
+482|				depthWrite: matDef?.depthWrite ?? true,
+483|				depthTest: matDef?.depthTest ?? true,
+484|			});
+485|			if (!matBuilt.userData) matBuilt.userData = {};
+486|			matBuilt.userData.freecapcutGlobalScreen = true;
+487|			ensureGlobalScreenUniforms(matBuilt, { forceAll: true });
+488|			return matBuilt;
+489|		}
+490|	}
+491|
+492|	if (matDef?.type === "MeshBasicMaterial") {
+493|		return new THREE.MeshBasicMaterial({
+494|			color,
+495|			map,
+496|			transparent: matDef.transparent ?? false,
+497|			opacity: matDef.opacity ?? 1,
+498|			side: matDef.side ?? THREE.FrontSide,
+499|		});
+500|	}
+501|
+502|	return new THREE.MeshStandardMaterial({
+503|		color,
+504|		map,
+505|		emissive: matDef?.emissive ? new THREE.Color(matDef.emissive) : undefined,
+506|		metalness: matDef?.metalness ?? 0,
+507|		roughness: matDef?.roughness ?? 1,
+508|		transparent: matDef?.transparent ?? false,
+509|		opacity: matDef?.opacity ?? 1,
+510|		side: matDef?.side ?? THREE.FrontSide,
+511|	});
+512|}
+513|
+514|
+515|function collectBelowInputNames(
+516|	material: THREE.Material,
+517|	into: Set<BelowInputUniformName>,
+518|) {
+519|	const mat = material as THREE.ShaderMaterial;
+520|	if (!mat.uniforms) return;
+521|	const names = ensureBelowInputUniforms({
+522|		uniforms: mat.uniforms as Record<string, { value: unknown }>,
+523|		vertexShader: mat.vertexShader,
+524|		fragmentShader: mat.fragmentShader,
+525|	});
+526|	for (const n of names) into.add(n);
+527|}

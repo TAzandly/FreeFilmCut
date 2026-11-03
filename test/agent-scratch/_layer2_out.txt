@@ -1,0 +1,38 @@
+==== TextLayerRT.js
+45:export function ensureTextLayerRenderTarget( width, height, opts ) {
+72:pooledTarget.texture.name = 'FreeFilmCut.TextLayerRT';
+85:export function applyTextLayerFx( args ) {
+108:/** @deprecated use applyTextLayerFx — kept as Step-2 hook name from audit */
+109:export function applyTextLayerFxPlaceholder( target ) {
+122:export function textLayerCompositeSource( target, opts ) {
+126:return applyTextLayerFx( {
+134:const fx = applyTextLayerFxPlaceholder( target );
+145:name: 'TextLayerRT.blit',
+189:export function blitTextLayerToLetterbox( args ) {
+223:export function renderOverlayTextLayerToRT( args ) {
+346:export function disposeTextLayerRT() {
+==== Viewport.js
+21:ensureTextLayerRenderTarget,
+22:renderOverlayTextLayerToRT,
+23:blitTextLayerToLetterbox,
+25:applyTextLayerFx,
+26:} from './ui/TextLayerRT.js?v=fcc-ui-165';
+37:import { applyTextStickersInScene } from './ui/TextStickers.js?v=fcc-ui-179';
+1251:// Stickers follow posed glyph AABB (after char anim, before geom fx / TextFx).
+1252:applyTextStickersInScene( scene, editor.materials );
+1279:// SS-Camera contract: prepareCameraMode enables UI_CAMERA_LAYER on vpCam so
+1314:uiOverlay.prepareCameraMode( projectRes.width, projectRes.height );
+1458:editor.textLayerRTPreview === true
+1464:const textRT = ensureTextLayerRenderTarget( projectRes.width, projectRes.height );
+1465:renderOverlayTextLayerToRT( {
+1473:const outTex = applyTextLayerFx( {
+1478:blitTextLayerToLetterbox( {
+==== UIOverlay.js
+17:import { applyTextStickersInScene } from './TextStickers.js?v=fcc-ui-179';
+74:*   prepareCameraMode: Function,
+104:function prepareCameraMode( resW, resH ) {
+126:// Stickers need post-layout glyphBounds / carets (rebind+layout above).
+127:applyTextStickersInScene( editor.scene, editor.materials );
+173:// Stickers after rebind+layout so scale/offset/glyph AABB take effect.
+174:applyTextStickersInScene( scene, editor.materials );
+218:prepareCameraMode,

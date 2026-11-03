@@ -1,0 +1,101 @@
+ * FreeFilmCut UGUI Text 鈥?Troika dynamic SDF helpers.
+ * Group holds fccUI (type=text). 鑺卞瓧 = multilayer Effect stack of ephemeral Troika children (__fccFlower_*); not a separate component.
+ */
+
+import * as THREE from 'three';
+import { Text, configureTextBuilder } from 'troika-three-text';
+import { createDerivedMaterial } from 'troika-three-utils';
+// Default SDF margin is 1/16 of the glyph. Outline past that saturates and
+// stops looking thicker. Reserve half the atlas cell so UI strokes can grow.
+configureTextBuilder( { sdfMargin: 0.5 } );
+
+import {
+	DEFAULT_TEXT_FONT_URL,
+	getFccUI,
+	isUIText,
+	getOwningCanvasRenderMode,
+	RENDER_MODE_CAMERA,
+	readLocalEulerDegrees,
+	readLocalScale,
+} from './UIConstants.js?v=fcc-ui-57';
+import {
+	getEffectiveFlowerStyle,
+	contentPrimaryColor,
+	normalizeFillContent,
+	hexToRgb01,
+} from './FlowerStyle.js?v=fcc-ui-57';
+
+export const FCC_TEXT_MESH = '__fccText';
+export const FCC_TEXT_SHADOW = '__fccTextShadow';
+export const FCC_FLOWER_PREFIX = '__fccFlower_';
+export const FCC_FLOWER_FACE = '__fccFlower_face';
+
+/**
+ * URLs Troika can fetch directly. Project-relative paths (assets/fonts/鈥?
+ * and absolute FS paths are NOT usable 鈥?reopen must rebuild blob: via ProjectFolder.
+ * Session blob: is OK only after restoreUITextFontsFromProject / the font picker.
+ */
+function isUsableFontUrl( url ) {
+
+	if ( ! url || typeof url !== 'string' ) return false;
+	const u = url.trim();
+	if ( ! u ) return false;
+	if ( u.startsWith( 'blob:' ) || u.startsWith( 'data:' ) ) return true;
+	if ( u.startsWith( 'http://' ) || u.startsWith( 'https://' ) ) return true;
+	return false;
+
+}
+
+function disposeTroikaChild( group, name ) {
+
+	const child = group.getObjectByName( name );
+	if ( ! child ) return;
+	group.remove( child );
+	try {
+
+		if ( typeof child.dispose === 'function' ) child.dispose();
+
+	} catch ( e ) { /* ignore */ }
+
+}
+
+function resolveFontUrl( ui ) {
+
+	if ( ui.bold && isUsableFontUrl( ui.fontBold ) ) return ui.fontBold;
+	if ( isUsableFontUrl( ui.font ) ) return ui.font;
+	if ( ui.font && ! isUsableFontUrl( ui.font ) ) {
+
+		console.warn( '[FreeFilmCut] ignoring non-fetchable font URL (use銆屾枃浠躲€峱icker):', ui.font );
+
+	}
+
+	return DEFAULT_TEXT_FONT_URL;
+
+}
+
+function revokeBlobUrlQuiet( url ) {
+
+	if ( url && typeof url === 'string' && url.startsWith( 'blob:' ) ) {
+
+		try {
+
+			URL.revokeObjectURL( url );
+
+		} catch ( e ) { /* ignore */ }
+
+	}
+
+}
+
+function candidateFontRelPaths( ui ) {
+
+	const paths = [];
+	const push = ( p ) => {
+
+		if ( ! p || typeof p !== 'string' ) return;
+		const t = p.replace( /\\/g, '/' ).replace( /^\.?\/+/, '' );
+		if ( ! t || paths.includes( t ) ) return;
+		paths.push( t );
+
+	};
+

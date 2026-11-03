@@ -1,0 +1,377 @@
+{
+    "studio_anim_params": {
+        "effectAnimators": [
+            {
+                "effects": [
+                    {
+                        "caption": "丁达尔光效",
+                        "isRelativePath": true,
+                        "name": "GodRay",
+                        "params": {
+                            "angle": {
+                                "value": 0
+                            },
+                            "angleRange": {
+                                "value": 360
+                            },
+                            "angleType": {
+                                "value": 0
+                            },
+                            "blendMode": {
+                                "value": 0
+                            },
+                            "borderType": {
+                                "value": 0
+                            },
+                            "brightness": {
+                                "motionKeyFrameInfo": [
+                                    {
+                                        "it": "cubic",
+                                        "t": 0,
+                                        "v": 1,
+                                        "vi": 0,
+                                        "vo": 1,
+                                        "vti": 0,
+                                        "vto": 0.737
+                                    },
+                                    {
+                                        "it": "cubic",
+                                        "t": 2.167,
+                                        "v": 1,
+                                        "vi": 1,
+                                        "vo": 1,
+                                        "vti": -0.715,
+                                        "vto": 0.275
+                                    },
+                                    {
+                                        "it": "cubic",
+                                        "t": 3,
+                                        "v": 0,
+                                        "vi": 0,
+                                        "vo": 0,
+                                        "vti": -0.283,
+                                        "vto": 0
+                                    }
+                                ],
+                                "value": 1
+                            },
+                            "center_x": {
+                                "value": 0.5
+                            },
+                            "center_y": {
+                                "motionKeyFrameInfo": [
+                                    {
+                                        "it": "cubic",
+                                        "t": 0,
+                                        "v": -0.5,
+                                        "vi": 0,
+                                        "vo": -0.5,
+                                        "vti": 0,
+                                        "vto": 0.385
+                                    },
+                                    {
+                                        "it": "cubic",
+                                        "t": 1.167,
+                                        "v": -0.5,
+                                        "vi": -0.5,
+                                        "vo": -0.5,
+                                        "vti": -0.385,
+                                        "vto": 0.495
+                                    },
+                                    {
+                                        "it": "cubic",
+                                        "t": 2.667,
+                                        "v": 0.5,
+                                        "vi": 0.5,
+                                        "vo": 0.5,
+                                        "vti": -0.495,
+                                        "vto": 0.11
+                                    },
+                                    {
+                                        "it": "cubic",
+                                        "t": 3,
+                                        "v": 0.5,
+                                        "vi": 0.5,
+                                        "vo": 0,
+                                        "vti": -0.113,
+                                        "vto": 0
+                                    }
+                                ],
+                                "value": -0.5
+                            },
+                            "colorDecay": {
+                                "value": 0.9
+                            },
+                            "colorType": {
+                                "value": 1
+                            },
+                            "directionPoint": {
+                                "value": [
+                                    0.5,
+                                    0.5
+                                ]
+                            },
+                            "displayRayOnly": {
+                                "value": false
+                            },
+                            "dither": {
+                                "value": 0
+                            },
+                            "grayscaleCorrection": {
+                                "value": 0
+                            },
+                            "inverseGammaCorrection": {
+                                "value": true
+                            },
+                            "lightColor": {
+                                "value": [
+                                    1,
+                                    0.6,
+                                    0.2,
+                                    1
+                                ]
+                            },
+                            "lightSource": {
+                                "value": 0
+                            },
+                            "noiseIntensity": {
+                                "value": 0
+                            },
+                            "quality": {
+                                "value": 10
+                            },
+                            "range": {
+                                "value": 0.8999999761581421
+                            },
+                            "scaleType": {
+                                "value": 1
+                            },
+                            "smoothness": {
+                                "value": 0.07999999821186066
+                            },
+                            "useAngle": {
+                                "value": false
+                            },
+                            "weightDecay": {
+                                "value": 0.8600000143051147
+                            }
+                        },
+                        "path": "/res/GodRay",
+                        "prefabName": "LumiGodRay.prefab"
+                    },
+                    {
+                        "caption": "线性擦除",
+                        "isRelativePath": true,
+                        "name": "LinearWipe",
+                        "params": {
+                            "feather": {
+                                "value": 0.20000000298023224
+                            },
+                            "progress": {
+                                "value": 0.3100000023841858
+                            },
+                            "rotation": {
+                                "value": 180
+                            }
+                        },
+                        "path": "/res/LinearWipe",
+                        "prefabName": "LumiLinearWipe.prefab"
+                    }
+                ],
+                "renderGroup_attrs": {
+                    "class": "renderGroup",
+                    "customShape": {
+                        "value": 0
+                    },
+                    "effectSelectorParams": {
+                        "God Ray": {
+                            "dither": false,
+                            "noiseIntensity": false
+                        },
+                        "Linear Wipe": {
+                            "feather": false,
+                            "progress": false
+                        }
+                    },
+                    "expandRatioX": {
+                        "value": 2
+                    },
+                    "expandRatioY": {
+                        "value": 2
+                    },
+                    "mode": {
+                        "value": 0
+                    },
+                    "offset": {
+                        "value": 0
+                    },
+                    "randomSeed": {
+                        "value": 50
+                    },
+                    "randomSort": {
+                        "value": false
+                    },
+                    "shape": {
+                        "value": 0
+                    }
+                }
+            }
+        ],
+        "selectors": [
+            {
+                "base_attrs": {
+                    "position": {
+                        "distance": {
+                            "value": -0.09
+                        },
+                        "type": {
+                            "value": 0
+                        },
+                        "x": {
+                            "value": 0
+                        },
+                        "y": {
+                            "motionKeyFrameInfo": [
+                                {
+                                    "it": "cubic",
+                                    "t": 0,
+                                    "v": -4,
+                                    "vi": 0,
+                                    "vo": -4,
+                                    "vti": 0,
+                                    "vto": 0.825
+                                },
+                                {
+                                    "it": "cubic",
+                                    "t": 2.5,
+                                    "v": 0,
+                                    "vi": 0,
+                                    "vo": 0,
+                                    "vti": -0.825,
+                                    "vto": 0.165
+                                },
+                                {
+                                    "it": "cubic",
+                                    "t": 3,
+                                    "v": 0,
+                                    "vi": 0,
+                                    "vo": 0,
+                                    "vti": -0.17,
+                                    "vto": 0
+                                }
+                            ]
+                        }
+                    }
+                },
+                "class": "Text_BaseSelector",
+                "selector_attrs": {
+                    "class": "Text_BaseSelector",
+                    "constrained": {
+                        "value": 1
+                    },
+                    "customShape": {
+                        "value": 0
+                    },
+                    "end": {
+                        "value": 1
+                    },
+                    "offset": {
+                        "value": 0
+                    },
+                    "randomSeed": {
+                        "value": 50
+                    },
+                    "randomSort": {
+                        "value": false
+                    },
+                    "shape": {
+                        "value": 0
+                    },
+                    "smooth": {
+                        "value": 0
+                    },
+                    "start": {
+                        "value": 0
+                    }
+                }
+            },
+            {
+                "base_attrs": {
+                    "position": {
+                        "distance": {
+                            "motionKeyFrameInfo": [
+                                {
+                                    "it": "cubic",
+                                    "t": 0,
+                                    "v": -1,
+                                    "vi": 0,
+                                    "vo": -1,
+                                    "vti": 0,
+                                    "vto": 0.814
+                                },
+                                {
+                                    "it": "cubic",
+                                    "t": 2.467,
+                                    "v": 0,
+                                    "vi": 0,
+                                    "vo": 0,
+                                    "vti": -0.814,
+                                    "vto": 0.176
+                                },
+                                {
+                                    "it": "cubic",
+                                    "t": 3,
+                                    "v": 0,
+                                    "vi": 0,
+                                    "vo": 0,
+                                    "vti": -0.181,
+                                    "vto": 0
+                                }
+                            ]
+                        },
+                        "type": {
+                            "value": 2
+                        },
+                        "x": {
+                            "value": 0
+                        },
+                        "y": {
+                            "value": 0
+                        }
+                    }
+                },
+                "class": "Text_BaseSelector",
+                "selector_attrs": {
+                    "class": "Text_BaseSelector",
+                    "constrained": {
+                        "value": 1
+                    },
+                    "customShape": {
+                        "value": 0
+                    },
+                    "end": {
+                        "value": 1
+                    },
+                    "offset": {
+                        "value": 0
+                    },
+                    "randomSeed": {
+                        "value": 50
+                    },
+                    "randomSort": {
+                        "value": false
+                    },
+                    "shape": {
+                        "value": 0
+                    },
+                    "smooth": {
+                        "value": 0
+                    },
+                    "start": {
+                        "value": 0
+                    }
+                }
+            }
+        ]
+    }
+}

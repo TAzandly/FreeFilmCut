@@ -1,0 +1,40 @@
+{
+  "format": "freecapcut.textanim-pack/1",
+  "name": "上浮淡入",
+  "category": "in",
+  "duration": 0.8,
+  "components": [
+    {
+      "id": "c_charIn_1",
+      "type": "charIn",
+      "scope": "char",
+      "enabled": true,
+      "params": {
+        "opacity": 0,
+        "offsetY": -48,
+        "scale": 0.7
+      },
+      "channels": {
+        "opacity": true,
+        "offsetY": true,
+        "scale": true
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "path": "textAnim.c_charIn_1.progress",
+      "keys": [
+        {
+          "t": 0,
+          "v": 0,
+          "ease": "easeOut"
+        },
+        {
+          "t": 0.8,
+          "v": 1
+        }
+      ]
+    }
+  ]
+}

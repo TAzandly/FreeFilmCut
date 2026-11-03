@@ -1,0 +1,231 @@
+﻿1431:					w: rect.w,
+1432:					h: rect.h,
+1433:				};
+1434:			}
+1435:			// CSS (top-left) letterbox rect for Selector overlay picking.
+1436:			editor.fccUIPickLayout = {
+1437:				x: uiLayout.x,
+1438:				y: ch - uiLayout.y - uiLayout.h,
+1439:				w: uiLayout.w,
+1440:				h: uiLayout.h,
+1441:				cssW: cw,
+1442:				cssH: ch,
+1443:			};
+1444:			// Overlay: Text→RT→TextFx→blit when preview toggle / TextFx on.
+1445:			// Bend / wipeReveal are already in the Troika materials.
+1446:			const hasOverlayUI = sceneHasOverlayCanvas( scene );
+1447:			let textFxStack = null;
+1448:			const sel = editor.selected;
+1449:			if ( hasOverlayUI && sel && isUIText( sel )
+1450:				&& getOwningCanvasRenderMode( sel ) !== RENDER_MODE_CAMERA ) {
+1451:
+1452:				const ui = getFccUI( sel );
+1453:				textFxStack = ( ui && ui.textFxStack ) ? ui.textFxStack : null;
+1454:
+1455:			}
+1456:
+1457:			const wantTextRT = hasOverlayUI && (
+1458:				editor.textLayerRTPreview === true
+1459:				|| stackDataHasEnabledEffects( textFxStack )
+1460:			);
+1461:
+1462:			if ( wantTextRT ) {
+1463:
+1464:				const textRT = ensureTextLayerRenderTarget( projectRes.width, projectRes.height );
+1465:				renderOverlayTextLayerToRT( {
+1466:					renderer,
+1467:					uiOverlay,
+1468:					resW: projectRes.width,
+1469:					resH: projectRes.height,
+1470:					target: textRT,
+1471:				} );
+1472:
+1473:				const outTex = applyTextLayerFx( {
+1474:					renderer,
+1475:					target: textRT,
+1476:					stack: textFxStack,
+1477:				} ) || textRT.texture;
+1478:				blitTextLayerToLetterbox( {
+1479:					renderer,
+1480:					texture: outTex,
+1481:					rect: uiLayout,
+1482:					opacity: 1,
+1483:				} );
+1484:
+1485:			} else {
+1486:
+1487:				uiOverlay.render( renderer, uiLayout, projectRes.width, projectRes.height );
+1488:
+1489:			}
+1490:		}
+1491:
+1492:		if ( camera === editor.viewportCamera ) {
+1493:
+1494:			renderer.autoClear = false;
+1495:			if ( renderer.xr.isPresenting !== true ) viewHelper.render( renderer );
+1496:			renderer.autoClear = true;
+1497:
+1498:		}
+1499:
+1500:		renderer.setScissorTest( false );
+1501:
+1502:		endTime = performance.now();
+1503:		editor.signals.sceneRendered.dispatch( endTime - startTime );
+1504:
+1505:	}
+1506:
+1507:	return container;
+1508:
+1509:}
+1510:
+1511:function stickerPreviewActive( editor ) {
+1512:
+1513:	return editor.stickerMotionPreview === true
+1514:		&& !! editor.config
+1515:		&& editor.config.getKey( 'project/vfxpack/type' ) === 'sticker-anim';
+1516:
+1517:}
+1518:
+1519:function sceneHasOverlayCanvas( scene ) {
+1520:
+==== TextLayerRT renderOverlayTextLayerToRT
+export function renderOverlayTextLayerToRT( args ) {
+
+	const renderer = args.renderer;
+	const uiOverlay = args.uiOverlay;
+	const resW = args.resW;
+	const resH = args.resH;
+	const target = args.target;
+	if ( ! renderer || ! uiOverlay || ! target ) return;
+
+	const prevTarget = renderer.getRenderTarget();
+	const prevClear = new THREE.Color();
+	renderer.getClearColor( prevClear );
+	const prevAlpha = renderer.getClearAlpha();
+
+	renderer.setRenderTarget( target );
+	renderer.setViewport( 0, 0, target.width, target.height );
+	renderer.setScissorTest( false );
+	renderer.setClearColor( 0x000000, 0 );
+	renderer.clear( true, true, true );
+
+	// Full project RT (tight AABB path reverted on clip; keep parity).
+	uiOverlay.render(
+		renderer,
+		{ x: 0, y: 0, w: target.width, h: target.height },
+		resW,
+		resH,
+		target,
+	);
+
+	renderer.setClearColor( prevClear, prevAlpha );
+	renderer.setRenderTarget( prevTarget );
+
+}
+
+/* ------------------------------------------------------------------------- *
+ * Screen-Space–Camera UI capture
+ *
+ * Overlay canvases live on a dedicated ortho camera; SS-Camera canvases are
+ * drawn by the beauty camera, in front of the frustum at planeDistance. Both
+ * end up filling the safe-frame rect, so the same project-res RT works for
+ * either — only the camera differs. Reusing the overlay RT keeps the TextFx
+ * stack and the blit byte-identical between the two modes.
+ * ------------------------------------------------------------------------- */
+
+/** Cached clone of the render camera, used only for UI capture. */
+let uiCaptureCamera = null;
+
+function captureCameraFrom( source, layerMask ) {
+
+	if ( ! source ) return null;
+	if ( ! uiCaptureCamera || uiCaptureCamera.type !== source.type ) {
+
+		uiCaptureCamera = source.clone();
+
+	} else {
+
+		uiCaptureCamera.copy( source );
+
+	}
+
+	if ( layerMask != null ) uiCaptureCamera.layers.set( layerMask );
+	uiCaptureCamera.matrixAutoUpdate = true;
+	return uiCaptureCamera;
+
+}
+
+/**
+ * Render the scene's UI layer (only `layers`) into `target`, matching what the
+ * beauty camera draws, with the background/fog suppressed.
+ *
+ * @param {object} args
+ * @param {THREE.WebGLRenderer} args.renderer
+ * @param {THREE.Scene} args.sce
+==== applyTextLayerFx
+export function applyTextLayerFx( args ) {
+
+	const renderer = args.renderer;
+	const target = args.target;
+	const stack = args.stack;
+	const input = args.inputTexture || ( target ? target.texture : null );
+	if ( ! renderer || ! input ) return input;
+	const width = args.width || ( target ? target.width : 0 );
+	const height = args.height || ( target ? target.height : 0 );
+	if ( ! stackDataHasEnabledEffects( stack ) ) return input;
+	if ( !( width > 0 ) || !( height > 0 ) ) return input;
+
+	return renderTextureFx( {
+		renderer,
+		inputTexture: input,
+		width,
+		height,
+		stack,
+		cache: fxCache,
+	} );
+
+}
+
+/** @deprecated use applyTextLayerFx — kept as Step-2 hook name from audit */
+export function applyTextLayerFxPlaceholder( target ) {
+
+	return null;
+
+}
+
+/**
+ * @param {THREE.WebGLRenderTarget} target
+ * @param {object} [opts]
+ * @param {THREE.WebGLRenderer} [opts.renderer]
+ * @param {object|null} [opts.stack]
+ * @returns {THREE.Texture}
+ */
+export function textLayerCompositeSource( target, opts ) {
+
+	if ( opts && opts.renderer && opts.stack ) {
+
+		return applyTextLayerFx( {
+			renderer: opts.renderer,
+			target,
+			stack: opts.stack,
+		} );
+
+	}
+
+	const fx = applyTextLayerFxPlaceholder( target );
+	return fx || target.texture;
+
+}
+
+export { stackDataHasEnabledEffects };
+
+function ensureBlit() {
+
+	if ( blitMat ) return;
+	blitMat = new THREE.ShaderMaterial( {
+		name: 'TextLayerRT.blit',
+		uniforms: {
+			tDiffuse: { value: null },
+			uOpacity: { value: 1 },
+		},
+		vertexShader: /* glsl 

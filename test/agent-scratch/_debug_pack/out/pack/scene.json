@@ -1,0 +1,279 @@
+{
+  "schema": "vfxpack-scene/1.1",
+  "name": "Scene",
+  "background": {
+    "type": "None",
+    "value": null
+  },
+  "environment": {
+    "type": "Equirectangular",
+    "path": "textures/tex_0_pmrem.png",
+    "uuid": "f3e0b4be-7520-44f0-8e72-7bb314d94980",
+    "colorSpace": "srgb-linear",
+    "intensity": 1,
+    "rotation": [
+      0,
+      0,
+      0
+    ],
+    "exported": false
+  },
+  "fog": null,
+  "render": {
+    "rendererType": "WebGLRenderer",
+    "cameraType": "perspective",
+    "antialias": true,
+    "shadows": true,
+    "shadowType": 1,
+    "toneMapping": 7,
+    "toneMappingName": "NeutralToneMapping",
+    "toneMappingExposure": 1
+  },
+  "activeCamera": "c2e60c9c-0b18-48a4-b292-1b6bce858ac8",
+  "nodes": [
+    {
+      "uuid": "d8bc66dc-492a-4fda-a142-9b4b7a67189b",
+      "name": "Scene",
+      "kind": "scene",
+      "type": "Scene",
+      "visible": true,
+      "layers": 1,
+      "parent": null,
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "userData": {}
+    },
+    {
+      "uuid": "ed78f039-3ac5-4db1-a25a-15027c8bc3ae",
+      "name": "Box",
+      "kind": "mesh",
+      "type": "Mesh",
+      "visible": true,
+      "layers": 1,
+      "parent": null,
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "userData": {},
+      "geometry": {
+        "uuid": "f105bd09-1af1-4495-92f4-5a88170e2d45",
+        "name": "",
+        "type": "BoxGeometry",
+        "parameters": {
+          "width": 1,
+          "height": 1,
+          "depth": 1,
+          "widthSegments": 1,
+          "heightSegments": 1,
+          "depthSegments": 1
+        },
+        "attributes": [
+          "position",
+          "normal",
+          "uv"
+        ],
+        "indexCount": 36
+      },
+      "materials": [
+        {
+          "uuid": "298c15bd-318f-49d7-a96f-bae52b925bc9",
+          "name": "CustomShader",
+          "type": "ShaderMaterial",
+          "transparent": false,
+          "opacity": 1,
+          "side": 0,
+          "depthWrite": true,
+          "depthTest": true,
+          "color": "#ffffff",
+          "emissive": null,
+          "textures": {},
+          "uniforms": {
+            "color": "#ffffff",
+            "color2": "#0000ff",
+            "opacity": 1,
+            "uTime": 0,
+            "useMap": false
+          },
+          "shader": {
+            "vertex": "shaders/mat_0_customshader.vert.glsl",
+            "fragment": "shaders/mat_0_customshader.frag.glsl",
+            "raw": false
+          }
+        }
+      ],
+      "castShadow": false,
+      "receiveShadow": false
+    },
+    {
+      "uuid": "c2e60c9c-0b18-48a4-b292-1b6bce858ac8",
+      "name": "PerspectiveCamera",
+      "kind": "camera",
+      "type": "PerspectiveCamera",
+      "visible": true,
+      "layers": 1,
+      "parent": null,
+      "transform": {
+        "position": [
+          0,
+          0,
+          4.173458274066583
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "quaternion": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ],
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          4.173458274066583,
+          1
+        ]
+      },
+      "userData": {},
+      "cameraType": "PerspectiveCamera",
+      "fov": 50,
+      "aspect": 0.5625,
+      "near": 0.1,
+      "far": 2000,
+      "focus": 10,
+      "zoom": 1
+    }
+  ],
+  "assets": {
+    "textures": [
+      {
+        "uuid": "f3e0b4be-7520-44f0-8e72-7bb314d94980",
+        "name": "PMREM",
+        "path": "textures/tex_0_pmrem.png",
+        "exported": false,
+        "wrapS": 1001,
+        "wrapT": 1001,
+        "magFilter": 1006,
+        "minFilter": 1008,
+        "flipY": false,
+        "colorSpace": "srgb-linear"
+      }
+    ],
+    "shaders": [
+      {
+        "name": "CustomShader",
+        "vertex": "shaders/mat_0_customshader.vert.glsl",
+        "fragment": "shaders/mat_0_customshader.frag.glsl",
+        "raw": false
+      }
+    ]
+  },
+  "resolution": {
+    "width": 1080,
+    "height": 1920
+  },
+  "meta": {
+    "generator": "FreeFilmCut Three.js Editor VfxPackExporter",
+    "threeSceneUuid": "d8bc66dc-492a-4fda-a142-9b4b7a67189b",
+    "exportedAt": "2026-10-13T10:01:37.478Z",
+    "nodeCount": 3,
+    "textureCount": 1,
+    "shaderCount": 1
+  }
+}

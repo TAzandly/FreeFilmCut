@@ -1,0 +1,12 @@
+{
+    "app_version": "8.8.0",
+    "effect": {
+        "Link": [
+            {
+                "type": "TextStyle"
+            }
+        ]
+    },
+    "item_source": "user_post_pc_pc",
+    "version": "21.2.0"
+}

@@ -1,0 +1,61 @@
+170|		camera.lookAt(0, 0, 0);
+171|		root.add(camera);
+172|	}
+173|
+174|	const belowNames = Array.from(belowInputUniformNames);
+175|	const exposedParams = normalizeExposedParams({
+176|		manifest: pack.manifest,
+177|		scene: sceneFile,
+178|	});
+179|
+180|
+181|	// Load FreeFilmCut .anim clips listed in manifest (or assets.animations)
+182|	const animClips: FreecapcutAnimClip[] = [];
+183|	const animPaths = new Set<string>();
+184|	for (const entry of pack.manifest.animations || []) {
+185|		if (entry?.path) animPaths.add(String(entry.path).replace(/^pack\//, ""));
+186|	}
+187|	for (const p of pack.manifest.assets?.animations || []) {
+188|		if (p) animPaths.add(String(p).replace(/^pack\//, ""));
+189|	}
+190|	// Also pick up any *.anim under animations/
+191|	for (const key of pack.files.keys()) {
+192|		if (/^animations\/.*\.anim$/i.test(key)) animPaths.add(key);
+193|	}
+194|	const decodeText = (bytes: Uint8Array) => new TextDecoder().decode(bytes);
+195|	for (const rel of animPaths) {
+196|		const bytes = pack.files.get(rel) || pack.files.get(`pack/${rel}`);
+197|		if (!bytes) continue;
+198|		try {
+199|			const raw = JSON.parse(decodeText(bytes));
+200|			const clip = normalizeAnim(raw);
+201|			if (clip) animClips.push(clip);
+202|		} catch (err) {
+203|			console.warn("[FreeFilmCut] failed to parse .anim", rel, err);
+204|		}
+205|	}
+206|
+207|	return {
+208|		packId: pack.id,
+209|		packType: String(pack.type || "effect"),
+210|		packScope: String(pack.scope || (needsBelow ? "below" : "stack")),
+211|		needsBelowInput: needsBelow,
+212|		belowInputUniformNames: belowNames,
+213|		root,
+214|		camera,
+215|		disposables,
+216|		postProcess,
+217|		materialsByUuid,
+218|		animClips,
+219|		exposedParams,
+220|		render: sceneFile.render
+221|			? {
+222|					toneMapping: sceneFile.render.toneMapping,
+223|					toneMappingExposure: sceneFile.render.toneMappingExposure,
+224|					shadows: sceneFile.render.shadows,
+225|					shadowType: sceneFile.render.shadowType,
+226|					antialias: sceneFile.render.antialias,
+227|			  }
+228|			: undefined,
+229|	};
+230|}

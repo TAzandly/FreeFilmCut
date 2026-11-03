@@ -1,0 +1,166 @@
+{
+  "schema": "freecapcut.vfxpack/1",
+  "id": "freecapcut.text-anim.sweep",
+  "version": "1.0.0",
+  "displayName": "sweep",
+  "type": "text-anim",
+  "phase": "in",
+  "duration": 1,
+  "textAnim": {
+    "format": "freecapcut.textanim-pack/1",
+    "name": "sweep",
+    "category": "in",
+    "duration": 1,
+    "components": [
+      {
+        "id": "c_charIn_1",
+        "type": "charIn",
+        "scope": "char",
+        "enabled": true,
+        "params": {
+          "opacity": 1,
+          "offsetX": 0,
+          "offsetY": -36,
+          "scale": 1,
+          "rotateX": 0,
+          "rotateY": 0,
+          "rotateZ": 0
+        },
+        "channels": {
+          "opacity": true,
+          "offsetX": false,
+          "offsetY": true,
+          "scale": true,
+          "rotateX": false,
+          "rotateY": false,
+          "rotateZ": true
+        },
+        "selector": {
+          "unit": "char",
+          "order": "ltr",
+          "start": 0,
+          "end": 1,
+          "amount": 1,
+          "delay": 0.56,
+          "ease": "linear",
+          "seed": 1
+        },
+        "suppressCharPose": false
+      },
+      {
+        "id": "c_wipeReveal_1",
+        "type": "wipeReveal",
+        "scope": "text",
+        "enabled": true,
+        "params": {
+          "direction": "ltr",
+          "soft": 0.08,
+          "edgeIntensity": 2.5,
+          "edgeWidth": 0.03,
+          "fillDim": 1,
+          "fillRange": 0.12,
+          "fillPower": 2.5,
+          "blendMode": "normal",
+          "invert": false
+        },
+        "channels": {},
+        "suppressCharPose": false
+      }
+    ],
+    "tracks": [
+      {
+        "path": "textAnim.c_charIn_1.progress",
+        "keys": [
+          {
+            "t": 0,
+            "v": 0,
+            "ease": "easeOut"
+          },
+          {
+            "t": 1,
+            "v": 1
+          }
+        ]
+      },
+      {
+        "path": "textAnim.c_wipeReveal_1.progress",
+        "keys": [
+          {
+            "t": 0,
+            "v": 0,
+            "ease": "easeOut"
+          },
+          {
+            "t": 1,
+            "v": 1
+          }
+        ]
+      }
+    ],
+    "postProcess": {
+      "enabled": true,
+      "effects": [
+        {
+          "id": "f8f62edd-42e1-4a54-84f7-e42345d6162e",
+          "type": "deepGlow",
+          "enabled": false,
+          "params": {
+            "intensity": 0.89,
+            "threshold": 0.06,
+            "radius": 1.08,
+            "color": "#151e66"
+          },
+          "exposed": {}
+        },
+        {
+          "id": "3c99ef3a-df43-47ae-b6e8-f505db4cdc26",
+          "type": "bloom",
+          "enabled": true,
+          "params": {
+            "strength": 0.37,
+            "radius": 0.91,
+            "threshold": 0.9
+          },
+          "exposed": {}
+        }
+      ]
+    }
+  },
+  "i18n": {
+    "zh-CN": {
+      "displayName": "sweep"
+    }
+  },
+  "postProcess": {
+    "enabled": true,
+    "effects": [
+      {
+        "id": "f8f62edd-42e1-4a54-84f7-e42345d6162e",
+        "type": "deepGlow",
+        "enabled": false,
+        "params": {
+          "intensity": 0.89,
+          "threshold": 0.06,
+          "radius": 1.08,
+          "color": "#151e66"
+        },
+        "exposed": {}
+      },
+      {
+        "id": "3c99ef3a-df43-47ae-b6e8-f505db4cdc26",
+        "type": "bloom",
+        "enabled": true,
+        "params": {
+          "strength": 0.37,
+          "radius": 0.91,
+          "threshold": 0.9
+        },
+        "exposed": {}
+      }
+    ]
+  },
+  "preview": {
+    "poster": "preview/poster.png",
+    "hover": "preview/hover.gif"
+  }
+}

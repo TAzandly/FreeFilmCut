@@ -1,0 +1,322 @@
+{
+  "format": "freecapcut.anim/1",
+  "name": "__fccImageMesh",
+  "fps": 30,
+  "duration": 1,
+  "loop": "clamp",
+  "targets": [
+    {
+      "objectUuid": "837d7921-cac9-4f27-94d0-3dd412400940",
+      "tracks": [
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.uMix",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 1,
+              "v": 1
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.uResolution.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1080
+            },
+            {
+              "t": 1,
+              "v": 1080
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.uResolution.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1920
+            },
+            {
+              "t": 1,
+              "v": 1920
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.uScreenTexelSize.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0.000925925925925926
+            },
+            {
+              "t": 1,
+              "v": 0.000925925925925926
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.uScreenTexelSize.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0.0005208333333333333
+            },
+            {
+              "t": 1,
+              "v": 0.0005208333333333333
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.uScreenParams.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1080
+            },
+            {
+              "t": 1,
+              "v": 1080
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.uScreenParams.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1920
+            },
+            {
+              "t": 1,
+              "v": 1920
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.uScreenParams.z",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1.000925925925926
+            },
+            {
+              "t": 1,
+              "v": 1.000925925925926
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.uScreenParams.w",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1.0005208333333333
+            },
+            {
+              "t": 1,
+              "v": 1.0005208333333333
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms._ScreenParams.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1080
+            },
+            {
+              "t": 1,
+              "v": 1080
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms._ScreenParams.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1920
+            },
+            {
+              "t": 1,
+              "v": 1920
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms._ScreenParams.z",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1.000925925925926
+            },
+            {
+              "t": 1,
+              "v": 1.000925925925926
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms._ScreenParams.w",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1.0005208333333333
+            },
+            {
+              "t": 1,
+              "v": 1.0005208333333333
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.color.r",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0.07818742179702069
+            },
+            {
+              "t": 1,
+              "v": 0.07818742179702069
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.color.g",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0.5457244613615395
+            },
+            {
+              "t": 1,
+              "v": 0.5457244613615395
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.color.b",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0.9301108583738498
+            },
+            {
+              "t": 1,
+              "v": 0.9301108583738498
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.color2.r",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 1,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.color2.g",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 1,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.color2.b",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1
+            },
+            {
+              "t": 1,
+              "v": 1
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.opacity",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1
+            },
+            {
+              "t": 1,
+              "v": 1
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.uTime",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 1,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "material.05b6f2fe-561e-4617-858b-b512776edc26.uniforms.useMap",
+          "interp": "step",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 1,
+              "v": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

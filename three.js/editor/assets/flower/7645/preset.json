@@ -1,0 +1,69 @@
+{
+  "id": "7645318555541638462",
+  "name": "剪映样例",
+  "assetDir": "assets/flower/7645",
+  "fill": "solid #ffffff",
+  "strokes": [
+    {
+      "side": "outer",
+      "widthRel": 0.145,
+      "content": "solid #ffffff"
+    },
+    {
+      "side": "outer",
+      "widthRel": 0.12,
+      "content": "solid #024479"
+    },
+    {
+      "side": "outer",
+      "widthRel": 0.102,
+      "content": "texture 1780131838447.png"
+    },
+    {
+      "side": "outer",
+      "widthRel": 0.057,
+      "content": "texture 1780131613632.png"
+    }
+  ],
+  "shadows": [
+    {
+      "note": "pink soft drop",
+      "color": "#fb9ffb",
+      "distance": 4.55,
+      "diffuseRel": 0.06,
+      "alpha": 0.9
+    },
+    {
+      "note": "purple gradient glow",
+      "colors": [
+        "#a018a0",
+        "#1c000b"
+      ],
+      "distance": 0,
+      "diffuseRel": 0.0055
+    },
+    {
+      "note": "texture underlay",
+      "texture": "1780131613632.png"
+    }
+  ],
+  "innerShadows": [
+    {
+      "texture": "1780131462621.png",
+      "distance": 5,
+      "diffuseRel": 0.025,
+      "alpha": 0.9,
+      "scale": 1.3
+    }
+  ],
+  "unitMap": {
+    "strokeWidth": "capcutWidth * fontSize",
+    "diffuse": "capcutDiffuse * fontSize",
+    "distance": "capcutDistance * (fontSize / 48)"
+  },
+  "gaps": [
+    "CapCut nested strokes-on-shadow flattened to concentric outer strokes",
+    "inner shadow stencil still approximate / may be invisible",
+    "offset outline rings become concentric"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "freefilmcut",
+  "version": "1.0.0",
+  "description": "剪映式多轨剪辑：**OpenCut Classic UI + Three.js 渲染**；资源用改版 Three.js Editor 导出 `.vfxpack`；支持 Web 与 Electron/Tauri exe。",
+  "main": "three.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "playwright": "^1.64.0"
+  }
+}

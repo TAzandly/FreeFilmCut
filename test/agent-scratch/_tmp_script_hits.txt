@@ -1,0 +1,15 @@
+102: 			if ( currentScript !== 'programInfo' ) return;
+114: 			if ( JSON.stringify( currentObject.material.uniforms ) !== JSON.stringify( json.uniforms ) ) {
+116: 				const uniforms = normalizeShaderUniforms( json.uniforms );
+402: 				case 'vertexShader':
+407: 				case 'fragmentShader':
+412: 				case 'programInfo':
+440: 				case 'vertexShader': {
+443: 					const matV = editor.getObjectMaterial( object, editor.selectedMaterialSlot || 0 );
+444: 					source = ( matV && matV.vertexShader ) || '';
+450: 				case 'fragmentShader': {
+453: 					const matF = editor.getObjectMaterial( object, editor.selectedMaterialSlot || 0 );
+454: 					source = ( matF && matF.fragmentShader ) || '';
+460: 				case 'programInfo': {
+464: 					const matP = editor.getObjectMaterial( object, editor.selectedMaterialSlot || 0 );
+510: 		if ( [ 'programInfo', 'vertexShader', 'fragmentShader' ].includes( currentScript ) ) return;

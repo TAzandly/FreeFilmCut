@@ -1,0 +1,187 @@
+{
+  "schema": "vfxpack/1.3",
+  "id": "freecapcut.bloom",
+  "version": "0.1.0",
+  "displayName": "Bloom",
+  "engine": {
+    "api": "webgl2",
+    "renderer": "three"
+  },
+  "type": "effect",
+  "scope": "below",
+  "resolution": {
+    "width": 1080,
+    "height": 1920
+  },
+  "render": {
+    "rendererType": "WebGLRenderer",
+    "cameraType": "perspective",
+    "antialias": true,
+    "shadows": true,
+    "shadowType": 1,
+    "toneMapping": 7,
+    "toneMappingName": "NeutralToneMapping",
+    "toneMappingExposure": 1
+  },
+  "entry": {
+    "scene": "scene.json"
+  },
+  "params": [
+    {
+      "key": "intensity",
+      "label": "Intensity",
+      "type": "float",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "exposedParams": [],
+  "passes": [
+    {
+      "id": "main",
+      "shader": {
+        "vertex": "shaders/mat_0_uiimage.vert.glsl",
+        "fragment": "shaders/mat_0_uiimage.frag.glsl"
+      },
+      "inputs": {
+        "uInput": "accumBelow"
+      }
+    }
+  ],
+  "assets": {
+    "scene": "scene.json",
+    "textures": [
+      "textures/tex_0_pmrem.png",
+      "rt:4427ab5e-c74b-439d-8bcb-afe1b51ef71f"
+    ],
+    "shaders": [
+      "shaders/mat_0_uiimage.vert.glsl",
+      "shaders/mat_0_uiimage.frag.glsl"
+    ],
+    "animations": [
+      "animations/cubeaction.anim",
+      "animations/animation.anim",
+      "animations/image.anim",
+      "animations/canvas.anim",
+      "animations/image_3.anim",
+      "animations/image_4.anim",
+      "animations/image_2.anim",
+      "animations/plane.anim",
+      "animations/image_5.anim"
+    ],
+    "timelines": [],
+    "videos": [
+      "videos/6e19564d_mg.mp4"
+    ],
+    "background": null,
+    "environment": "textures/tex_0_pmrem.png"
+  },
+  "animations": [
+    {
+      "name": "CubeAction",
+      "path": "animations/cubeaction.anim",
+      "fps": 30,
+      "duration": 5.875,
+      "loop": "clamp",
+      "objectUuids": [
+        "295ac2d7-a8e1-46eb-91a9-b8287d055d89"
+      ]
+    },
+    {
+      "name": "Animation",
+      "path": "animations/animation.anim",
+      "fps": 30,
+      "duration": 1,
+      "loop": "loop",
+      "objectUuids": [
+        "7bc7e0cc-001a-437a-a73a-b5e7df06346d",
+        "09ad81c4-2c23-45c5-a73a-327cf164f127"
+      ]
+    },
+    {
+      "name": "Image",
+      "path": "animations/image.anim",
+      "fps": 30,
+      "duration": 1,
+      "loop": "clamp",
+      "objectUuids": [
+        "17c541ae-a885-4845-b0ed-270380e929eb"
+      ]
+    },
+    {
+      "name": "Canvas",
+      "path": "animations/canvas.anim",
+      "fps": 30,
+      "duration": 1,
+      "loop": "clamp",
+      "objectUuids": [
+        "1bd3ee9f-57c5-4eae-b4dd-9a9ce899c9f9"
+      ]
+    },
+    {
+      "name": "Image_3",
+      "path": "animations/image_3.anim",
+      "fps": 30,
+      "duration": 1,
+      "loop": "loop",
+      "objectUuids": [
+        "17c541ae-a885-4845-b0ed-270380e929eb"
+      ]
+    },
+    {
+      "name": "Image_4",
+      "path": "animations/image_4.anim",
+      "fps": 30,
+      "duration": 1,
+      "loop": "loop",
+      "objectUuids": [
+        "17c541ae-a885-4845-b0ed-270380e929eb"
+      ]
+    },
+    {
+      "name": "Image_2",
+      "path": "animations/image_2.anim",
+      "fps": 30,
+      "duration": 1,
+      "loop": "clamp",
+      "objectUuids": [
+        "17c541ae-a885-4845-b0ed-270380e929eb"
+      ]
+    },
+    {
+      "name": "Plane",
+      "path": "animations/plane.anim",
+      "fps": 30,
+      "duration": 1,
+      "loop": "loop",
+      "objectUuids": [
+        "fccd07ad-a889-475c-bc06-34b2aae608a1"
+      ]
+    },
+    {
+      "name": "Image_5",
+      "path": "animations/image_5.anim",
+      "fps": 30,
+      "duration": 1,
+      "loop": "loop",
+      "objectUuids": [
+        "0b9f7d12-87c7-4462-8580-27ce64cae3af"
+      ]
+    }
+  ],
+  "timelines": [],
+  "i18n": {
+    "zh-CN": {
+      "displayName": "Bloom"
+    }
+  },
+  "meta": {
+    "generator": "FreeFilmCut Three.js Editor VfxPackExporter",
+    "exportedAt": "2026-10-30T03:09:13.012Z",
+    "hasCustomShaders": true,
+    "shaderCount": 1,
+    "animationCount": 9,
+    "timelineCount": 0
+  }
+}

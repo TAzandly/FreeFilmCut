@@ -1,0 +1,126 @@
+{
+  "format": "freecapcut.anim/2",
+  "name": "Image_3",
+  "fps": 30,
+  "duration": 1,
+  "loop": "loop",
+  "targets": [
+    {
+      "objectUuid": "17c541ae-a885-4845-b0ed-270380e929eb",
+      "tracks": [
+        {
+          "path": "ui.anchoredPosition.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 1,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "ui.anchoredPosition.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 1,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "ui.localEulerAngles.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 1,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "ui.localEulerAngles.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 1,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "ui.localEulerAngles.z",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 1,
+              "v": 90
+            }
+          ]
+        },
+        {
+          "path": "ui.localScale.x",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1
+            },
+            {
+              "t": 1,
+              "v": 1
+            }
+          ]
+        },
+        {
+          "path": "ui.localScale.y",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 0
+            },
+            {
+              "t": 1,
+              "v": 0
+            }
+          ]
+        },
+        {
+          "path": "ui.localScale.z",
+          "interp": "linear",
+          "keys": [
+            {
+              "t": 0,
+              "v": 1
+            },
+            {
+              "t": 1,
+              "v": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "format": "freecapcut.textanim-pack/1",
+  "name": "扫光入场",
+  "category": "in",
+  "duration": 1,
+  "components": [
+    {
+      "id": "c_wipe_1",
+      "type": "wipeReveal",
+      "scope": "text",
+      "enabled": true,
+      "params": {
+        "direction": "ltr",
+        "soft": 0.08,
+        "edgeIntensity": 2.5,
+        "edgeWidth": 0.03,
+        "fillDim": 1,
+        "fillRange": 0.12,
+        "fillPower": 2.5,
+        "blendMode": "add"
+      }
+    }
+  ],
+  "tracks": [
+    {
+      "path": "textAnim.c_wipe_1.progress",
+      "keys": [
+        {
+          "t": 0,
+          "v": 0
+        },
+        {
+          "t": 1,
+          "v": 1
+        }
+      ]
+    }
+  ]
+}

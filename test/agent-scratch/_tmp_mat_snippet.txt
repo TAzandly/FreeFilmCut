@@ -1,0 +1,54 @@
+// name
+
+	const materialNameRow = new UIRow();
+	const materialName = new UIInput().setWidth( '150px' ).setFontSize( '12px' ).onChange( function () {
+
+		editor.execute( new SetMaterialValueCommand( editor, editor.selected, 'name', materialName.getValue(), currentMaterialSlot ) );
+
+	} );
+
+	materialNameRow.add( new UIText( strings.getKey( 'sidebar/material/name' ) ).setClass( 'Label' ) );
+	materialNameRow.add( materialName );
+
+	container.add( materialNameRow );
+
+
+	// FreeFilmCut: explicit create / clone (UUID "New" only renews id — confusing for artists)
+	const materialActionsRow = new UIRow();
+	materialActionsRow.add( new UIText( strings.getKey( 'sidebar/material/actions' ) ).setClass( 'Label' ) );
+
+	const createMaterialBtn = new UIButton( strings.getKey( 'sidebar/material/create' ) );
+	createMaterialBtn.setMarginRight( '4px' );
+	createMaterialBtn.onClick( function () {
+
+		const type = materialClass.getValue() || 'MeshStandardMaterial';
+		createAndAssignMaterial( type );
+
+	} );
+	materialActionsRow.add( createMaterialBtn );
+
+	const createShaderBtn = new UIButton( strings.getKey( 'sidebar/material/createShader' ) );
+	createShaderBtn.setMarginRight( '4px' );
+	createShaderBtn.onClick( function () {
+
+		createAndAssignMaterial( 'ShaderMaterial', { openFrag: true } );
+
+	} );
+	materialActionsRow.add( createShaderBtn );
+
+	const cloneMaterialBtn = new UIButton( strings.getKey( 'sidebar/material/clone' ) );
+	cloneMaterialBtn.onClick( function () {
+
+		cloneAndAssignMaterial();
+
+	} );
+	materialActionsRow.add( cloneMaterialBtn );
+
+	container.add( materialActionsRow );
+
+	// program
+
+	const materialProgram = new SidebarMaterialProgram( editor, 'vertexShader' );
+	container.add( materialProgram );
+
+	

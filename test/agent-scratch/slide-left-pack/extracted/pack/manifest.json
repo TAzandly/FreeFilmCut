@@ -1,0 +1,87 @@
+{
+  "schema": "vfxpack/1.3",
+  "id": "freecapcut.clip-anim.slide-left",
+  "version": "1.0.0",
+  "displayName": "Slide Left",
+  "engine": {
+    "api": "webgl2",
+    "renderer": "three"
+  },
+  "type": "clip-anim",
+  "phase": "in",
+  "scope": "below",
+  "duration": 0.5,
+  "resolution": {
+    "width": 1920,
+    "height": 1080
+  },
+  "render": {
+    "rendererType": "WebGLRenderer",
+    "cameraType": "perspective",
+    "antialias": false,
+    "shadows": false,
+    "shadowType": 0,
+    "toneMapping": 0,
+    "toneMappingName": "NoToneMapping",
+    "toneMappingExposure": 1
+  },
+  "entry": {
+    "scene": "scene.json"
+  },
+  "params": [],
+  "exposedParams": [],
+  "passes": [
+    {
+      "id": "main",
+      "shader": {
+        "vertex": "shaders/slide.vert.glsl",
+        "fragment": "shaders/slide.frag.glsl"
+      },
+      "inputs": {
+        "uInput": "accumBelow"
+      }
+    }
+  ],
+  "assets": {
+    "scene": "scene.json",
+    "textures": [],
+    "shaders": [
+      "shaders/slide.vert.glsl",
+      "shaders/slide.frag.glsl"
+    ],
+    "animations": [
+      "animations/slide.anim"
+    ],
+    "timelines": [],
+    "background": null,
+    "environment": null
+  },
+  "animations": [
+    {
+      "name": "Slide",
+      "path": "animations/slide.anim",
+      "fps": 30,
+      "duration": 0.5,
+      "loop": "clamp",
+      "objectUuids": [
+        "c3333333-3333-4333-8333-333333333333"
+      ]
+    }
+  ],
+  "preview": {
+    "poster": "preview/poster.png",
+    "hover": "preview/hover.gif"
+  },
+  "i18n": {
+    "zh-CN": {
+      "displayName": "向左滑动"
+    }
+  },
+  "meta": {
+    "generator": "build-clip-anim-slide-packs.mjs",
+    "hasCustomShaders": true,
+    "shaderCount": 1,
+    "animationCount": 1,
+    "timelineCount": 0
+  }
+}

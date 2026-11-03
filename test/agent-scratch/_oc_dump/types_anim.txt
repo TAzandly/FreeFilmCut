@@ -1,0 +1,41 @@
+40|		uniform?: string;
+41|	}>;
+42|	exposedParams?: import("@/vfxpack/exposed-params").ExposedParam[];
+43|	assets?: {
+44|		scene?: string;
+45|		textures?: string[];
+46|		shaders?: string[];
+47|		animations?: string[];
+48|	};
+49|	/** Pack-embedded FreeFilmCut .anim clips (manifest list). */
+50|	animations?: Array<{
+51|		name: string;
+52|		path: string;
+53|		fps?: number;
+54|		duration?: number;
+55|		loop?: "clamp" | "loop";
+56|		objectUuids?: string[];
+57|	}>;
+58|	meta?: Record<string, unknown>;
+59|	resolution?: { width: number; height: number };
+60|	render?: VfxPackRenderSettings;
+61|}
+62|
+63|export interface VfxSceneNodeTransform {
+64|	position: [number, number, number];
+65|	rotation: [number, number, number];
+66|	quaternion: [number, number, number, number];
+67|	scale: [number, number, number];
+68|	matrix?: number[];
+69|}
+70|
+71|export interface VfxSceneMaterial {
+72|	uuid: string;
+73|	name?: string;
+74|	type: string;
+75|	transparent?: boolean;
+76|	opacity?: number;
+77|	side?: number;
+78|	depthWrite?: boolean;
+79|	depthTest?: boolean;
+80|	color?: string;

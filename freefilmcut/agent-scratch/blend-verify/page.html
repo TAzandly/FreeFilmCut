@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>blend verify</title>
+		<script type="importmap">
+			{ "imports": { "three": "./three.module.js" } }
+		</script>
+	</head>
+	<body>
+		<pre id="out">running</pre>
+		<script type="module">
+			import * as THREE from "three";
+			import { FRAGMENT } from "./fragment.js";
+
+			const W = 256;
+			const H = 64;
+
+			// Backdrop (what snapshotBelowSource would hand over): raw
+			// sRGB-encoded values, exactly what a HalfFloat accum RT stores.
+			//  [0,192) red(255,0,0) opaque   [192,256) red with alpha 0
+			const backdropData = new Uint8Array(W * H * 4);
+			for (let y = 0; y < H; y++) {
+				for (let x = 0; x < W; x++) {
+					const i = (y * W + x) * 4;
+					backdropData[i] = 255;
+					backdropData[i + 1] = 0;
+					backdropData[i + 2] = 0;
+					backdropData[i + 3] = x < 192 ? 255 : 0;
+				}
+			}
+			// No sRGB tag: the shader must see the stored bytes verbatim, the
+			// same way it reads a raw HalfFloat RT in the real pipeline.
+			const backdrop = new THREE.DataTexture(backdropData, W, H, THREE.RGBAFormat);
+			backdrop.minFilter = THREE.NearestFilter;
+			backdrop.magFilter = THREE.NearestFilter;
+			backdrop.needsUpdate = true;
+
+			// Layer: green with alpha bands.
+			//  [0,96)   alpha 255   (blend formulas, opaque)
+			//  [96,160) alpha 128   (blend formulas, half coverage)
+			//  [160,192) alpha 0    (must rewrite the backdrop unchanged)
+			//  [192,224) alpha 128  (half coverage over a transparent backdrop)
+			//  [224,256) alpha 0
+			const layerData = new Uint8Array(W * H * 4);
+			for (let y = 0; y < H; y++) {
+				for (let x = 0; x < W; x++) {
+					const a =
+						x < 96 ? 255 : x < 160 ? 128 : x < 192 ? 0 : x < 224 ? 128 : 0;
+					const i = (y * W + x) * 4;
+					layerData[i] = 0;
+					layerData[i + 1] = 255;
+					layerData[i + 2] = 0;
+					layerData[i + 3] = a;
+				}
+			}
+			const layer = new THREE.DataTexture(layerData, W, H, THREE.RGBAFormat);
+			layer.colorSpace = THREE.SRGBColorSpace;
+			layer.minFilter = THREE.NearestFilter;
+			layer.magFilter = THREE.NearestFilter;
+			layer.needsUpdate = true;
+
+			const canvas = document.createElement("canvas");
+			canvas.width = W;
+			canvas.height = H;
+			const renderer = new THREE.WebGLRenderer({
+				canvas,
+				antialias: false,
+				preserveDrawingBuffer: true,
+			});
+			renderer.setSize(W, H, false);
+			// Match the real pipeline: the shader outputs linear and three's
+			// colorspace_fragment encodes to sRGB for the target.
+			renderer.outputColorSpace = THREE.SRGBColorSpace;
+			renderer.toneMapping = THREE.NoToneMapping;
+
+			const uniforms = {
+				uBlendEnabled: { value: 1 },
+				uBlendMode: { value: 0 },
+				uBlendBackdrop: { value: backdrop },
+				uBlendTexel: { value: new THREE.Vector2(1 / W, 1 / H) },
+			};
+
+			const material = new THREE.MeshBasicMaterial({
+				map: layer,
+				transparent: true,
+				depthTest: false,
+				// The blend shader computes the composite itself; GL blending
+				// must stay off, exactly like applyBlendModeToMaterial does.
+				blending: THREE.NoBlending,
+			});
+			material.onBeforeCompile = (shader) => {
+				shader.fragmentShader = FRAGMENT;
+				for (const [name, uniform] of Object.entries(uniforms)) {
+					shader.uniforms[name] = uniform;
+				}
+			};
+			material.customProgramCacheKey = () => "blend-verify";
+
+			const scene = new THREE.Scene();
+			const geometry = new THREE.PlaneGeometry(2, 2);
+			const uv = geometry.attributes.uv;
+			for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));
+			scene.add(new THREE.Mesh(geometry, material));
+
+			const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+			camera.position.z = 1;
+			const gl = renderer.getContext();
+			const pixels = new Uint8Array(W * H * 4);
+
+			function render(mode) {
+				uniforms.uBlendMode.value = mode;
+				renderer.render(scene, camera);
+				gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+			}
+			const at = (x) => {
+				const i = (32 * W + x) * 4;
+				return [pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]];
+			};
+			const close = (got, want, tol = 4) =>
+				got.every((v, i) => Math.abs(v - want[i]) <= tol);
+
+			// Hand-computed CSS expectations. Cs = (0,255,0), Cb = (255,0,0).
+			// Opaque band x=48: Co = B(Cs,Cb). Semi band x=128 (ab=1):
+			// Co = 0.5·B + 0.5·Cb. Semi-over-transparent x=208 (ab=0):
+			// Co = 0.5·Cs, alpha = 128. Unchanged region x=176: backdrop.
+			const EXPECT = {
+				normal: { opaque: [0, 255, 0], semi: [128, 128, 0] },
+				darken: { opaque: [0, 0, 0], semi: [128, 0, 0] },
+				multiply: { opaque: [0, 0, 0], semi: [128, 0, 0] },
+				"color-burn": { opaque: [255, 0, 0], semi: [255, 0, 0] },
+				lighten: { opaque: [255, 255, 0], semi: [255, 128, 0] },
+				screen: { opaque: [255, 255, 0], semi: [255, 128, 0] },
+				"plus-lighter": { opaque: [255, 255, 0], semi: [255, 128, 0] },
+				"color-dodge": { opaque: [255, 0, 0], semi: [255, 0, 0] },
+				overlay: { opaque: [0, 255, 0], semi: [128, 128, 0] },
+				"soft-light": { opaque: [255, 0, 0], semi: [255, 0, 0] },
+				"hard-light": { opaque: [255, 0, 0], semi: [255, 0, 0] },
+				difference: { opaque: [255, 255, 0], semi: [255, 128, 0] },
+				exclusion: { opaque: [255, 255, 0], semi: [255, 128, 0] },
+				hue: { opaque: [0, 130, 0], semi: [128, 193, 0] },
+				saturation: { opaque: [255, 0, 0], semi: [255, 0, 0] },
+				color: { opaque: [0, 130, 0], semi: [128, 193, 0] },
+				luminosity: { opaque: [255, 106, 106], semi: [255, 53, 53] },
+			};
+			// hue/color semi: (0.5·0 + 0.5·255, 0.5·130 + 0.5·0, 0) = (128, 65, 0)?
+			// No — 0.5·B + 0.5·Cb per channel: r 0.5·0+0.5·255=128,
+			// g 0.5·130+0.5·0=65, b 0. Fix the table instead of guessing:
+			EXPECT.hue.semi = [128, 65, 0];
+			EXPECT.color.semi = [128, 65, 0];
+			// luminosity semi: r 0.5·255+0.5·255=255, g 0.5·106=53, b 53.
+			EXPECT.luminosity.semi = [255, 53, 53];
+
+			const MODE_INDEX = {
+				normal: 0, darken: 1, multiply: 2, "color-burn": 3, lighten: 4,
+				screen: 5, "plus-lighter": 6, "color-dodge": 7, overlay: 8,
+				"soft-light": 9, "hard-light": 10, difference: 11, exclusion: 12,
+				hue: 13, saturation: 14, color: 15, luminosity: 16,
+			};
+
+			const results = [];
+			const failures = [];
+			const logs = [];
+			const originalError = console.error;
+			console.error = (...args) => {
+				logs.push(args.map((a) => String(a)).join(" ").slice(0, 400));
+				originalError(...args);
+			};
+
+			render(0); // warm-up compile before measuring anything
+			for (const [name, index] of Object.entries(MODE_INDEX)) {
+				render(index);
+				const opaque = at(48);
+				const semi = at(128);
+				const untouched = at(176);
+				const semiTransparentBackdrop = at(208);
+				const expect = EXPECT[name];
+				// plus-lighter adds *premultiplied* values, so half coverage over
+				// a transparent backdrop stores full green at alpha 0.5 (straight
+				// restatement of 0.5·Cs premultiplied) — not 0.5·Cs straight.
+				const ab0Want =
+					name === "plus-lighter" ? [0, 255, 0, 128] : [0, 128, 0, 128];
+				const checks = [
+					["opaque", opaque, [...expect.opaque, 255]],
+					["semi", semi, [...expect.semi, 255]],
+					// alpha-0 layer must rewrite the backdrop verbatim (red, opaque band)
+					["untouched", untouched, [255, 0, 0, 255]],
+					// half coverage over transparent backdrop
+					["semi@ab0", semiTransparentBackdrop, ab0Want],
+				];
+				for (const [label, got, want] of checks) {
+					if (!close(got, want)) {
+						failures.push(`${name}.${label}: got [${got}] want [${want}]`);
+					}
+				}
+				results.push({
+					name,
+					opaque,
+					semi,
+					untouched,
+					semiTransparentBackdrop,
+				});
+			}
+
+			document.getElementById("out").textContent = JSON.stringify(
+				{
+					ok: failures.length === 0,
+					renderer: gl.getParameter(gl.VERSION),
+					diagnostics: { logs },
+					failures,
+					results,
+				},
+				null,
+				1,
+			);
+		</script>
+	</body>
+</html>

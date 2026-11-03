@@ -1,0 +1,27 @@
+{
+  "format": "freecapcut-timeline/1",
+  "name": "Timeline",
+  "fps": 30,
+  "duration": 1,
+  "loop": "clamp",
+  "tracks": [
+    {
+      "id": "c030771b-cc12-4f1d-b193-8fc26ffbb262",
+      "type": "animation",
+      "name": "Animation",
+      "muted": false,
+      "bindingUuid": "837d7921-cac9-4f27-94d0-3dd412400940",
+      "clips": [
+        {
+          "id": "7cd5957e-fef8-4e1c-b0cb-1fe3e3271784",
+          "start": 0,
+          "duration": 1,
+          "animId": "__fccImageMesh",
+          "animPath": "",
+          "clipLocalOffset": 0,
+          "loop": false
+        }
+      ]
+    }
+  ]
+}

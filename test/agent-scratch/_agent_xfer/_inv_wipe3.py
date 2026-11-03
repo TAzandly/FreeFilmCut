@@ -1,0 +1,20 @@
+from pathlib import Path
+side = Path(r"D:\GrokbotWork\FreeFilmCut\three.js\editor\js\Sidebar.Object.TextAnim.js").read_text(encoding="utf-8")
+print(side[100:250])
+print("--- dirty ---")
+print(side[side.find("function dirty"):side.find("function dirty")+400])
+print("--- play ---")
+print(side[side.find("editor.textAnimPlaying = true")-200:side.find("editor.textAnimPlaying = true")+500])
+# sampleWipeRevealProgress
+ta = Path(r"D:\GrokbotWork\FreeFilmCut\three.js\editor\js\ui\TextAnim.js").read_text(encoding="utf-8")
+i = ta.find("export function sampleWipeRevealProgress")
+print("--- sampleWipe ---")
+print(ta[i:i+700])
+# blit shader + color space of wipe vs pooled target
+tl = Path(r"D:\GrokbotWork\FreeFilmCut\three.js\editor\js\ui\TextLayerRT.js").read_text(encoding="utf-8")
+print("--- blit ---")
+i = tl.find("function ensureBlit")
+print(tl[i:i+900])
+print("--- wipe return ---")
+i = tl.find("renderer.render( wipeScene")
+print(tl[i-200:i+350])
