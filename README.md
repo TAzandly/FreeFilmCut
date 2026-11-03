@@ -17,10 +17,19 @@
 | **Asset editor** | `three.js/editor/` | Author effects / art text → export `.vfxpack` |
 | **Bundled packs** | `freefilmcut/apps/web/public/vfxpacks/`, `.../flower/` | Sample stickers, transitions, effects, art text, etc. |
 
-Quick start (Windows):
+### Prerequisites
 
-- NLE: `start-opencut.bat` → http://localhost:3000  
-- Asset editor: `start-asset-editor.bat` → http://localhost:5174/editor/
+| Script | Needs |
+|--------|--------|
+| `start-filmcut.bat` (NLE) | Will **auto-install Bun** if missing, then `bun install` when `node_modules` is absent |
+| `start-asset-editor.bat` | Needs Python 3; will try **winget** install if missing |
+
+### Quick start (Windows)
+
+- NLE: `start-filmcut.bat` → http://localhost:3000  
+- Asset editor: `start-asset-editor.bat` → http://localhost:5174/editor/  
+
+First NLE run may take a while (`bun install` + Next.js).
 
 ---
 

@@ -25,7 +25,7 @@ keep_files = {
     "README.md",
     "package.json",
     "start-asset-editor.bat",
-    "start-opencut.bat",
+    "start-filmcut.bat",
 }
 
 moved = []
@@ -125,7 +125,7 @@ Move-Item .\\test\\backups\\three.js\\editor\\js\\textanim\\TextAnimBuiltins.js.
   .\\three.js\\editor\\js\\textanim\\TextAnimBuiltins.js.bak_corrupt
 ```
 
-不要把 `agent-scratch` 里的脚本当生产入口；正式启动仍用根目录 `start-opencut.bat` / `start-asset-editor.bat`。
+不要把 `agent-scratch` 里的脚本当生产入口；正式启动仍用根目录 `start-filmcut.bat` / `start-asset-editor.bat`。
 """
 with open(os.path.join(test_root, "README.md"), "w", encoding="utf-8", newline="\n") as f:
     f.write(readme)

@@ -17,10 +17,19 @@
 | **特效编辑器** | `three.js/editor/` | 制作特效 / 艺术字等，导出 `.vfxpack` |
 | **已有资源包** | `freefilmcut/apps/web/public/vfxpacks/`、`.../flower/` | 贴纸、转场、特效、艺术字等示例包 |
 
-快速启动（Windows）：
+### 环境要求
 
-- 剪辑端：`start-opencut.bat` → http://localhost:3000  
-- 资源编辑器：`start-asset-editor.bat` → http://localhost:5174/editor/
+| 脚本 | 需要 |
+|------|------|
+| `start-filmcut.bat`（剪辑端） | 缺 Bun 时会**自动安装**，缺 `node_modules` 时会跑 `bun install` |
+| `start-asset-editor.bat`（资源编辑器） | 需要 Python 3；缺失时会尝试用 **winget** 安装 |
+
+### 快速启动（Windows）
+
+- 剪辑端：`start-filmcut.bat` → http://localhost:3000  
+- 资源编辑器：`start-asset-editor.bat` → http://localhost:5174/editor/  
+
+剪辑端第一次启动可能较慢（`bun install` + Next.js）。
 
 ---
 

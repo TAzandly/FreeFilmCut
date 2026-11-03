@@ -10,6 +10,11 @@ set "ROOT=%CD%"
 set "NLE_DIR=%ROOT%\freefilmcut"
 set "LOCK=%NLE_DIR%\apps\web\.next\dev\lock"
 
+REM Bun default install location (used after auto-install in this same window)
+if exist "%USERPROFILE%\.bun\bin\bun.exe" (
+  set "PATH=%USERPROFILE%\.bun\bin;%PATH%"
+)
+
 title FreeFilmCut NLE
 echo ========================================
 echo   FreeFilmCut NLE
@@ -28,10 +33,28 @@ if not exist "%NLE_DIR%\package.json" (
 
 where bun >nul 2>&1
 if errorlevel 1 (
-  echo [ERROR] bun not found in PATH.
-  echo Tip: install Bun, or open a terminal where "where bun" works.
-  pause
-  exit /b 1
+  echo [INFO] Bun not found - installing automatically...
+  echo.
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://bun.sh/install.ps1 | iex"
+  if errorlevel 1 (
+    echo [ERROR] Auto-install Bun failed.
+    echo Manual install: powershell -c "irm https://bun.sh/install.ps1 ^| iex"
+    echo Docs: https://bun.sh/docs/installation
+    pause
+    exit /b 1
+  )
+  if exist "%USERPROFILE%\.bun\bin\bun.exe" (
+    set "PATH=%USERPROFILE%\.bun\bin;%PATH%"
+  )
+  where bun >nul 2>&1
+  if errorlevel 1 (
+    echo [ERROR] Bun installed but still not on PATH in this window.
+    echo Close this window, open a NEW terminal, then run start-filmcut.bat again.
+    pause
+    exit /b 1
+  )
+  echo [INFO] Bun is ready.
+  echo.
 )
 
 cd /d "%NLE_DIR%" || (
@@ -40,8 +63,17 @@ cd /d "%NLE_DIR%" || (
   exit /b 1
 )
 
-REM Folder rename can break turbo junctions inside node_modules.
-if not exist "node_modules\turbo\bin\turbo" (
+REM First clone / missing deps: install project packages.
+if not exist "node_modules" (
+  echo [INFO] node_modules missing - running bun install ...
+  bun install
+  if errorlevel 1 (
+    echo [ERROR] bun install failed.
+    pause
+    exit /b 1
+  )
+) else if not exist "node_modules\turbo\bin\turbo" (
+  REM Folder rename can break turbo junctions inside node_modules.
   echo [WARN] turbo missing - running bun install ...
   bun install
   if errorlevel 1 (

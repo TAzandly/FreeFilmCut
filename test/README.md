@@ -26,4 +26,4 @@ Get-Content .\test\MOVE_MANIFEST.json | Select-Object -First 40
 Move-Item .\test\agent-scratch\_tmp_mg.mp4 .\
 ```
 
-不要把 `agent-scratch` 里的脚本当生产入口；正式启动仍用根目录 `start-opencut.bat` / `start-asset-editor.bat`。
+不要把 `agent-scratch` 里的脚本当生产入口；正式启动仍用根目录 `start-filmcut.bat` / `start-asset-editor.bat`。
