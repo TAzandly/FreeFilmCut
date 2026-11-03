@@ -63,6 +63,24 @@ cd /d "%NLE_DIR%" || (
   exit /b 1
 )
 
+REM .env.local is gitignored — clone machines need placeholders so Zod env parse succeeds.
+set "WEB_DIR=%NLE_DIR%\apps\web"
+if not exist "%WEB_DIR%\.env.local" (
+  if exist "%WEB_DIR%\.env.example" (
+    echo [INFO] Creating apps\web\.env.local from .env.example ...
+    copy /Y "%WEB_DIR%\.env.example" "%WEB_DIR%\.env.local" >nul
+    if errorlevel 1 (
+      echo [ERROR] Failed to create .env.local
+      pause
+      exit /b 1
+    )
+  ) else (
+    echo [ERROR] Missing apps\web\.env.example — cannot create .env.local
+    pause
+    exit /b 1
+  )
+)
+
 REM First clone / missing deps: install project packages.
 if not exist "node_modules" (
   echo [INFO] node_modules missing - running bun install ...

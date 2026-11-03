@@ -21,7 +21,7 @@
 
 | Script | Needs |
 |--------|--------|
-| `start-filmcut.bat` (NLE) | Will **auto-install Bun** if missing, then `bun install` when `node_modules` is absent |
+| `start-filmcut.bat` (NLE) | Auto-installs Bun if missing; creates `apps/web/.env.local` from `.env.example` if missing; `bun install` when `node_modules` is absent |
 | `start-asset-editor.bat` | Needs Python 3; will try **winget** install if missing |
 
 ### Quick start (Windows)

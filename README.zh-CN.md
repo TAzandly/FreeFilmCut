@@ -21,7 +21,7 @@
 
 | 脚本 | 需要 |
 |------|------|
-| `start-filmcut.bat`（剪辑端） | 缺 Bun 时会**自动安装**，缺 `node_modules` 时会跑 `bun install` |
+| `start-filmcut.bat`（剪辑端） | 缺 Bun 自动安装；缺 `apps/web/.env.local` 时从 `.env.example` 复制；缺 `node_modules` 时跑 `bun install` |
 | `start-asset-editor.bat`（资源编辑器） | 需要 Python 3；缺失时会尝试用 **winget** 安装 |
 
 ### 快速启动（Windows）
