@@ -1,5 +1,5 @@
 import type { MutableRefObject } from "react";
-import type { TAction } from "./definitions";
+import { ACTIONS, type TAction } from "./definitions";
 
 export type { TAction };
 
@@ -42,3 +42,21 @@ export type TActionHandlerOptions =
 	| MutableRefObject<boolean>
 	| boolean
 	| undefined;
+
+const OPTIONAL_ARG_ACTION_KEYS: ReadonlySet<string> = (() => {
+	const requiredOnly = new Set<string>([
+		"remove-media-asset",
+		"remove-media-assets",
+	]);
+	const out = new Set<string>();
+	for (const key of Object.keys(ACTIONS)) {
+		if (!requiredOnly.has(key)) out.add(key);
+	}
+	return out;
+})();
+
+export function isActionWithOptionalArgs(
+	value: unknown,
+): value is TActionWithOptionalArgs {
+	return typeof value === "string" && OPTIONAL_ARG_ACTION_KEYS.has(value);
+}
