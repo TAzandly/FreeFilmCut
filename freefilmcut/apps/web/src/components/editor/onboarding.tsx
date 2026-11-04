@@ -1,135 +1,109 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ArrowRightIcon } from "lucide-react";
-import { useState } from "react";
-import ReactMarkdown from "react-markdown";
-import { SOCIAL_LINKS } from "@/site/social";
 import { useLocalStorage } from "@/services/storage/use-local-storage";
 import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
+import { Label } from "../ui/label";
 import { Dialog, DialogBody, DialogContent, DialogTitle } from "../ui/dialog";
 
+const DONT_SHOW_KEY = "onboardingDontShowAgain";
+const LEGACY_SEEN_KEY = "hasSeenOnboarding";
+
 export function Onboarding() {
-	const [step, setStep] = useState(0);
-	const [hasSeenOnboarding, setHasSeenOnboarding] = useLocalStorage({
-		key: "hasSeenOnboarding",
+	const [dontShowAgain, setDontShowAgain, isReady] = useLocalStorage({
+		key: DONT_SHOW_KEY,
 		defaultValue: false,
 	});
+	const [dontShowChecked, setDontShowChecked] = useState(false);
+	const [dismissedThisSession, setDismissedThisSession] = useState(false);
+	const [legacyMigrated, setLegacyMigrated] = useState(false);
 
-	const isOpen = !hasSeenOnboarding;
-
-	const handleNext = () => {
-		setStep(step + 1);
-	};
-
-	const handleClose = () => {
-		setHasSeenOnboarding({ value: true });
-	};
-
-	const getStepTitle = () => {
-		switch (step) {
-			case 0:
-				return "Welcome to FreeFilmCut Beta! 🎉";
-			case 1:
-				return "⚠️ This is a super early beta!";
-			case 2:
-				return "🦋 Have fun testing!";
-			default:
-				return "FreeFilmCut Onboarding";
+	// One-time: previous Finish (hasSeenOnboarding) → treat as "don't show again"
+	useEffect(() => {
+		if (!isReady) return;
+		try {
+			const legacy = localStorage.getItem(LEGACY_SEEN_KEY);
+			const already = localStorage.getItem(DONT_SHOW_KEY);
+			if (legacy === "true" && already === null) {
+				setDontShowAgain({ value: true });
+				localStorage.removeItem(LEGACY_SEEN_KEY);
+			}
+		} catch {
+			/* ignore */
 		}
+		setLegacyMigrated(true);
+	}, [isReady, setDontShowAgain]);
+
+	const isOpen =
+		isReady && legacyMigrated && !dontShowAgain && !dismissedThisSession;
+
+	const dismiss = ({ persist }: { persist: boolean }) => {
+		if (persist) {
+			setDontShowAgain({ value: true });
+			try {
+				localStorage.removeItem(LEGACY_SEEN_KEY);
+			} catch {
+				/* ignore */
+			}
+		}
+		setDismissedThisSession(true);
 	};
 
-	const renderStepContent = () => {
-		switch (step) {
-			case 0:
-				return (
-					<div className="space-y-5">
-						<div className="space-y-3">
-							<Title title="Welcome to FreeFilmCut Beta! 🎉" />
-							<Description description="You're among the first to try FreeFilmCut - the fully open source CapCut alternative." />
-						</div>
-						<NextButton onClick={handleNext}>Next</NextButton>
-					</div>
-				);
-			case 1:
-				return (
-					<div className="space-y-5">
-						<div className="space-y-3">
-							<Title title={getStepTitle()} />
-							<Description description="There's still a ton of things to do to make this editor amazing." />
-							<Description description="A lot of features are still missing. We're working hard to build them out!" />
-							<Description description="If you're curious, check out our roadmap [here](https://opencut.app/roadmap)" />
-						</div>
-						<NextButton onClick={handleNext}>Next</NextButton>
-					</div>
-				);
-			case 2:
-				return (
-					<div className="space-y-5">
-						<div className="space-y-3">
-							<Title title={getStepTitle()} />
-							<Description
-								description={`Join our [Discord](${SOCIAL_LINKS.discord}), chat with cool people and share feedback to help make FreeFilmCut the best editor ever.`}
-							/>
-						</div>
-						<NextButton onClick={handleClose}>Finish</NextButton>
-					</div>
-				);
-			default:
-				return null;
+	const handleFinish = () => {
+		dismiss({ persist: dontShowChecked });
+	};
+
+	const handleOpenChange = (open: boolean) => {
+		if (!open) {
+			dismiss({ persist: dontShowChecked });
 		}
 	};
 
 	return (
-		<Dialog open={isOpen} onOpenChange={handleClose}>
+		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogTitle>
-					<span className="sr-only">{getStepTitle()}</span>
+					<span className="sr-only">Welcome to FreeFilmCut Beta!</span>
 				</DialogTitle>
-				<DialogBody>{renderStepContent()}</DialogBody>
+				<DialogBody>
+					<div className="space-y-5">
+						<div className="space-y-3">
+							<h2 className="text-lg font-bold md:text-xl">
+								Welcome to FreeFilmCut Beta!
+							</h2>
+							<p className="text-muted-foreground mb-0">
+								You're among the first to try FreeFilmCut - the fully open
+								source CapCut alternative.
+							</p>
+						</div>
+						<label className="flex cursor-pointer items-center gap-2">
+							<Checkbox
+								checked={dontShowChecked}
+								onCheckedChange={(checked) =>
+									setDontShowChecked(checked === true)
+								}
+								id="onboarding-dont-show"
+							/>
+							<Label
+								htmlFor="onboarding-dont-show"
+								className="cursor-pointer text-sm font-normal text-muted-foreground"
+							>
+								Don&apos;t show again
+							</Label>
+						</label>
+						<Button
+							onClick={handleFinish}
+							variant="default"
+							className="w-full"
+						>
+							Finish
+							<ArrowRightIcon className="size-4" />
+						</Button>
+					</div>
+				</DialogBody>
 			</DialogContent>
 		</Dialog>
-	);
-}
-
-function Title({ title }: { title: string }) {
-	return <h2 className="text-lg font-bold md:text-xl">{title}</h2>;
-}
-
-function Description({ description }: { description: string }) {
-	return (
-		<div className="text-muted-foreground">
-			<ReactMarkdown
-				components={{
-					p: ({ children }) => <p className="mb-0">{children}</p>,
-					a: ({ href, children }) => (
-						<a
-							href={href}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-foreground hover:text-foreground/80 underline"
-						>
-							{children}
-						</a>
-					),
-				}}
-			>
-				{description}
-			</ReactMarkdown>
-		</div>
-	);
-}
-
-function NextButton({
-	children,
-	onClick,
-}: {
-	children: React.ReactNode;
-	onClick: () => void;
-}) {
-	return (
-		<Button onClick={onClick} variant="default" className="w-full">
-			{children}
-			<ArrowRightIcon className="size-4" />
-		</Button>
 	);
 }

@@ -53,7 +53,8 @@ export default function RootLayout({
 			<body className={`${siteFont.className} font-sans antialiased`}>
 				<ThemeProvider
 					attribute="class"
-					defaultTheme="system"
+					defaultTheme="dark"
+					enableSystem={false}
 					disableTransitionOnChange={true}
 				>
 					<TooltipProvider>
