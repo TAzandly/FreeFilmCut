@@ -30,7 +30,7 @@ interface Contributor {
 async function getContributors(): Promise<Contributor[]> {
 	try {
 		const response = await fetch(
-			"https://api.github.com/repos/OpenCut-app/OpenCut/contributors?per_page=100",
+			"https://api.github.com/repos/TAzandly/FreeFilmCut/contributors?per_page=100",
 			{
 				headers: {
 					Accept: "application/vnd.github.v3+json",

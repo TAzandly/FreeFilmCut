@@ -43,7 +43,11 @@ import {
 } from "@/vfxpack/timeline-flower-text";
 import {
 	createSolidContent,
+	getDefaultTextOuterShadow,
+	getDefaultTextOuterStroke,
 	normalizeFlowerStyle,
+	setDefaultTextOuterShadow,
+	setDefaultTextOuterStroke,
 	type FlowerStyle,
 } from "@/vfxpack/flower-style";
 import {
@@ -238,12 +242,30 @@ function BasicTab({ element, trackId }: { element: TextElement; trackId: string 
 	const posY = readNumber({ params, key: "transform.positionY", fallback: 0 });
 	const rotate = readNumber({ params, key: "transform.rotate", fallback: 0 });
 	const opacity = readNumber({ params, key: "opacity", fallback: 1 });
-	const [strokeEnabled, setStrokeEnabled] = useState(false);
-	const [strokeColor, setStrokeColor] = useState("#000000");
 	const isTpl = isTextTemplateClip(renderElement);
+	/** Default text only — hide stroke/shadow when Effects / text-template applied. */
+	const isDefaultText =
+		!isTpl && !(renderElement as TextElement).flowerTemplateId;
 	const typographyKeys = isTpl
 		? TYPOGRAPHY_PARAM_KEYS.filter((key) => key !== "fontFamily")
 		: TYPOGRAPHY_PARAM_KEYS;
+
+	const fillColor = color;
+	const outerStroke = isDefaultText
+		? getDefaultTextOuterStroke((renderElement as TextElement).flowerStyle)
+		: null;
+	const outerShadow = isDefaultText
+		? getDefaultTextOuterShadow((renderElement as TextElement).flowerStyle)
+		: null;
+	const strokeEnabled = !!(outerStroke && outerStroke.enable);
+	const strokeColor = outerStroke?.content?.solid?.color ?? "#000000";
+	const strokeWidth = outerStroke?.width ?? 4;
+	const shadowEnabled = !!(outerShadow && outerShadow.enable);
+	const shadowDistance = outerShadow?.distance ?? 4;
+	const shadowAngle = outerShadow?.angle ?? -45;
+	const shadowBlur = outerShadow?.diffuse ?? 2;
+	const shadowColor = outerShadow?.content?.solid?.color ?? "#000000";
+	const shadowAlpha = outerShadow?.alpha ?? 0.75;
 
 	const patchParams = (patch: ParamValues) => {
 		previewUpdates({ params: { ...renderElement.params, ...patch } });
@@ -251,6 +273,60 @@ function BasicTab({ element, trackId }: { element: TextElement; trackId: string 
 	const commitParams = (patch: ParamValues) => {
 		patchParams(patch);
 		commit();
+	};
+
+	const previewFlowerStyle = (nextStyle: FlowerStyle) => {
+		previewUpdates({ flowerStyle: nextStyle });
+	};
+	const commitFlowerStyle = (nextStyle: FlowerStyle) => {
+		previewFlowerStyle(nextStyle);
+		commit();
+	};
+
+	const applyStroke = ({
+		enable,
+		width,
+		color: strokeCol,
+		previewOnly = false,
+	}: {
+		enable: boolean;
+		width: number;
+		color: string;
+		previewOnly?: boolean;
+	}) => {
+		const next = setDefaultTextOuterStroke(
+			(renderElement as TextElement).flowerStyle,
+			{ enable, width, color: strokeCol },
+			{ fillColor },
+		);
+		if (previewOnly) previewFlowerStyle(next);
+		else commitFlowerStyle(next);
+	};
+
+	const applyShadow = ({
+		enable,
+		distance,
+		angle,
+		diffuse,
+		color: shadowCol,
+		alpha,
+		previewOnly = false,
+	}: {
+		enable: boolean;
+		distance: number;
+		angle: number;
+		diffuse: number;
+		color: string;
+		alpha: number;
+		previewOnly?: boolean;
+	}) => {
+		const next = setDefaultTextOuterShadow(
+			(renderElement as TextElement).flowerStyle,
+			{ enable, distance, angle, diffuse, color: shadowCol, alpha },
+			{ fillColor },
+		);
+		if (previewOnly) previewFlowerStyle(next);
+		else commitFlowerStyle(next);
 	};
 
 	/** fcc-tl-flower-64: color swatch must also rewrite solid flowerStyle.fill (Default text stamps one). */
@@ -414,36 +490,214 @@ function BasicTab({ element, trackId }: { element: TextElement; trackId: string 
 				</SectionContent>
 			</Section>
 
-			<Section collapsible defaultOpen={false} sectionKey={`${element.id}:text-stroke`}>
-				<SectionHeader
-					leading={
-						<Checkbox
-							checked={strokeEnabled}
-							onCheckedChange={(checked) => setStrokeEnabled(checked === true)}
-							onClick={(event) => event.stopPropagation()}
-							aria-label="Enable stroke"
-						/>
-					}
+			{isDefaultText && (
+				<Section
+					collapsible
+					defaultOpen={false}
+					sectionKey={`${element.id}:text-stroke`}
 				>
-					<SectionTitle>Stroke</SectionTitle>
-				</SectionHeader>
-				<SectionContent>
-					<SectionFields>
-						<SectionField label="Color">
-							<ColorPicker
-								value={strokeColor.replace("#", "").toUpperCase()}
-								onChange={(c) => setStrokeColor(`#${c}`)}
-								onChangeEnd={(c) => setStrokeColor(`#${c}`)}
+					<SectionHeader
+						leading={
+							<Checkbox
+								checked={strokeEnabled}
+								onCheckedChange={(checked) => {
+									const on = checked === true;
+									applyStroke({
+										enable: on,
+										width: on ? Math.max(strokeWidth, 2) : strokeWidth,
+										color: strokeColor,
+									});
+								}}
+								onClick={(event) => event.stopPropagation()}
+								aria-label="Enable stroke"
 							/>
-						</SectionField>
-						{!strokeEnabled && (
-							<p className="text-muted-foreground px-0.5 text-[11px]">
-								UI only for now — stroke applies with Effects styles.
-							</p>
-						)}
-					</SectionFields>
-				</SectionContent>
-			</Section>
+						}
+					>
+						<SectionTitle>Stroke</SectionTitle>
+					</SectionHeader>
+					{strokeEnabled && (
+						<SectionContent>
+							<SectionFields>
+								<UnitSliderRow
+									label="Width"
+									value={strokeWidth}
+									min={0}
+									max={40}
+									step={0.5}
+									onPreview={(width) =>
+										applyStroke({
+											enable: true,
+											width,
+											color: strokeColor,
+											previewOnly: true,
+										})
+									}
+									onCommit={commit}
+								/>
+								<SectionField label="Color">
+									<ColorPicker
+										value={strokeColor.replace("#", "").toUpperCase()}
+										onChange={(c) =>
+											applyStroke({
+												enable: true,
+												width: strokeWidth,
+												color: `#${c}`,
+												previewOnly: true,
+											})
+										}
+										onChangeEnd={(c) =>
+											applyStroke({
+												enable: true,
+												width: strokeWidth,
+												color: `#${c}`,
+											})
+										}
+									/>
+								</SectionField>
+							</SectionFields>
+						</SectionContent>
+					)}
+				</Section>
+			)}
+
+			{isDefaultText && (
+				<Section
+					collapsible
+					defaultOpen={false}
+					sectionKey={`${element.id}:text-shadow`}
+				>
+					<SectionHeader
+						leading={
+							<Checkbox
+								checked={shadowEnabled}
+								onCheckedChange={(checked) => {
+									const on = checked === true;
+									applyShadow({
+										enable: on,
+										distance: on ? Math.max(shadowDistance, 2) : shadowDistance,
+										angle: shadowAngle,
+										diffuse: shadowBlur,
+										color: shadowColor,
+										alpha: shadowAlpha,
+									});
+								}}
+								onClick={(event) => event.stopPropagation()}
+								aria-label="Enable shadow"
+							/>
+						}
+					>
+						<SectionTitle>Shadow</SectionTitle>
+					</SectionHeader>
+					{shadowEnabled && (
+						<SectionContent>
+							<SectionFields>
+								<UnitSliderRow
+									label="Distance"
+									value={shadowDistance}
+									min={0}
+									max={64}
+									step={0.5}
+									onPreview={(distance) =>
+										applyShadow({
+											enable: true,
+											distance,
+											angle: shadowAngle,
+											diffuse: shadowBlur,
+											color: shadowColor,
+											alpha: shadowAlpha,
+											previewOnly: true,
+										})
+									}
+									onCommit={commit}
+								/>
+								<UnitSliderRow
+									label="Angle"
+									value={shadowAngle}
+									min={-180}
+									max={180}
+									step={1}
+									suffix="°"
+									onPreview={(angle) =>
+										applyShadow({
+											enable: true,
+											distance: shadowDistance,
+											angle,
+											diffuse: shadowBlur,
+											color: shadowColor,
+											alpha: shadowAlpha,
+											previewOnly: true,
+										})
+									}
+									onCommit={commit}
+								/>
+								<UnitSliderRow
+									label="Blur"
+									value={shadowBlur}
+									min={0}
+									max={32}
+									step={0.5}
+									onPreview={(diffuse) =>
+										applyShadow({
+											enable: true,
+											distance: shadowDistance,
+											angle: shadowAngle,
+											diffuse,
+											color: shadowColor,
+											alpha: shadowAlpha,
+											previewOnly: true,
+										})
+									}
+									onCommit={commit}
+								/>
+								<PercentSliderRow
+									label="Opacity"
+									percent={shadowAlpha * 100}
+									min={0}
+									max={100}
+									onPreview={(percent) =>
+										applyShadow({
+											enable: true,
+											distance: shadowDistance,
+											angle: shadowAngle,
+											diffuse: shadowBlur,
+											color: shadowColor,
+											alpha: Math.min(100, Math.max(0, percent)) / 100,
+											previewOnly: true,
+										})
+									}
+									onCommit={commit}
+								/>
+								<SectionField label="Color">
+									<ColorPicker
+										value={shadowColor.replace("#", "").toUpperCase()}
+										onChange={(c) =>
+											applyShadow({
+												enable: true,
+												distance: shadowDistance,
+												angle: shadowAngle,
+												diffuse: shadowBlur,
+												color: `#${c}`,
+												alpha: shadowAlpha,
+												previewOnly: true,
+											})
+										}
+										onChangeEnd={(c) =>
+											applyShadow({
+												enable: true,
+												distance: shadowDistance,
+												angle: shadowAngle,
+												diffuse: shadowBlur,
+												color: `#${c}`,
+												alpha: shadowAlpha,
+											})
+										}
+									/>
+								</SectionField>
+							</SectionFields>
+						</SectionContent>
+					)}
+				</Section>
+			)}
 
 			<Section collapsible defaultOpen sectionKey={`${element.id}:text-typography`}>
 				<SectionHeader>
@@ -1053,6 +1307,75 @@ function DecorativeKeyframe() {
 			title="Keyframes coming soon"
 			onToggle={() => undefined}
 		/>
+	);
+}
+
+function UnitSliderRow({
+	label,
+	value,
+	min,
+	max,
+	step = 1,
+	suffix,
+	onPreview,
+	onCommit,
+}: {
+	label: string;
+	value: number;
+	min: number;
+	max: number;
+	step?: number;
+	suffix?: string;
+	onPreview: (value: number) => void;
+	onCommit: () => void;
+}) {
+	const display = formatNumberForDisplay({
+		value,
+		maxFractionDigits: step < 1 ? 1 : 0,
+	});
+	const draft = usePropertyDraft({
+		displayValue: display,
+		parse: (input) => {
+			const parsed = Number.parseFloat(input);
+			if (Number.isNaN(parsed)) return null;
+			return snapToStep({
+				value: Math.min(max, Math.max(min, parsed)),
+				step,
+			});
+		},
+		onPreview,
+		onCommit,
+	});
+
+	return (
+		<SectionField label={label}>
+			<div className="flex w-full items-center gap-2">
+				<Slider
+					className="flex-1"
+					min={min}
+					max={max}
+					step={step}
+					value={[Math.min(max, Math.max(min, value))]}
+					onValueChange={(vals) => onPreview(vals[0] ?? value)}
+					onValueCommit={() => onCommit()}
+				/>
+				<NumberField
+					value={draft.displayValue}
+					suffix={suffix}
+					className="w-[72px]"
+					isDefault={false}
+					onFocus={draft.onFocus}
+					onChange={draft.onChange}
+					onBlur={draft.onBlur}
+					onScrub={(next) =>
+						onPreview(
+							Math.min(max, Math.max(min, snapToStep({ value: next, step }))),
+						)
+					}
+					onScrubEnd={onCommit}
+				/>
+			</div>
+		</SectionField>
 	);
 }
 

@@ -19,7 +19,8 @@ export const TRANSCRIPTION_MODELS: TranscriptionModel[] = [
 	{
 		id: "whisper-medium",
 		name: "Medium",
-		huggingFaceId: "onnx-community/whisper-medium",
+		// onnx-community/whisper-medium is private (HF 401); Xenova mirror is public + has q4.
+		huggingFaceId: "Xenova/whisper-medium",
 		description: "Higher accuracy, slower",
 	},
 	{

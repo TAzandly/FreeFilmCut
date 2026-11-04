@@ -13,9 +13,14 @@ import { useEditor } from "@/editor/use-editor";
 import { TRANSCRIPTION_DIAGNOSTICS_SCOPE } from "@/transcription/diagnostics";
 import { DEFAULT_TRANSCRIPTION_SAMPLE_RATE } from "@/transcription/audio";
 import { TRANSCRIPTION_LANGUAGES } from "@/transcription/supported-languages";
+import {
+	DEFAULT_TRANSCRIPTION_MODEL,
+	TRANSCRIPTION_MODELS,
+} from "@/transcription/models";
 import type {
 	CaptionChunk,
 	TranscriptionLanguage,
+	TranscriptionModelId,
 	TranscriptionProgress,
 } from "@/transcription/types";
 import { transcriptionService } from "@/services/transcription/service";
@@ -39,6 +44,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { DiagnosticSeverity } from "@/diagnostics/types";
+import { useLocalStorage } from "@/services/storage/use-local-storage";
 
 const DIAGNOSTIC_BUTTON_VARIANT: Record<
 	DiagnosticSeverity,
@@ -83,30 +89,40 @@ function processingReducer(
 }
 /* eslint-enable opencut/prefer-object-params */
 
+function isTranscriptionModelId(value: string): value is TranscriptionModelId {
+	return TRANSCRIPTION_MODELS.some((model) => model.id === value);
+}
+
 export function Captions() {
-	const [selectedLanguage, setSelectedLanguage] =
-		useState<TranscriptionLanguage>("auto");
-	const [processing, dispatch] = useReducer(processingReducer, IDLE_STATE);
-	const containerRef = useRef<HTMLDivElement>(null);
-	const fileInputRef = useRef<HTMLInputElement>(null);
-	const editor = useEditor();
+		const [selectedLanguage, setSelectedLanguage] =
+			useState<TranscriptionLanguage>("auto");
+		const [selectedModelId, setSelectedModelId] = useLocalStorage({
+			key: "transcriptionModelId",
+			defaultValue: DEFAULT_TRANSCRIPTION_MODEL,
+		});
+		const [processing, dispatch] = useReducer(processingReducer, IDLE_STATE);
+		const containerRef = useRef<HTMLDivElement>(null);
+		const fileInputRef = useRef<HTMLInputElement>(null);
+		const editor = useEditor();
 
-	const isProcessing = processing.status === "processing";
+		const isProcessing = processing.status === "processing";
 
-	const activeDiagnostics = useEditor((e) =>
-		e.diagnostics.getActive({ scope: TRANSCRIPTION_DIAGNOSTICS_SCOPE }),
-	);
+		const activeDiagnostics = useEditor((e) =>
+			e.diagnostics.getActive({ scope: TRANSCRIPTION_DIAGNOSTICS_SCOPE }),
+		);
 
-	const handleProgress = (progress: TranscriptionProgress) => {
-		if (progress.status === "loading-model") {
-			dispatch({
-				type: "update_step",
-				step: `Loading model ${Math.round(progress.progress)}%`,
-			});
-		} else if (progress.status === "transcribing") {
-			dispatch({ type: "update_step", step: "Transcribing..." });
-		}
-	};
+		const handleProgress = (progress: TranscriptionProgress) => {
+			if (progress.status === "loading-model") {
+				dispatch({
+					type: "update_step",
+					step:
+						progress.message ??
+						`Loading model ${Math.round(progress.progress)}%`,
+				});
+			} else if (progress.status === "transcribing") {
+				dispatch({ type: "update_step", step: "Transcribing..." });
+			}
+		};
 
 	const insertCaptions = ({
 		captions,
@@ -132,11 +148,12 @@ export function Captions() {
 				sampleRate: DEFAULT_TRANSCRIPTION_SAMPLE_RATE,
 			});
 
-			const result = await transcriptionService.transcribe({
-				audioData: samples,
-				language: selectedLanguage === "auto" ? undefined : selectedLanguage,
-				onProgress: handleProgress,
-			});
+				const result = await transcriptionService.transcribe({
+					audioData: samples,
+					language: selectedLanguage,
+					modelId: selectedModelId,
+					onProgress: handleProgress,
+				});
 
 			dispatch({ type: "update_step", step: "Generating captions..." });
 			const captionChunks = buildCaptionChunks({ segments: result.segments });
@@ -221,18 +238,23 @@ export function Captions() {
 		await handleImportFile({ file });
 	};
 
-	const handleLanguageChange = ({ value }: { value: string }) => {
-		if (value === "auto") {
-			setSelectedLanguage("auto");
-			return;
-		}
+		const handleLanguageChange = ({ value }: { value: string }) => {
+			if (value === "auto") {
+				setSelectedLanguage("auto");
+				return;
+			}
 
-		const matchedLanguage = TRANSCRIPTION_LANGUAGES.find(
-			(language) => language.code === value,
-		);
-		if (!matchedLanguage) return;
-		setSelectedLanguage(matchedLanguage.code);
-	};
+			const matchedLanguage = TRANSCRIPTION_LANGUAGES.find(
+				(language) => language.code === value,
+			);
+			if (!matchedLanguage) return;
+			setSelectedLanguage(matchedLanguage.code);
+		};
+
+		const handleModelChange = ({ value }: { value: string }) => {
+			if (!isTranscriptionModelId(value)) return;
+			setSelectedModelId({ value });
+		};
 
 	const error = processing.status === "idle" ? processing.error : null;
 	const warnings = processing.status === "idle" ? processing.warnings : [];
@@ -288,26 +310,45 @@ export function Captions() {
 				className="flex-1"
 			>
 				<SectionContent className="flex flex-col gap-4 h-full pt-1">
-					<SectionFields>
-						<SectionField label="Language">
-							<Select
-								value={selectedLanguage}
-								onValueChange={(value) => handleLanguageChange({ value })}
-							>
-								<SelectTrigger>
-									<SelectValue placeholder="Select a language" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="auto">Auto detect</SelectItem>
-									{TRANSCRIPTION_LANGUAGES.map((language) => (
-										<SelectItem key={language.code} value={language.code}>
-											{language.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</SectionField>
-					</SectionFields>
+						<SectionFields>
+							<SectionField label="Language">
+								<Select
+									value={selectedLanguage}
+									onValueChange={(value) => handleLanguageChange({ value })}
+									disabled={isProcessing}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Select a language" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="auto">Auto detect</SelectItem>
+										{TRANSCRIPTION_LANGUAGES.map((language) => (
+											<SelectItem key={language.code} value={language.code}>
+												{language.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</SectionField>
+							<SectionField label="Whisper model">
+								<Select
+									value={selectedModelId}
+									onValueChange={(value) => handleModelChange({ value })}
+									disabled={isProcessing}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Select a model" />
+									</SelectTrigger>
+									<SelectContent>
+										{TRANSCRIPTION_MODELS.map((model) => (
+											<SelectItem key={model.id} value={model.id}>
+												{model.name} — {model.description}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</SectionField>
+						</SectionFields>
 
 					<Button
 						type="button"

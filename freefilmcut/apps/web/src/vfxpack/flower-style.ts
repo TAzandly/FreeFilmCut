@@ -788,6 +788,117 @@ export function createDefaultFlowerStyle(
 	});
 }
 
+function ensureStyleWithFill(
+	style: unknown,
+	fillColor: string,
+): FlowerStyle {
+	if (style) return normalizeFlowerStyle(style);
+	return createDefaultFlowerStyle({
+		fill: { alpha: 1, content: createSolidContent(fillColor, 1) },
+	});
+}
+
+/** First outer stroke on a Default-text flowerStyle (or null). */
+export function getDefaultTextOuterStroke(
+	style: unknown,
+): StrokeLayer | null {
+	const s = style ? normalizeFlowerStyle(style) : null;
+	if (!s) return null;
+	return (
+		s.strokes.find((st) => st.side !== "inner" && st.enable) ??
+		s.strokes.find((st) => st.side !== "inner") ??
+		null
+	);
+}
+
+/** First outer shadow on a Default-text flowerStyle (or null). */
+export function getDefaultTextOuterShadow(
+	style: unknown,
+): ShadowLayer | null {
+	const s = style ? normalizeFlowerStyle(style) : null;
+	if (!s) return null;
+	return s.shadows.find((sh) => sh.enable) ?? s.shadows[0] ?? null;
+}
+
+/**
+ * Replace Default-text outer stroke (at most one). Keeps existing outer shadows.
+ * Pass `enable: false` to clear stroke.
+ */
+export function setDefaultTextOuterStroke(
+	style: unknown,
+	next: { enable: boolean; width: number; color: string },
+	opts: { fillColor?: string } = {},
+): FlowerStyle {
+	const fillColor = opts.fillColor ?? "#ffffff";
+	const base = ensureStyleWithFill(style, fillColor);
+	const strokes = next.enable
+		? [
+				createStrokeLayer({
+					enable: true,
+					width: Math.max(0, Number(next.width) || 0),
+					side: "outer",
+					alpha: 1,
+					content: createSolidContent(normalizeHex(next.color, "#000000"), 1),
+				}),
+			]
+		: [];
+	return normalizeFlowerStyle({
+		version: base.version,
+		id: base.id,
+		fill: base.fill,
+		stack: [],
+		strokes,
+		shadows: base.shadows,
+		innerShadows: [],
+		anims: base.anims,
+	});
+}
+
+/**
+ * Replace Default-text outer shadow (at most one). Keeps existing outer strokes.
+ * Pass `enable: false` to clear shadow.
+ */
+export function setDefaultTextOuterShadow(
+	style: unknown,
+	next: {
+		enable: boolean;
+		distance: number;
+		angle: number;
+		diffuse: number;
+		color: string;
+		alpha: number;
+	},
+	opts: { fillColor?: string } = {},
+): FlowerStyle {
+	const fillColor = opts.fillColor ?? "#ffffff";
+	const base = ensureStyleWithFill(style, fillColor);
+	const shadows = next.enable
+		? [
+				createShadowLayer({
+					enable: true,
+					distance: Math.max(0, Number(next.distance) || 0),
+					angle: Number(next.angle) || 0,
+					diffuse: Math.max(0, Number(next.diffuse) || 0),
+					width: 0,
+					alpha: clamp01(next.alpha),
+					content: createSolidContent(normalizeHex(next.color, "#000000"), 1),
+					strokes: [],
+				}),
+			]
+		: [];
+	const strokes = base.strokes.filter((st) => st.side !== "inner");
+	return normalizeFlowerStyle({
+		version: base.version,
+		id: base.id,
+		fill: base.fill,
+		stack: [],
+		strokes,
+		shadows,
+		innerShadows: [],
+		anims: base.anims,
+	});
+}
+
 export function cloneFlowerStyle(style: unknown): FlowerStyle {
 	try {
 		return normalizeFlowerStyle(JSON.parse(JSON.stringify(style || {})));

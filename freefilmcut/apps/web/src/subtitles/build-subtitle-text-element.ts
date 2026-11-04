@@ -18,7 +18,7 @@ import type { SubtitleCue, SubtitleStyleOverrides } from "./types";
 
 const SUBTITLE_MAX_WIDTH_RATIO = 0.8;
 const SUBTITLE_BOTTOM_MARGIN_RATIO = 0.05;
-const SUBTITLE_FONT_SIZE = 5;
+const SUBTITLE_FONT_SIZE = 50;
 const MEASUREMENT_CANVAS_SIZE = 4096;
 
 function quoteFontFamily({ fontFamily }: { fontFamily: string }): string {

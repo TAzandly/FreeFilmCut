@@ -54,7 +54,7 @@ class TranscriptionService {
 						resolve({
 							text: response.text,
 							segments: response.segments,
-							language,
+							language: response.language || language,
 						});
 						break;
 
@@ -125,19 +125,32 @@ class TranscriptionService {
 				const response = event.data;
 
 				switch (response.type) {
-					case "init-progress":
+					case "init-progress": {
+						const verb =
+							response.source === "download"
+								? "Downloading"
+								: "Loading cached";
 						onProgress?.({
 							status: "loading-model",
 							progress: response.progress,
-							message: `Loading ${model.name} model...`,
+							message: `${verb} ${model.name} ${Math.round(response.progress)}%`,
 						});
 						break;
+					}
 
 					case "init-complete":
 						this.worker?.removeEventListener("message", handleMessage);
 						this.isInitialized = true;
 						this.isInitializing = false;
 						this.currentModelId = modelId;
+						onProgress?.({
+							status: "loading-model",
+							progress: 100,
+							message:
+								response.source === "download"
+									? `${model.name} saved for offline use`
+									: `${model.name} ready (cached)`,
+						});
 						resolve();
 						break;
 
@@ -152,9 +165,22 @@ class TranscriptionService {
 
 			this.worker.addEventListener("message", handleMessage);
 
+			const customHost =
+				typeof process !== "undefined"
+					? process.env.NEXT_PUBLIC_HF_REMOTE_HOST?.trim()
+					: undefined;
+			const preferMirror =
+				typeof navigator !== "undefined" &&
+				navigator.language.toLowerCase().startsWith("zh");
+			const defaultHosts = preferMirror
+				? ["https://hf-mirror.com/", "https://huggingface.co/"]
+				: ["https://huggingface.co/", "https://hf-mirror.com/"];
 			this.worker.postMessage({
 				type: "init",
 				modelId: model.huggingFaceId,
+				remoteHosts: customHost
+					? [customHost, ...defaultHosts]
+					: defaultHosts,
 			} satisfies WorkerMessage);
 		});
 	}

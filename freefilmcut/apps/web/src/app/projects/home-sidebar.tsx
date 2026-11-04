@@ -7,8 +7,10 @@ import {
 	ScissorIcon,
 	UserCircleIcon,
 } from "@hugeicons/core-free-icons";
+import { FaGithub } from "react-icons/fa6";
 import { toast } from "sonner";
 import { DEFAULT_LOGO_URL } from "@/site/brand";
+import { SOCIAL_LINKS } from "@/site/social";
 import { cn } from "@/utils/ui";
 
 export type HomeSection = "home" | "templates";
@@ -55,7 +57,7 @@ export function HomeSidebar({
 				type="button"
 				onClick={handleSignInClick}
 				className={cn(
-					"mx-3 mb-4 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors",
+					"mx-3 mb-1.5 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors",
 					"hover:bg-accent/60",
 				)}
 				aria-label="Sign in"
@@ -68,6 +70,25 @@ export function HomeSidebar({
 					<p className="text-muted-foreground truncate text-xs">Sign in</p>
 				</div>
 			</button>
+
+			<a
+				href={SOCIAL_LINKS.github}
+				target="_blank"
+				rel="noopener noreferrer"
+				className={cn(
+					"mx-3 mb-4 flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors",
+					"hover:bg-accent/60",
+				)}
+				aria-label="GitHub repository"
+			>
+				<div className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full">
+					<FaGithub className="size-5" />
+				</div>
+				<div className="min-w-0 flex-1">
+					<p className="truncate text-sm font-medium">GitHub</p>
+					<p className="text-muted-foreground truncate text-xs">View repository</p>
+				</div>
+			</a>
 
 			<nav className="flex flex-col gap-1 px-3">
 				{NAV_ITEMS.map((item) => {
