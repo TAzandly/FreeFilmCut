@@ -53,3 +53,5 @@ bun.lockb
 
 # Large local-only font extract (do not redistribute)
 freefilmcut/apps/web/public/fonts/msyh.ttf
+
+.worktrees/
