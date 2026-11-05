@@ -21,6 +21,7 @@ import {
 	ElementParamFields,
 	ElementParamsTab,
 } from "./components/element-params-tab";
+import { ColorCorrectionSection } from "./color-correction-section";
 import { getElementParams } from "@/params/registry";
 import {
 	COLOR_GRADE_HSL_PARAM_KEYS,
@@ -199,6 +200,7 @@ function AdjustmentPage({
 					</TabsList>
 				</div>
 				<TabsContent value="basic" className="min-h-0 flex-1 overflow-auto px-0 py-0">
+					<ColorCorrectionSection element={element} trackId={trackId} />
 					<Section
 						collapsible
 						defaultOpen

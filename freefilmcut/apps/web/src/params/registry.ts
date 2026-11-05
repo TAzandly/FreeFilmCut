@@ -32,6 +32,7 @@ import {
 	buildColorGradeCurvesParamDefs,
 	buildColorGradeHslParamDefs,
 } from "@/color-grade/param-defs";
+import { buildColorCorrectionParamDefs } from "@/color-correction/param-defs";
 
 export type ElementParamDefinition<TKey extends string = string> =
 	ParamDefinition<TKey> & {
@@ -305,6 +306,8 @@ const chromaKeyParams: ElementParamDefinition[] = [
 			writeChromaKeyParam({ element, key: "chromaKey.edgeCleanup", value }),
 	},
 ];
+
+const colorCorrectionParams = buildColorCorrectionParamDefs();
 
 const colorGradeBasicParams: ElementParamDefinition[] = [
 	{
@@ -641,6 +644,7 @@ elementParamRegistry.register({
 		...audioElementParams,
 		...chromaKeyParams,
 		...backgroundFillParams,
+		...colorCorrectionParams,
 		...colorGradeBasicParams,
 		...colorGradeHslParams,
 		...colorGradeCurvesParams,
@@ -652,6 +656,7 @@ elementParamRegistry.register({
 		...visualElementParams,
 		...chromaKeyParams,
 		...backgroundFillParams,
+		...colorCorrectionParams,
 		...colorGradeBasicParams,
 		...colorGradeHslParams,
 		...colorGradeCurvesParams,
