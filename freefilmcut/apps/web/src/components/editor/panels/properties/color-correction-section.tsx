@@ -33,8 +33,8 @@ const ANALYSIS_KEY = COLOR_CORRECTION_PARAM_KEYS.analysis;
 
 /**
  * In-flight analysis keyed by element id, shared across remounts.
- * Reset drops the token and bumps the epoch so a late result cannot
- * write the cache back, and a new enable can start immediately.
+ * Disable and Reset drop the token and bump the epoch so a late result
+ * cannot write the cache back, and a new enable can start immediately.
  */
 const analysisFlightTokenByElementId = new Map<string, number>();
 const analysisEpochByElementId = new Map<string, number>();
@@ -114,6 +114,11 @@ export function ColorCorrectionSection({
 
 	const handleEnabled = (checked: boolean) => {
 		if (!checked) {
+			const elementId = renderElement.id;
+			invalidateColorCorrectionAnalysis({ elementId });
+			if (mountedRef.current) {
+				setAnalyzingId((current) => (current === elementId ? null : current));
+			}
 			commitParams({ patch: { [ENABLED_KEY]: false } });
 			return;
 		}
@@ -289,6 +294,7 @@ async function runColorCorrectionAnalysisForElement({
 			elements: [{ trackId, elementId }],
 		})[0]?.element;
 		if (!fresh || !stillCurrent()) return;
+		if (fresh.params[ENABLED_KEY] !== true) return;
 
 		const patch: ParamValues = {
 			[ANALYSIS_KEY]: serializeColorCorrectionAnalysis({ analysis }),
