@@ -1,7 +1,4 @@
-export type {
-	ColorCorrectionAnalysis,
-	ColorCorrectionUniforms,
-} from "./math";
+export type { ColorCorrectionAnalysis, ColorCorrectionUniforms } from "./math";
 export {
 	ANALYSIS_KEYS,
 	IDENTITY_ANALYSIS,
@@ -23,3 +20,4 @@ export {
 } from "./settings";
 export { buildColorCorrectionParamDefs } from "./param-defs";
 export { analyzeColorCorrection } from "./analyze";
+export { COLOR_CORRECTION_SHADER_HELPERS } from "./shader-core";

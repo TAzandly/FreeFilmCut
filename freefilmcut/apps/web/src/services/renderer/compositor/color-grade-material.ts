@@ -11,6 +11,11 @@ import {
 } from "@/color-grade/curves";
 import { COLOR_GRADE_SHADER_HELPERS } from "@/color-grade/shader-core";
 import { packColorGradeUniforms } from "@/color-grade/uniforms";
+import {
+	packColorCorrectionUniforms,
+	type ResolvedColorCorrection,
+} from "@/color-correction";
+import { COLOR_CORRECTION_SHADER_HELPERS } from "@/color-correction/shader-core";
 
 export type ColorGradeUniforms = {
 	uColorGradeEnabled: { value: number };
@@ -69,13 +74,46 @@ export function resolveColorGradeUniformValues({
 }
 
 const GRADE_BODY = /* glsl */ `
+	diffuseColor.rgb = applyFccColorCorrection(diffuseColor.rgb);
 	diffuseColor.rgb = applyFccColorGrade(diffuseColor.rgb);
 `;
 
-const PROGRAM_CACHE_KEY = "fcc-layer-color-grade-v3";
+const PROGRAM_CACHE_KEY = "fcc-layer-color-grade-v4";
 const AFTER_CHROMA_MARKER = "/* fcc-chroma-end */";
 
+type ColorCorrectionMaterialUniforms = {
+	uColorCorrectionEnabled: { value: number };
+	uColorCorrectionEnableTemperatureTint: { value: number };
+	uColorCorrectionEnableHighlight: { value: number };
+	uColorCorrectionEnableShadow: { value: number };
+	uColorCorrectionEnableSaturation: { value: number };
+	uColorCorrectionEnableBrightness: { value: number };
+	uColorCorrectionEnableContrast: { value: number };
+	uColorCorrectionEnableBlackWhite: { value: number };
+	uColorCorrectionTemperatureTintRed: { value: THREE.Vector3 };
+	uColorCorrectionTemperatureTintGreen: { value: THREE.Vector3 };
+	uColorCorrectionTemperatureTintBlue: { value: THREE.Vector3 };
+	uColorCorrectionSaturationParam: { value: number };
+	uColorCorrectionBrightnessParam: { value: number };
+	uColorCorrectionContrastParam: { value: number };
+	uColorCorrectionContrastPivot: { value: number };
+	uColorCorrectionContrastXFactor: { value: number };
+	uColorCorrectionContrastLeftDiff: { value: number };
+	uColorCorrectionContrastRightDiff: { value: number };
+	uColorCorrectionContrastLeftSlopeDiff: { value: number };
+	uColorCorrectionContrastRightSlopeDiff: { value: number };
+	uColorCorrectionContrastPivotSlope: { value: number };
+	uColorCorrectionHighlightParam: { value: number };
+	uColorCorrectionShadowParam: { value: number };
+	uColorCorrectionBlackWhiteSlope: { value: number };
+	uColorCorrectionBlackWhiteBias: { value: number };
+};
+
 const uniformsByMaterial = new WeakMap<THREE.Material, ColorGradeUniforms>();
+const correctionUniformsByMaterial = new WeakMap<
+	THREE.Material,
+	ColorCorrectionMaterialUniforms
+>();
 const lutByMaterial = new WeakMap<
 	THREE.Material,
 	{ hash: string; texture: THREE.DataTexture }
@@ -117,7 +155,7 @@ export function injectColorGradeShader({
 
 	const withUniforms = fragmentShader.replace(
 		"#include <common>",
-		`#include <common>\n${COLOR_GRADE_SHADER_HELPERS}`,
+		`#include <common>\n${COLOR_CORRECTION_SHADER_HELPERS}\n${COLOR_GRADE_SHADER_HELPERS}`,
 	);
 
 	const chromaMarkerAt = withUniforms.lastIndexOf(AFTER_CHROMA_MARKER);
@@ -182,6 +220,8 @@ export function installColorGradePatch({
 		uColorGradeLutEnabled: { value: 0 },
 	};
 	uniformsByMaterial.set(material, uniforms);
+	const correctionUniforms = createColorCorrectionUniforms();
+	correctionUniformsByMaterial.set(material, correctionUniforms);
 
 	const previousBeforeCompile = material.onBeforeCompile;
 	const previousCacheKey = material.customProgramCacheKey;
@@ -191,6 +231,9 @@ export function installColorGradePatch({
 		previousBeforeCompile.call(material, shader, ...rest);
 
 		for (const [name, slot] of Object.entries(uniforms)) {
+			shader.uniforms[name] = slot;
+		}
+		for (const [name, slot] of Object.entries(correctionUniforms)) {
 			shader.uniforms[name] = slot;
 		}
 
@@ -287,4 +330,108 @@ export function applyColorGradeToMaterial({
 	uniforms.uColorGradeHslSat.value = values.hslSat;
 	uniforms.uColorGradeHslLuma.value = values.hslLuma;
 	ensureLutTexture({ material, grade: colorGrade });
+}
+
+function createColorCorrectionUniforms(): ColorCorrectionMaterialUniforms {
+	return {
+		uColorCorrectionEnabled: { value: 0 },
+		uColorCorrectionEnableTemperatureTint: { value: 0 },
+		uColorCorrectionEnableHighlight: { value: 0 },
+		uColorCorrectionEnableShadow: { value: 0 },
+		uColorCorrectionEnableSaturation: { value: 0 },
+		uColorCorrectionEnableBrightness: { value: 0 },
+		uColorCorrectionEnableContrast: { value: 0 },
+		uColorCorrectionEnableBlackWhite: { value: 0 },
+		uColorCorrectionTemperatureTintRed: { value: new THREE.Vector3(1, 0, 0) },
+		uColorCorrectionTemperatureTintGreen: { value: new THREE.Vector3(0, 1, 0) },
+		uColorCorrectionTemperatureTintBlue: { value: new THREE.Vector3(0, 0, 1) },
+		uColorCorrectionSaturationParam: { value: 1 },
+		uColorCorrectionBrightnessParam: { value: 0 },
+		uColorCorrectionContrastParam: { value: 1 },
+		uColorCorrectionContrastPivot: { value: 0.435 },
+		uColorCorrectionContrastXFactor: { value: 1 },
+		uColorCorrectionContrastLeftDiff: { value: 0 },
+		uColorCorrectionContrastRightDiff: { value: 0 },
+		uColorCorrectionContrastLeftSlopeDiff: { value: 1 },
+		uColorCorrectionContrastRightSlopeDiff: { value: 1 },
+		uColorCorrectionContrastPivotSlope: { value: 1 },
+		uColorCorrectionHighlightParam: { value: 1 },
+		uColorCorrectionShadowParam: { value: 1 },
+		uColorCorrectionBlackWhiteSlope: { value: 1 },
+		uColorCorrectionBlackWhiteBias: { value: 0 },
+	};
+}
+
+function writePackedColorCorrection({
+	uniforms,
+	values,
+}: {
+	uniforms: ColorCorrectionMaterialUniforms;
+	values: ReturnType<typeof packColorCorrectionUniforms>;
+}): void {
+	uniforms.uColorCorrectionEnabled.value = 1;
+	uniforms.uColorCorrectionEnableTemperatureTint.value =
+		values.enableTemperatureTint;
+	uniforms.uColorCorrectionEnableHighlight.value = values.enableHighlight;
+	uniforms.uColorCorrectionEnableShadow.value = values.enableShadow;
+	uniforms.uColorCorrectionEnableSaturation.value = values.enableSaturation;
+	uniforms.uColorCorrectionEnableBrightness.value = values.enableBrightness;
+	uniforms.uColorCorrectionEnableContrast.value = values.enableContrast;
+	uniforms.uColorCorrectionEnableBlackWhite.value = values.enableBlackWhite;
+	uniforms.uColorCorrectionTemperatureTintRed.value.set(
+		values.temperatureTintRed[0],
+		values.temperatureTintRed[1],
+		values.temperatureTintRed[2],
+	);
+	uniforms.uColorCorrectionTemperatureTintGreen.value.set(
+		values.temperatureTintGreen[0],
+		values.temperatureTintGreen[1],
+		values.temperatureTintGreen[2],
+	);
+	uniforms.uColorCorrectionTemperatureTintBlue.value.set(
+		values.temperatureTintBlue[0],
+		values.temperatureTintBlue[1],
+		values.temperatureTintBlue[2],
+	);
+	uniforms.uColorCorrectionSaturationParam.value = values.saturationParam;
+	uniforms.uColorCorrectionBrightnessParam.value = values.brightnessParam;
+	uniforms.uColorCorrectionContrastParam.value = values.contrastParam;
+	uniforms.uColorCorrectionContrastPivot.value = values.contrastPivot;
+	uniforms.uColorCorrectionContrastXFactor.value = values.contrastXFactor;
+	uniforms.uColorCorrectionContrastLeftDiff.value = values.contrastLeftDiff;
+	uniforms.uColorCorrectionContrastRightDiff.value = values.contrastRightDiff;
+	uniforms.uColorCorrectionContrastLeftSlopeDiff.value =
+		values.contrastLeftSlopeDiff;
+	uniforms.uColorCorrectionContrastRightSlopeDiff.value =
+		values.contrastRightSlopeDiff;
+	uniforms.uColorCorrectionContrastPivotSlope.value = values.contrastPivotSlope;
+	uniforms.uColorCorrectionHighlightParam.value = values.highlightParam;
+	uniforms.uColorCorrectionShadowParam.value = values.shadowParam;
+	uniforms.uColorCorrectionBlackWhiteSlope.value = values.blackWhiteSlope;
+	uniforms.uColorCorrectionBlackWhiteBias.value = values.blackWhiteBias;
+}
+
+/** Per-frame correction uniform write. null → enabled=0. */
+export function applyColorCorrectionToMaterial({
+	material,
+	colorCorrection,
+}: {
+	material: THREE.Material;
+	colorCorrection: ResolvedColorCorrection | null | undefined;
+}): void {
+	const uniforms = correctionUniformsByMaterial.get(material);
+	if (!uniforms) return;
+
+	if (!colorCorrection) {
+		uniforms.uColorCorrectionEnabled.value = 0;
+		return;
+	}
+
+	writePackedColorCorrection({
+		uniforms,
+		values: packColorCorrectionUniforms({
+			analysis: colorCorrection.analysis,
+			intensity: colorCorrection.intensity,
+		}),
+	});
 }
