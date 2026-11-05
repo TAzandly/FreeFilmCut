@@ -405,6 +405,9 @@ async function collectVisualSourceNode({
 		...(node.resolved.colorGrade
 			? { colorGrade: node.resolved.colorGrade }
 			: {}),
+		...(node.resolved.colorCorrection
+			? { colorCorrection: node.resolved.colorCorrection }
+			: {}),
 		...((node instanceof ImageNode || node instanceof VideoNode) &&
 		node.params.mediaAnims
 			? {
@@ -593,6 +596,9 @@ function collectTransitionSide({
 		effectPassGroups: [],
 		mask: null,
 		...(side.colorGrade ? { colorGrade: side.colorGrade } : {}),
+		...(side.colorCorrection
+			? { colorCorrection: side.colorCorrection }
+			: {}),
 		...(side.mediaAnims
 			? {
 					clipLocalTime: side.clipLocalTime,

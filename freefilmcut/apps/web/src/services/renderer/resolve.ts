@@ -29,6 +29,7 @@ import {
 } from "@/text/measure-element";
 import { resolveColorAtTime, resolveOpacityAtTime } from "@/animation/values";
 import { resolveChromaKeyAtTime } from "@/chroma-key";
+import { resolveColorCorrectionAtTime } from "@/color-correction";
 import {
 	isColorGradeIdentity,
 	resolveColorGradeAtTime,
@@ -245,6 +246,13 @@ function resolveVisualState({
 					localTime,
 				})
 			: null;
+		const colorCorrection = params.colorCorrection
+			? resolveColorCorrectionAtTime({
+					base: params.colorCorrection,
+					animations: params.animations,
+					localTime,
+				})
+			: null;
 
 		return {
 			localTime,
@@ -275,6 +283,8 @@ function resolveVisualState({
 				colorGrade && !isColorGradeIdentity({ grade: colorGrade })
 					? colorGrade
 					: null,
+			/** Null when disabled or unanalyzed so the correction pass stays off. */
+			colorCorrection,
 		};
 	}
 
@@ -318,6 +328,7 @@ async function resolveOwnedCutTransition({
 			effectPasses: [],
 			chromaKey: null,
 			colorGrade: null,
+			colorCorrection: null,
 		};
 
 	return {

@@ -1,5 +1,6 @@
 import type { BlendMode } from "@/rendering";
 import type { ChromaKeySettings } from "@/chroma-key";
+import type { ResolvedColorCorrection } from "@/color-correction";
 import type { ColorGradeSettings } from "@/color-grade";
 import type { EffectPass } from "@/effects/types";
 
@@ -32,6 +33,11 @@ export type FrameItemDescriptor =
 			 * after chroma, before blend — one blit with the rest of the layer.
 			 */
 			colorGrade?: ColorGradeSettings | null;
+			/**
+			 * Active color correction (before grade). Absent or null leaves the
+			 * correction pass off.
+			 */
+			colorCorrection?: ResolvedColorCorrection | null;
 			/** Clip-local seconds / duration for mediaAnims sampling. */
 			clipLocalTime?: number;
 			clipDurationSec?: number;

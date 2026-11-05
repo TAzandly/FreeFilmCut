@@ -25,6 +25,7 @@ import {
 } from "@/rendering";
 import { buildCutTransitionBindings } from "./cut-transition";
 import { readChromaKeyFromParams } from "@/chroma-key";
+import { readColorCorrectionFromParams } from "@/color-correction";
 import { readColorGradeFromParams } from "@/color-grade";
 
 const PREVIEW_MAX_IMAGE_SIZE = 2048;
@@ -66,6 +67,20 @@ function buildColorGradeParam({
 }): { colorGrade: import("@/color-grade").ColorGradeSettings } {
 	return {
 		colorGrade: readColorGradeFromParams({ params: element.params }),
+	};
+}
+
+/**
+ * Always attach base correction so the intensity keyframe can sample even when
+ * the clip is disabled. Resolve turns inactive correction back into null.
+ */
+function buildColorCorrectionParam({
+	element,
+}: {
+	element: { params: import("@/params").ParamValues };
+}): { colorCorrection: import("@/color-correction").ColorCorrectionSettings } {
+	return {
+		colorCorrection: readColorCorrectionFromParams({ params: element.params }),
 	};
 }
 
@@ -255,6 +270,7 @@ function buildElementNodes({
 								mediaAnims: element.mediaAnims,
 								...buildChromaKeyParam({ element }),
 								...buildColorGradeParam({ element }),
+								...buildColorCorrectionParam({ element }),
 								...(cutTransitions.length > 0 ? { cutTransitions } : {}),
 							}),
 						);
@@ -282,6 +298,7 @@ function buildElementNodes({
 								mediaAnims: element.mediaAnims,
 								...buildChromaKeyParam({ element }),
 								...buildColorGradeParam({ element }),
+								...buildColorCorrectionParam({ element }),
 								...(cutTransitions.length > 0 ? { cutTransitions } : {}),
 								...(isPreview && {
 									maxSourceSize: PREVIEW_MAX_IMAGE_SIZE,

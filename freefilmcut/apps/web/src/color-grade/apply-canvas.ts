@@ -1,8 +1,41 @@
+import {
+	packColorCorrectionUniforms,
+	type ResolvedColorCorrection,
+} from "@/color-correction";
+import { COLOR_CORRECTION_SHADER_HELPERS } from "@/color-correction/shader-core";
 import type { ColorGradeSettings } from "./settings";
 import { isColorGradeCurvesIdentity, isColorGradeIdentity } from "./settings";
 import { bakeCurveLut, LUT_SIZE } from "./curves";
 import { COLOR_GRADE_SHADER_HELPERS } from "./shader-core";
 import { packColorGradeUniforms } from "./uniforms";
+
+type CorrectionBlitLocations = {
+	enabled: WebGLUniformLocation | null;
+	enableTemperatureTint: WebGLUniformLocation | null;
+	enableHighlight: WebGLUniformLocation | null;
+	enableShadow: WebGLUniformLocation | null;
+	enableSaturation: WebGLUniformLocation | null;
+	enableBrightness: WebGLUniformLocation | null;
+	enableContrast: WebGLUniformLocation | null;
+	enableBlackWhite: WebGLUniformLocation | null;
+	temperatureTintRed: WebGLUniformLocation | null;
+	temperatureTintGreen: WebGLUniformLocation | null;
+	temperatureTintBlue: WebGLUniformLocation | null;
+	saturationParam: WebGLUniformLocation | null;
+	brightnessParam: WebGLUniformLocation | null;
+	contrastParam: WebGLUniformLocation | null;
+	contrastPivot: WebGLUniformLocation | null;
+	contrastXFactor: WebGLUniformLocation | null;
+	contrastLeftDiff: WebGLUniformLocation | null;
+	contrastRightDiff: WebGLUniformLocation | null;
+	contrastLeftSlopeDiff: WebGLUniformLocation | null;
+	contrastRightSlopeDiff: WebGLUniformLocation | null;
+	contrastPivotSlope: WebGLUniformLocation | null;
+	highlightParam: WebGLUniformLocation | null;
+	shadowParam: WebGLUniformLocation | null;
+	blackWhiteSlope: WebGLUniformLocation | null;
+	blackWhiteBias: WebGLUniformLocation | null;
+};
 
 type GradeBlitContext = {
 	gl: WebGL2RenderingContext;
@@ -27,6 +60,7 @@ type GradeBlitContext = {
 		lutEnabled: WebGLUniformLocation | null;
 		src: WebGLUniformLocation | null;
 	};
+	correction: CorrectionBlitLocations;
 };
 
 let blitCtx: GradeBlitContext | null = null;
@@ -48,10 +82,11 @@ in vec2 vUv;
 uniform sampler2D uSrc;
 out vec4 outColor;
 
+${COLOR_CORRECTION_SHADER_HELPERS}
 ${COLOR_GRADE_SHADER_HELPERS.replace(/texture2D/g, "texture")}
 
-// Match Three.js MeshBasic + SRGBColorSpace: grade in linear, store sRGB bytes
-// for the OffscreenCanvas / CanvasTexture round-trip.
+	// Match Three.js MeshBasic + SRGBColorSpace: correction then grade in linear,
+	// store sRGB bytes for the OffscreenCanvas / CanvasTexture round-trip.
 float fccSrgbToLinear(float c) {
 	return c < 0.04045 ? c * 0.0773993808 : pow(c * 0.9478672986 + 0.0521327014, 2.4);
 }
@@ -69,7 +104,8 @@ void main() {
 	vec4 texel = texture(uSrc, vUv);
 	// RGBA8 upload keeps encoded bytes; decode before grade (preview path is linear).
 	vec3 linear = fccSrgbToLinear3(texel.rgb);
-	vec3 graded = applyFccColorGrade(linear);
+	vec3 corrected = applyFccColorCorrection(linear);
+	vec3 graded = applyFccColorGrade(corrected);
 	outColor = vec4(fccLinearToSrgb3(graded), texel.a);
 }
 `;
@@ -180,6 +216,7 @@ function ensureBlitContext(): GradeBlitContext | null {
 				lutEnabled: gl.getUniformLocation(program, "uColorGradeLutEnabled"),
 				src: gl.getUniformLocation(program, "uSrc"),
 			},
+			correction: readCorrectionLocations({ gl, program }),
 		};
 		return blitCtx;
 	} catch (error) {
@@ -188,25 +225,124 @@ function ensureBlitContext(): GradeBlitContext | null {
 	}
 }
 
+function readCorrectionLocations({
+	gl,
+	program,
+}: {
+	gl: WebGL2RenderingContext;
+	program: WebGLProgram;
+}): CorrectionBlitLocations {
+	const loc = (name: string) => gl.getUniformLocation(program, name);
+	return {
+		enabled: loc("uColorCorrectionEnabled"),
+		enableTemperatureTint: loc("uColorCorrectionEnableTemperatureTint"),
+		enableHighlight: loc("uColorCorrectionEnableHighlight"),
+		enableShadow: loc("uColorCorrectionEnableShadow"),
+		enableSaturation: loc("uColorCorrectionEnableSaturation"),
+		enableBrightness: loc("uColorCorrectionEnableBrightness"),
+		enableContrast: loc("uColorCorrectionEnableContrast"),
+		enableBlackWhite: loc("uColorCorrectionEnableBlackWhite"),
+		temperatureTintRed: loc("uColorCorrectionTemperatureTintRed"),
+		temperatureTintGreen: loc("uColorCorrectionTemperatureTintGreen"),
+		temperatureTintBlue: loc("uColorCorrectionTemperatureTintBlue"),
+		saturationParam: loc("uColorCorrectionSaturationParam"),
+		brightnessParam: loc("uColorCorrectionBrightnessParam"),
+		contrastParam: loc("uColorCorrectionContrastParam"),
+		contrastPivot: loc("uColorCorrectionContrastPivot"),
+		contrastXFactor: loc("uColorCorrectionContrastXFactor"),
+		contrastLeftDiff: loc("uColorCorrectionContrastLeftDiff"),
+		contrastRightDiff: loc("uColorCorrectionContrastRightDiff"),
+		contrastLeftSlopeDiff: loc("uColorCorrectionContrastLeftSlopeDiff"),
+		contrastRightSlopeDiff: loc("uColorCorrectionContrastRightSlopeDiff"),
+		contrastPivotSlope: loc("uColorCorrectionContrastPivotSlope"),
+		highlightParam: loc("uColorCorrectionHighlightParam"),
+		shadowParam: loc("uColorCorrectionShadowParam"),
+		blackWhiteSlope: loc("uColorCorrectionBlackWhiteSlope"),
+		blackWhiteBias: loc("uColorCorrectionBlackWhiteBias"),
+	};
+}
+
+function writeCorrectionUniforms({
+	gl,
+	locations,
+	colorCorrection,
+}: {
+	gl: WebGL2RenderingContext;
+	locations: CorrectionBlitLocations;
+	colorCorrection: ResolvedColorCorrection | null;
+}): void {
+	if (!colorCorrection) {
+		gl.uniform1f(locations.enabled, 0);
+		return;
+	}
+	const packed = packColorCorrectionUniforms({
+		analysis: colorCorrection.analysis,
+		intensity: colorCorrection.intensity,
+	});
+	gl.uniform1f(locations.enabled, 1);
+	gl.uniform1f(locations.enableTemperatureTint, packed.enableTemperatureTint);
+	gl.uniform1f(locations.enableHighlight, packed.enableHighlight);
+	gl.uniform1f(locations.enableShadow, packed.enableShadow);
+	gl.uniform1f(locations.enableSaturation, packed.enableSaturation);
+	gl.uniform1f(locations.enableBrightness, packed.enableBrightness);
+	gl.uniform1f(locations.enableContrast, packed.enableContrast);
+	gl.uniform1f(locations.enableBlackWhite, packed.enableBlackWhite);
+	gl.uniform3f(
+		locations.temperatureTintRed,
+		packed.temperatureTintRed[0],
+		packed.temperatureTintRed[1],
+		packed.temperatureTintRed[2],
+	);
+	gl.uniform3f(
+		locations.temperatureTintGreen,
+		packed.temperatureTintGreen[0],
+		packed.temperatureTintGreen[1],
+		packed.temperatureTintGreen[2],
+	);
+	gl.uniform3f(
+		locations.temperatureTintBlue,
+		packed.temperatureTintBlue[0],
+		packed.temperatureTintBlue[1],
+		packed.temperatureTintBlue[2],
+	);
+	gl.uniform1f(locations.saturationParam, packed.saturationParam);
+	gl.uniform1f(locations.brightnessParam, packed.brightnessParam);
+	gl.uniform1f(locations.contrastParam, packed.contrastParam);
+	gl.uniform1f(locations.contrastPivot, packed.contrastPivot);
+	gl.uniform1f(locations.contrastXFactor, packed.contrastXFactor);
+	gl.uniform1f(locations.contrastLeftDiff, packed.contrastLeftDiff);
+	gl.uniform1f(locations.contrastRightDiff, packed.contrastRightDiff);
+	gl.uniform1f(locations.contrastLeftSlopeDiff, packed.contrastLeftSlopeDiff);
+	gl.uniform1f(locations.contrastRightSlopeDiff, packed.contrastRightSlopeDiff);
+	gl.uniform1f(locations.contrastPivotSlope, packed.contrastPivotSlope);
+	gl.uniform1f(locations.highlightParam, packed.highlightParam);
+	gl.uniform1f(locations.shadowParam, packed.shadowParam);
+	gl.uniform1f(locations.blackWhiteSlope, packed.blackWhiteSlope);
+	gl.uniform1f(locations.blackWhiteBias, packed.blackWhiteBias);
+}
+
 /**
- * Apply full color grade to an image source.
- * Returns the original source unchanged when grade is identity or GPU unavailable.
+ * Apply color correction (when active) then full color grade to an image source.
+ * Returns the original source unchanged when both are inactive or GPU is unavailable.
  *
- * The graded result is the shared grade canvas itself (no GPU→CPU readback):
- * it is only valid until the next call, so draw it before grading again.
+ * The result is the shared canvas itself (no GPU→CPU readback):
+ * it is only valid until the next call, so draw it before calling again.
  */
 export function applyColorGradeToImageSource({
 	source,
 	width,
 	height,
 	grade,
+	colorCorrection = null,
 }: {
 	source: CanvasImageSource;
 	width: number;
 	height: number;
 	grade: ColorGradeSettings;
+	colorCorrection?: ResolvedColorCorrection | null;
 }): { source: CanvasImageSource; width: number; height: number } {
-	if (isColorGradeIdentity({ grade })) {
+	const gradeActive = !isColorGradeIdentity({ grade });
+	if (!gradeActive && !colorCorrection) {
 		return { source, width, height };
 	}
 
@@ -215,7 +351,7 @@ export function applyColorGradeToImageSource({
 		return { source, width, height };
 	}
 
-	const { gl, program, vao, srcTex, lutTex, locations } = ctx;
+	const { gl, program, vao, srcTex, lutTex, locations, correction } = ctx;
 	const w = Math.max(1, Math.round(width));
 	const h = Math.max(1, Math.round(height));
 	if (blitCanvas.width !== w || blitCanvas.height !== h) {
@@ -259,7 +395,7 @@ export function applyColorGradeToImageSource({
 	gl.useProgram(program);
 	gl.bindVertexArray(vao);
 
-	gl.uniform1f(locations.enabled, 1);
+	gl.uniform1f(locations.enabled, gradeActive ? 1 : 0);
 	gl.uniform1f(locations.temp, packed.temp);
 	gl.uniform1f(locations.tint, packed.tint);
 	gl.uniform1f(locations.sat, packed.sat);
@@ -271,7 +407,12 @@ export function applyColorGradeToImageSource({
 	gl.uniform1f(locations.hslHue, packed.hslHue);
 	gl.uniform1f(locations.hslSat, packed.hslSat);
 	gl.uniform1f(locations.hslLuma, packed.hslLuma);
-	gl.uniform1f(locations.lutEnabled, lutEnabled ? 1 : 0);
+	gl.uniform1f(locations.lutEnabled, gradeActive && lutEnabled ? 1 : 0);
+	writeCorrectionUniforms({
+		gl,
+		locations: correction,
+		colorCorrection,
+	});
 
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, srcTex);

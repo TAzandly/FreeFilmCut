@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { DEFAULT_BACKGROUND_FILL } from "@/background/fill";
+import { DEFAULT_COLOR_CORRECTION_INTENSITY } from "@/color-correction";
 import { DEFAULT_COLOR_GRADE } from "@/color-grade";
 import type { MediaAsset } from "@/media/types";
 import type { VideoElement, VideoTrack } from "@/timeline";
@@ -34,6 +35,11 @@ function imageSide(): TransitionMediaSource {
 		backgroundFill: DEFAULT_BACKGROUND_FILL,
 		fillStyleUrl: null,
 		colorGrade: DEFAULT_COLOR_GRADE,
+		colorCorrection: {
+			enabled: false,
+			intensity: DEFAULT_COLOR_CORRECTION_INTENSITY,
+			analysis: null,
+		},
 	};
 }
 

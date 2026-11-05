@@ -8,6 +8,11 @@ import {
 } from "@/background/fill";
 import { resolveBackgroundFillStyleUrl } from "@/background/fill-styles";
 import type { StyleFillSource } from "@/background/paint-fill";
+import type { ColorCorrectionSettings } from "@/color-correction";
+import {
+	readColorCorrectionFromParams,
+	resolveColorCorrectionAtTime,
+} from "@/color-correction";
 import type { ColorGradeSettings } from "@/color-grade";
 import {
 	isColorGradeIdentity,
@@ -66,6 +71,8 @@ export type TransitionMediaSource = {
 	fillStyleUrl: string | null;
 	/** Base color grade — baked into media (not fill) for uFrom/uTo. */
 	colorGrade: ColorGradeSettings;
+	/** Base color correction — applied to media (not fill) for uFrom/uTo. */
+	colorCorrection: ColorCorrectionSettings;
 	/** Clip-anim assignment — baked into media (not fill) for uFrom/uTo. */
 	mediaAnims?: MediaAnimAssignment;
 } & (
@@ -218,6 +225,9 @@ function toTransitionMedia({
 			? resolveBackgroundFillStyleUrl({ styleId: backgroundFill.styleId })
 			: null;
 		const colorGrade = readColorGradeFromParams({ params: element.params });
+		const colorCorrection = readColorCorrectionFromParams({
+			params: element.params,
+		});
 		const timing = {
 			elementStart: element.startTime,
 			elementDuration: element.duration,
@@ -230,6 +240,7 @@ function toTransitionMedia({
 			backgroundFill,
 			fillStyleUrl,
 			colorGrade,
+			colorCorrection,
 			mediaAnims: element.mediaAnims,
 		};
 	if (element.type === "video" && media.type === "video") {
@@ -505,6 +516,11 @@ async function sampleSide({
 		animations: media.animations,
 		localTime,
 	});
+	const colorCorrection = resolveColorCorrectionAtTime({
+		base: media.colorCorrection,
+		animations: media.animations,
+		localTime,
+	});
 	return {
 		source: raw.source,
 		sourceWidth: raw.width,
@@ -516,6 +532,7 @@ async function sampleSide({
 		backgroundFill: media.backgroundFill,
 		styleSource,
 		colorGrade: isColorGradeIdentity({ grade }) ? null : grade,
+		colorCorrection,
 		clipLocalTime: mediaTimeToSeconds({ time: localTime }),
 		clipDurationSec: mediaTimeToSeconds({ time: media.elementDuration }),
 		...(media.mediaAnims ? { mediaAnims: media.mediaAnims } : {}),

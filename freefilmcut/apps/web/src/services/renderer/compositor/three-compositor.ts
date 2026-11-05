@@ -5,6 +5,7 @@ import {
 	installChromaKeyPatch,
 } from "./chroma-key-material";
 import {
+	applyColorCorrectionToMaterial,
 	applyColorGradeToMaterial,
 	installColorGradePatch,
 } from "./color-grade-material";
@@ -3577,7 +3578,11 @@ class ThreeCompositor {
 						: null,
 			});
 			// Always write (including null → off) so a pooled mesh does not keep the
-			// previous clip's grade when this layer is identity / ungraded.
+			// previous clip's correction or grade.
+			applyColorCorrectionToMaterial({
+				material,
+				colorCorrection: item.colorCorrection,
+			});
 			applyColorGradeToMaterial({
 				material,
 				colorGrade: item.colorGrade,

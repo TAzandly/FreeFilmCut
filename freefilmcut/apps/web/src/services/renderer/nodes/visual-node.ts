@@ -1,6 +1,10 @@
 import { BaseNode } from "./base-node";
 import type { BackgroundFillSettings } from "@/background/fill";
 import type { ChromaKeySettings } from "@/chroma-key";
+import type {
+	ColorCorrectionSettings,
+	ResolvedColorCorrection,
+} from "@/color-correction";
 import type { ColorGradeSettings } from "@/color-grade";
 import type { Effect, EffectPass } from "@/effects/types";
 import type { Mask } from "@/masks/types";
@@ -25,6 +29,8 @@ export interface VisualNodeParams {
 	chromaKey?: ChromaKeySettings;
 	/** Base grade; sampled per frame in `resolve` (keyframes). */
 	colorGrade?: ColorGradeSettings;
+	/** Base correction; sampled per frame in `resolve` (intensity keyframes). */
+	colorCorrection?: ColorCorrectionSettings;
 	/** Clip-anim library assignment (image/video). */
 	mediaAnims?: MediaAnimAssignment;
 }
@@ -38,6 +44,8 @@ export interface ResolvedVisualNodeState {
 	chromaKey: ChromaKeySettings | null;
 	/** Full grade at `localTime`; null when identity (skip shader). */
 	colorGrade: ColorGradeSettings | null;
+	/** Active correction at `localTime`; null when disabled or unanalyzed. */
+	colorCorrection: ResolvedColorCorrection | null;
 }
 
 /**
@@ -58,6 +66,8 @@ export type CutTransitionSide = {
 	styleSource: { source: CanvasImageSource; width: number; height: number } | null;
 	/** Null when identity. */
 	colorGrade: ColorGradeSettings | null;
+	/** Null when inactive. */
+	colorCorrection: ResolvedColorCorrection | null;
 	clipLocalTime: number;
 	clipDurationSec: number;
 	mediaAnims?: MediaAnimAssignment;
