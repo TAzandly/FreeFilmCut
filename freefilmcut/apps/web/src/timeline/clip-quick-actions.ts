@@ -1,4 +1,12 @@
-import type { TimelineElement } from "@/timeline";
+import { getMappedSourceTime } from "@/retime/source-time";
+import type { RetimeConfig, TimelineElement } from "@/timeline";
+import {
+	addMediaTime,
+	lastFrameMediaTime,
+	type MediaTime,
+	roundMediaTime,
+} from "@/wasm";
+import type { FrameRate } from "opencut-wasm";
 
 const MIRROR_ROTATE_TYPES = new Set(["video", "image", "sticker"]);
 
@@ -102,6 +110,65 @@ export function buildRotate90Patches({
 					params: {
 						"transform.rotate": normalizeDegrees({ degrees: rotate + 90 }),
 					},
+				},
+			},
+		];
+	});
+}
+
+export const FREEZE_DURATION_SECONDS = 3;
+
+export function resolveFreezeSourceTime({
+	duration,
+	trimStart,
+	retime,
+	reversed,
+	fps,
+}: {
+	duration: MediaTime;
+	trimStart: MediaTime;
+	retime?: RetimeConfig;
+	reversed: boolean;
+	fps: FrameRate;
+}): MediaTime {
+	const localEnd = lastFrameMediaTime({ duration, fps });
+	return roundMediaTime({
+		time: getMappedSourceTime({
+			clipTime: localEnd,
+			clipDuration: duration,
+			trimStart,
+			retime,
+			reversed,
+		}),
+	});
+}
+
+export function buildFreezeRippleUpdates({
+	trackId,
+	elements,
+	afterTime,
+	delta,
+	excludeElementId,
+}: {
+	trackId: string;
+	elements: ReadonlyArray<{ id: string; startTime: MediaTime }>;
+	afterTime: MediaTime;
+	delta: MediaTime;
+	excludeElementId?: string;
+}): Array<{
+	trackId: string;
+	elementId: string;
+	patch: { startTime: MediaTime };
+}> {
+	return elements.flatMap((element) => {
+		if (excludeElementId && element.id === excludeElementId) return [];
+		if (element.startTime < afterTime) return [];
+		return [
+			{
+				trackId,
+				elementId: element.id,
+				patch: {
+					startTime: addMediaTime({ a: element.startTime, b: delta }),
 				},
 			},
 		];

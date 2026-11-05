@@ -1,4 +1,5 @@
 import type { EditorCore } from "@/core";
+import { toast } from "sonner";
 import { flushPendingPreviews } from "@/timeline/preview-flush";
 import type { ElementBounds } from "@/preview/element-bounds";
 import type { ParamValues } from "@/params";
@@ -11,12 +12,22 @@ import type {
 } from "@/timeline";
 import { calculateTotalDuration } from "@/timeline";
 import {
+	buildFreezeRippleUpdates,
 	buildMirrorPatches,
 	buildRotate90Patches,
+	FREEZE_DURATION_SECONDS,
+	resolveFreezeSourceTime,
 } from "@/timeline/clip-quick-actions";
 import { TimelineDragSource } from "@/timeline/drag-source";
 import { findTrackInSceneTracks } from "@/timeline/track-element-update";
-import { lastFrameMediaTime, type MediaTime, ZERO_MEDIA_TIME } from "@/wasm";
+import {
+	addMediaTime,
+	lastFrameMediaTime,
+	mediaTimeFromSeconds,
+	mediaTimeToSeconds,
+	type MediaTime,
+	ZERO_MEDIA_TIME,
+} from "@/wasm";
 import {
 	canElementBeHidden,
 	canElementHaveAudio,
@@ -33,11 +44,15 @@ import {
 	resolveAnimationPathValueAtTime,
 } from "@/animation";
 import { resolveAnimationTarget } from "@/timeline/animation-targets";
-import {
-	incrementCounter,
-	measureSpanSync,
-} from "@/diagnostics/render-perf";
+import { incrementCounter, measureSpanSync } from "@/diagnostics/render-perf";
 import { BatchCommand } from "@/commands";
+import { AddMediaAssetCommand } from "@/commands/media";
+import {
+	buildFreezeImageAsset,
+	buildFreezeImageElement,
+	captureFreezeFrameStill,
+	freezeSampleKey,
+} from "@/commands/timeline/element/freeze-frame";
 import {
 	AddTrackCommand,
 	RemoveTrackCommand,
@@ -106,6 +121,7 @@ export class TimelineManager {
 		fpsKey: unknown;
 		lastFrameTime: MediaTime | null;
 	} | null = null;
+	private freezeFrameInFlight = false;
 
 	constructor(private editor: EditorCore) {}
 
@@ -1057,6 +1073,25 @@ export class TimelineManager {
 		this.updateElements({ updates });
 	}
 
+	async freezeFrame({
+		trackId,
+		elementId,
+	}: {
+		trackId: string;
+		elementId: string;
+	}): Promise<void> {
+		if (this.freezeFrameInFlight) return;
+		this.freezeFrameInFlight = true;
+		try {
+			await this.insertFreezeFrame({ trackId, elementId });
+		} catch (error) {
+			console.error("Freeze frame failed:", error);
+			toast.error("Couldn't capture a freeze frame");
+		} finally {
+			this.freezeFrameInFlight = false;
+		}
+	}
+
 	getPreviewTracks(): SceneTracks | null {
 		return (
 			this.previewTracks ??
@@ -1089,6 +1124,110 @@ export class TimelineManager {
 		}
 		this.listeners.forEach((fn) => {
 			fn(reason);
+		});
+	}
+
+	private async insertFreezeFrame({
+		trackId,
+		elementId,
+	}: {
+		trackId: string;
+		elementId: string;
+	}): Promise<void> {
+		const located = this.getElementsWithTracks({
+			elements: [{ trackId, elementId }],
+		})[0];
+		if (!located || located.element.type !== "video") return;
+
+		const video = located.element;
+		const mediaAsset =
+			this.editor.media
+				.getAssets()
+				.find((asset) => asset.id === video.mediaId) ?? null;
+		if (!mediaAsset?.file) {
+			toast.error("Couldn't capture a freeze frame");
+			return;
+		}
+
+		const project = this.editor.project.getActive();
+		const sampleKey = freezeSampleKey({ element: video });
+		const sourceSeconds = Math.max(
+			0,
+			mediaTimeToSeconds({
+				time: resolveFreezeSourceTime({
+					duration: video.duration,
+					trimStart: video.trimStart,
+					retime: video.retime,
+					reversed: video.reversed === true,
+					fps: project.settings.fps,
+				}),
+			}),
+		);
+
+		const still = await captureFreezeFrameStill({
+			mediaId: video.mediaId,
+			file: mediaAsset.file,
+			timeSeconds: sourceSeconds,
+		});
+		if (!still) {
+			toast.error("Couldn't capture a freeze frame");
+			return;
+		}
+
+		const fresh = this.getElementsWithTracks({
+			elements: [{ trackId, elementId }],
+		})[0];
+		const activeProject = this.editor.project.getActiveOrNull();
+		if (
+			!fresh ||
+			fresh.element.type !== "video" ||
+			!activeProject ||
+			activeProject.metadata.id !== project.metadata.id ||
+			freezeSampleKey({ element: fresh.element }) !== sampleKey
+		) {
+			toast.error("Couldn't capture a freeze frame");
+			return;
+		}
+
+		const duration = mediaTimeFromSeconds({ seconds: FREEZE_DURATION_SECONDS });
+		const startTime = addMediaTime({
+			a: fresh.element.startTime,
+			b: fresh.element.duration,
+		});
+		const asset = buildFreezeImageAsset({
+			file: still.file,
+			width: still.width,
+			height: still.height,
+			thumbnailUrl: still.thumbnailUrl,
+		});
+		const addMedia = new AddMediaAssetCommand({
+			projectId: activeProject.metadata.id,
+			asset,
+		});
+		const imageElement = buildFreezeImageElement({
+			mediaId: addMedia.getAssetId(),
+			name: asset.name,
+			startTime,
+			duration,
+			sourceParams: fresh.element.params,
+		});
+		const rippleUpdates = buildFreezeRippleUpdates({
+			trackId: fresh.track.id,
+			elements: fresh.track.elements,
+			afterTime: startTime,
+			delta: duration,
+			excludeElementId: fresh.element.id,
+		});
+
+		this.editor.command.execute({
+			command: new BatchCommand([
+				addMedia,
+				new UpdateElementsCommand({ updates: rippleUpdates }),
+				new InsertElementCommand({
+					element: imageElement,
+					placement: { mode: "explicit", trackId: fresh.track.id },
+				}),
+			]),
 		});
 	}
 

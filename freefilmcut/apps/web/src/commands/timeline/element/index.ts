@@ -1,4 +1,10 @@
 export { InsertElementCommand } from "./insert-element";
+export {
+	buildFreezeImageAsset,
+	buildFreezeImageElement,
+	captureFreezeFrameStill,
+	freezeSampleKey,
+} from "./freeze-frame";
 export { DeleteElementsCommand } from "./delete-elements";
 export { DuplicateElementsCommand } from "./duplicate-elements";
 export { SplitElementsCommand } from "./split-elements";

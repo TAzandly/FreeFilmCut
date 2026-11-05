@@ -465,7 +465,10 @@ export function useEditorActions() {
 	useActionHandler(
 		"freeze-frame",
 		() => {
-			// No-op until freeze-frame extraction is wired.
+			if (selectedElements.length !== 1) return;
+			const selected = selectedElements[0];
+			if (!selected) return;
+			void editor.timeline.freezeFrame(selected);
 		},
 		undefined,
 	);
