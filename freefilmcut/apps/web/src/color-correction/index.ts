@@ -22,3 +22,4 @@ export {
 	serializeColorCorrectionAnalysis,
 } from "./settings";
 export { buildColorCorrectionParamDefs } from "./param-defs";
+export { analyzeColorCorrection } from "./analyze";
