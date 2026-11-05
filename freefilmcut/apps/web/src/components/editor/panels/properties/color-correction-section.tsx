@@ -279,6 +279,7 @@ async function runColorCorrectionAnalysisForElement({
 		const analysis = await runColorCorrectionAnalysis({
 			mediaId,
 			file: asset.file,
+			elementId,
 			elementType: element.type,
 			trimStart: element.trimStart,
 			trimEnd: element.trimEnd,
@@ -302,6 +303,9 @@ async function runColorCorrectionAnalysisForElement({
 		if (typeof fresh.params[INTENSITY_KEY] !== "number") {
 			patch[INTENSITY_KEY] = DEFAULT_COLOR_CORRECTION_INTENSITY;
 		}
+		// Enable is already one undo step. A second entry would drop the
+		// cache and leave enabled=true. This writes the live tracks only;
+		// undo of enable restores the pre-enable snapshot.
 		editor.timeline.updateElements({
 			updates: [
 				{
@@ -310,6 +314,7 @@ async function runColorCorrectionAnalysisForElement({
 					patch: { params: patch },
 				},
 			],
+			pushHistory: false,
 		});
 	} catch (error) {
 		if (!stillCurrent()) return;

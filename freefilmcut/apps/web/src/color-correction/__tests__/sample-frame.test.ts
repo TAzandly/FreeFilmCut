@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { mediaTimeFromSeconds, mediaTimeToSeconds } from "@/wasm";
-import { colorCorrectionSampleTimeSeconds } from "../sample-frame";
+import {
+	colorCorrectionSampleTimeSeconds,
+	colorCorrectionStreamKey,
+} from "../sample-frame";
 
 describe("colorCorrectionSampleTimeSeconds", () => {
 	test("midpoint of a trimmed window excludes the tail trim", () => {
@@ -28,5 +31,41 @@ describe("colorCorrectionSampleTimeSeconds", () => {
 			duration,
 		});
 		expect(seconds).toBeCloseTo(4, 5);
+	});
+});
+
+describe("colorCorrectionStreamKey", () => {
+	test("names media, sample time, element, and the request id", () => {
+		expect(
+			colorCorrectionStreamKey({
+				mediaId: "media-1",
+				sampleTimeSeconds: 4.5,
+				elementId: "clip-a",
+				requestId: "req-1",
+			}),
+		).toBe("color-correction:media-1:4.5:clip-a:req-1");
+	});
+
+	test("omits the element segment when no clip id is given", () => {
+		expect(
+			colorCorrectionStreamKey({
+				mediaId: "media-1",
+				sampleTimeSeconds: 1,
+				requestId: "req-1",
+			}),
+		).toBe("color-correction:media-1:1:req-1");
+	});
+
+	test("two requests for the same media and time do not share a key", () => {
+		const args = {
+			mediaId: "media-1",
+			sampleTimeSeconds: 4.5,
+			elementId: "clip-a",
+		};
+		const first = colorCorrectionStreamKey(args);
+		const second = colorCorrectionStreamKey(args);
+		expect(first).not.toBe(second);
+		expect(first.startsWith("color-correction:")).toBe(true);
+		expect(first).not.toBe("color-correction");
 	});
 });

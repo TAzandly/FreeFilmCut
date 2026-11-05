@@ -6,6 +6,7 @@ import { sampleColorCorrectionFrame } from "./sample-frame";
 export async function runColorCorrectionAnalysis({
 	mediaId,
 	file,
+	elementId,
 	elementType,
 	trimStart,
 	trimEnd,
@@ -13,6 +14,7 @@ export async function runColorCorrectionAnalysis({
 }: {
 	mediaId: string;
 	file: File;
+	elementId?: string;
 	elementType: "video" | "image";
 	trimStart: MediaTime;
 	trimEnd: MediaTime;
@@ -21,6 +23,7 @@ export async function runColorCorrectionAnalysis({
 	const imageData = await sampleColorCorrectionFrame({
 		mediaId,
 		file,
+		elementId,
 		elementType,
 		trimStart,
 		trimEnd,

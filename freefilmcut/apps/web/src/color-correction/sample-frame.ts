@@ -1,14 +1,14 @@
 import { videoCache } from "@/services/video-cache/service";
 import { mediaTimeToSeconds, type MediaTime } from "@/wasm";
 
-const COLOR_CORRECTION_STREAM_KEY = "color-correction";
-
 /** Longest edge of the bitmap passed to the analyzer. */
 const MAX_ANALYSIS_EDGE = 512;
 
 export type ColorCorrectionSampleArgs = {
 	mediaId: string;
 	file: File;
+	/** Clip id, so two clips of the same media do not share a decoder key. */
+	elementId?: string;
 	elementType: "video" | "image";
 	/** `VideoElement.trimStart` — integer media ticks. */
 	trimStart: MediaTime;
@@ -28,6 +28,7 @@ export type ColorCorrectionSampleArgs = {
 export async function sampleColorCorrectionFrame({
 	mediaId,
 	file,
+	elementId,
 	elementType,
 	trimStart,
 	trimEnd,
@@ -36,7 +37,39 @@ export async function sampleColorCorrectionFrame({
 	if (elementType === "image") {
 		return sampleImageFile({ file });
 	}
-	return sampleVideoFrame({ mediaId, file, trimStart, trimEnd, duration });
+	return sampleVideoFrame({
+		mediaId,
+		file,
+		elementId,
+		trimStart,
+		trimEnd,
+		duration,
+	});
+}
+
+/**
+ * One decoder per analysis request.
+ *
+ * `videoCache` coalesces in-flight seeks that share `mediaId#streamKey` and
+ * resolves them all to the latest requested time. A shared
+ * `"color-correction"` key would hand two clips of the same file the same
+ * frame. The id is unique even when media, element, and sample time match.
+ */
+export function colorCorrectionStreamKey({
+	mediaId,
+	sampleTimeSeconds,
+	elementId,
+	requestId = crypto.randomUUID(),
+}: {
+	mediaId: string;
+	sampleTimeSeconds: number;
+	elementId?: string;
+	requestId?: string;
+}): string {
+	const parts = ["color-correction", mediaId, String(sampleTimeSeconds)];
+	if (elementId) parts.push(elementId);
+	parts.push(requestId);
+	return parts.join(":");
 }
 
 /**
@@ -68,12 +101,14 @@ export function colorCorrectionSampleTimeSeconds({
 async function sampleVideoFrame({
 	mediaId,
 	file,
+	elementId,
 	trimStart,
 	trimEnd,
 	duration,
 }: {
 	mediaId: string;
 	file: File;
+	elementId?: string;
 	trimStart: MediaTime;
 	trimEnd: MediaTime;
 	duration: MediaTime;
@@ -87,13 +122,19 @@ async function sampleVideoFrame({
 	const times = [mid];
 	if (Math.abs(inPoint - mid) > 1e-3) times.push(inPoint);
 	if (inPoint > 1e-3 && mid > 1e-3) times.push(0);
+	const requestId = crypto.randomUUID();
 
 	for (const time of times) {
 		const frame = await videoCache.getFrameAt({
 			mediaId,
 			file,
 			time,
-			streamKey: COLOR_CORRECTION_STREAM_KEY,
+			streamKey: colorCorrectionStreamKey({
+				mediaId,
+				sampleTimeSeconds: time,
+				elementId,
+				requestId,
+			}),
 		});
 		if (!frame) continue;
 		const imageData = imageDataFromSource({ source: frame.canvas });

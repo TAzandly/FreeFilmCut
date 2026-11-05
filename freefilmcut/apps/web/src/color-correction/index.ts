@@ -24,6 +24,7 @@ export { COLOR_CORRECTION_SHADER_HELPERS } from "./shader-core";
 export type { ColorCorrectionSampleArgs } from "./sample-frame";
 export {
 	colorCorrectionSampleTimeSeconds,
+	colorCorrectionStreamKey,
 	sampleColorCorrectionFrame,
 } from "./sample-frame";
 export { runColorCorrectionAnalysis } from "./run-analysis";
