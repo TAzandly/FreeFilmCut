@@ -60,7 +60,14 @@ export class VideoCache {
 	private sinks = new Map<string, VideoSinkData>();
 	private initPromises = new Map<string, Promise<void>>();
 	private frameChain = new Map<string, Promise<unknown>>();
-	private seekGenerations = new Map<string, number>();
+	/** Latest media time asked for while a decode is in flight (seconds). */
+	private latestWantedTime = new Map<string, number>();
+	/**
+	 * In-flight chase promise per sink. Concurrent readers (main video + blur
+	 * fill, or reverse RAF vs a still-running seek) share one result instead of
+	 * cancelling each other with a stale frame.
+	 */
+	private inflightChase = new Map<string, Promise<WrappedCanvas | null>>();
 
 	/**
 	 * `streamKey` opens an independent decoder for the same media. Two readers
@@ -84,36 +91,58 @@ export class VideoCache {
 		const sinkData = this.sinks.get(key);
 		if (!sinkData) return null;
 
-		const generation = (this.seekGenerations.get(key) ?? 0) + 1;
-		this.seekGenerations.set(key, generation);
+		this.latestWantedTime.set(key, time);
+
+		const existing = this.inflightChase.get(key);
+		if (existing) {
+			return existing;
+		}
 
 		/**
 		 * Frames for one media are serialised through `frameChain`, so a single
 		 * 200ms seek blocks every frame queued behind it. Measuring the wait
 		 * separately from the decode is what tells contention apart from a slow
 		 * decoder — they need opposite fixes.
+		 *
+		 * Reverse playback seeks almost every frame (time decreases, so the
+		 * forward iterate window never applies). Returning a superseded caller's
+		 * stale `currentFrame` made reverse look frozen/forward. Instead, all
+		 * concurrent waiters share one chase that always ends on
+		 * `latestWantedTime`.
 		 */
 		const perf = isRenderPerfEnabled();
 		const enqueuedAt = perf ? performance.now() : 0;
 		const previous = this.frameChain.get(key) ?? Promise.resolve();
-		const current = previous.then(() => {
+		const chase = previous.then(async () => {
 			if (perf) {
 				recordSpan({
 					name: "vcache:queueWait",
 					durationMs: performance.now() - enqueuedAt,
 				});
 			}
-			if (this.seekGenerations.get(key) !== generation) {
-				if (perf) incrementCounter({ name: "vcache:stale" });
-				return sinkData.currentFrame ?? null;
+
+			let result: WrappedCanvas | null = null;
+			for (let step = 0; step < 8; step++) {
+				const target = this.latestWantedTime.get(key) ?? time;
+				result = await this.resolveFrame({ sinkData, time: target });
+				if ((this.latestWantedTime.get(key) ?? time) === target) {
+					return result;
+				}
+				if (perf) incrementCounter({ name: "vcache:timeChase" });
 			}
-			return this.resolveFrame({ sinkData, time });
+			return result;
 		});
+		const tracked = chase.finally(() => {
+			if (this.inflightChase.get(key) === tracked) {
+				this.inflightChase.delete(key);
+			}
+		});
+		this.inflightChase.set(key, tracked);
 		this.frameChain.set(
 			key,
-			current.catch(() => {}),
+			tracked.catch(() => {}),
 		);
-		return current;
+		return tracked;
 	}
 
 	private async resolveFrame({
@@ -418,7 +447,8 @@ export class VideoCache {
 
 		this.initPromises.delete(key);
 		this.frameChain.delete(key);
-		this.seekGenerations.delete(key);
+		this.latestWantedTime.delete(key);
+		this.inflightChase.delete(key);
 	}
 
 	clearAll(): void {
