@@ -21,3 +21,9 @@ export {
 export { buildColorCorrectionParamDefs } from "./param-defs";
 export { analyzeColorCorrection } from "./analyze";
 export { COLOR_CORRECTION_SHADER_HELPERS } from "./shader-core";
+export type { ColorCorrectionSampleArgs } from "./sample-frame";
+export {
+	colorCorrectionSampleTimeSeconds,
+	sampleColorCorrectionFrame,
+} from "./sample-frame";
+export { runColorCorrectionAnalysis } from "./run-analysis";
