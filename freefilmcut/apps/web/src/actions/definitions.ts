@@ -102,6 +102,22 @@ export const ACTIONS = {
 		description: "Extract or recover source audio",
 		category: "editing",
 	},
+	"freeze-frame": {
+		description: "Freeze last frame as 3s still after clip",
+		category: "editing",
+	},
+	"toggle-reverse": {
+		description: "Toggle reverse playback on selected video",
+		category: "editing",
+	},
+	mirror: {
+		description: "Mirror selected clips horizontally",
+		category: "editing",
+	},
+	"rotate-90": {
+		description: "Rotate selected clips 90 degrees",
+		category: "editing",
+	},
 	"select-all": {
 		description: "Select all elements",
 		category: "selection",

@@ -10,6 +10,10 @@ import type {
 	RetimeConfig,
 } from "@/timeline";
 import { calculateTotalDuration } from "@/timeline";
+import {
+	buildMirrorPatches,
+	buildRotate90Patches,
+} from "@/timeline/clip-quick-actions";
 import { TimelineDragSource } from "@/timeline/drag-source";
 import { findTrackInSceneTracks } from "@/timeline/track-element-update";
 import { lastFrameMediaTime, type MediaTime, ZERO_MEDIA_TIME } from "@/wasm";
@@ -982,6 +986,75 @@ export class TimelineManager {
 		});
 
 		this.updateElements({ updates: nextUpdates });
+	}
+
+	mirrorElements({
+		elements,
+	}: {
+		elements: { trackId: string; elementId: string }[];
+	}): void {
+		const items = this.getElementsWithTracks({ elements });
+		const updates = buildMirrorPatches({
+			items: items.map(({ track, element }) => ({
+				trackId: track.id,
+				elementId: element.id,
+				element,
+			})),
+		});
+		this.updateElements({ updates });
+	}
+
+	rotateElements90({
+		elements,
+	}: {
+		elements: { trackId: string; elementId: string }[];
+	}): void {
+		const items = this.getElementsWithTracks({ elements });
+		const updates = buildRotate90Patches({
+			items: items.map(({ track, element }) => ({
+				trackId: track.id,
+				elementId: element.id,
+				element,
+			})),
+		});
+		this.updateElements({ updates });
+	}
+
+	toggleReverse({
+		trackId,
+		elementId,
+	}: {
+		trackId: string;
+		elementId: string;
+	}): void {
+		const element = this.getElementByRef({ trackId, elementId });
+		if (!element || element.type !== "video") return;
+		const next = !(element.reversed === true);
+		const updates: Array<{
+			trackId: string;
+			elementId: string;
+			patch: Partial<TimelineElement>;
+		}> = [{ trackId, elementId, patch: { reversed: next } }];
+
+		const scene = this.editor.scenes.getActiveScene();
+		for (const track of scene.tracks.audio) {
+			for (const audio of track.elements) {
+				if (
+					audio.type === "audio" &&
+					"mediaId" in audio &&
+					audio.mediaId === element.mediaId &&
+					audio.startTime === element.startTime &&
+					audio.duration === element.duration
+				) {
+					updates.push({
+						trackId: track.id,
+						elementId: audio.id,
+						patch: { reversed: next },
+					});
+				}
+			}
+		}
+		this.updateElements({ updates });
 	}
 
 	getPreviewTracks(): SceneTracks | null {

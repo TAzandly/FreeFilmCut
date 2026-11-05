@@ -433,6 +433,44 @@ export function useEditorActions() {
 	);
 
 	useActionHandler(
+		"mirror",
+		() => {
+			editor.timeline.mirrorElements({ elements: selectedElements });
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"rotate-90",
+		() => {
+			editor.timeline.rotateElements90({ elements: selectedElements });
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"toggle-reverse",
+		() => {
+			if (selectedElements.length !== 1) return;
+			const ref = selectedElements[0];
+			const [item] = editor.timeline.getElementsWithTracks({
+				elements: [ref],
+			});
+			if (!item || item.element.type !== "video") return;
+			editor.timeline.toggleReverse(ref);
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"freeze-frame",
+		() => {
+			// No-op until freeze-frame extraction is wired.
+		},
+		undefined,
+	);
+
+	useActionHandler(
 		"toggle-elements-muted-selected",
 		() => {
 			editor.timeline.toggleElementsMuted({ elements: selectedElements });
