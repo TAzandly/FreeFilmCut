@@ -25,8 +25,9 @@ export default function RootLayout({
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
+	// Browser translate wraps text in <font> and breaks React removeChild — disable for the NLE UI.
 	return (
-		<html lang="en" suppressHydrationWarning>
+		<html lang="en" translate="no" className="notranslate" suppressHydrationWarning>
 			<head>
 				<BotIdClient protect={protectedRoutes} />
 				{/* fcc-tl-flower-67b: lightweight FPS meter (bottom-left via FccLightFps) (rAF counter only — does not tank FPS).
