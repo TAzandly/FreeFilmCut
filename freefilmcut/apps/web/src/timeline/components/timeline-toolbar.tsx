@@ -25,6 +25,11 @@ import {
 	isSourceAudioSeparated,
 } from "@/timeline/audio-separation";
 import { hasMediaId } from "@/timeline";
+import {
+	canShowFreeze,
+	canShowMirrorOrRotate,
+	canShowReverse,
+} from "@/timeline/clip-quick-actions";
 import { cn } from "@/utils/ui";
 import { useTimelineStore } from "@/timeline/timeline-store";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,6 +47,9 @@ import {
 	Link02Icon,
 	Layers01Icon,
 	Chart03Icon,
+	FlipHorizontalIcon,
+	ReplayIcon,
+	RotateClockwiseIcon,
 	Unlink02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -92,12 +100,23 @@ function ToolbarLeftSection() {
 	);
 	const { selectedElements } = useElementSelection();
 	const graphEditor = useGraphEditorController();
+	const selectedWithTracks = editor.timeline.getElementsWithTracks({
+		elements: selectedElements,
+	});
+	const selectedTimelineElements = selectedWithTracks.map(
+		({ element }) => element,
+	);
 	const selectedElement =
-		selectedElements.length === 1
-			? (editor.timeline.getElementsWithTracks({
-					elements: selectedElements,
-				})[0] ?? null)
-			: null;
+		selectedElements.length === 1 ? (selectedWithTracks[0] ?? null) : null;
+	const showFreeze = canShowFreeze({ elements: selectedTimelineElements });
+	const showReverse = canShowReverse({ elements: selectedTimelineElements });
+	const showMirrorRotate = canShowMirrorOrRotate({
+		elements: selectedTimelineElements,
+	});
+	const reverseActive =
+		showReverse &&
+		selectedTimelineElements[0]?.type === "video" &&
+		selectedTimelineElements[0].reversed === true;
 	const selectedMediaAsset = (() => {
 		if (!selectedElement) {
 			return null;
@@ -180,12 +199,44 @@ function ToolbarLeftSection() {
 					}
 				/>
 
-				<ToolbarButton
-					icon={<HugeiconsIcon icon={SnowIcon} />}
-					tooltip="Freeze frame (coming soon)"
-					disabled={true}
-					onClick={({ event: _event }) => {}}
-				/>
+				{showFreeze && (
+					<ToolbarButton
+						icon={<HugeiconsIcon icon={SnowIcon} />}
+						tooltip="Freeze frame"
+						onClick={({ event }) =>
+							handleAction({ action: "freeze-frame", event })
+						}
+					/>
+				)}
+
+				{showReverse && (
+					<ToolbarButton
+						icon={<HugeiconsIcon icon={ReplayIcon} />}
+						tooltip="Reverse"
+						isActive={reverseActive}
+						onClick={({ event }) =>
+							handleAction({ action: "toggle-reverse", event })
+						}
+					/>
+				)}
+
+				{showMirrorRotate && (
+					<ToolbarButton
+						icon={<HugeiconsIcon icon={FlipHorizontalIcon} />}
+						tooltip="Mirror"
+						onClick={({ event }) => handleAction({ action: "mirror", event })}
+					/>
+				)}
+
+				{showMirrorRotate && (
+					<ToolbarButton
+						icon={<HugeiconsIcon icon={RotateClockwiseIcon} />}
+						tooltip="Rotate 90°"
+						onClick={({ event }) =>
+							handleAction({ action: "rotate-90", event })
+						}
+					/>
+				)}
 
 				<ToolbarButton
 					icon={<HugeiconsIcon icon={Delete02Icon} />}
