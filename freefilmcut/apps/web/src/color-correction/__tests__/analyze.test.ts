@@ -52,6 +52,7 @@ describe("analyzeColorCorrection", () => {
 			fill: () => [40, 60, 200, 255],
 		});
 		const a = analyzeColorCorrection({ imageData: img });
+		expect(a.temperature).toBeGreaterThan(0);
 		expect(Math.abs(a.temperature) + Math.abs(a.tint)).toBeGreaterThan(0.01);
 	});
 
@@ -64,7 +65,8 @@ describe("analyzeColorCorrection", () => {
 		const a = analyzeColorCorrection({ imageData: img });
 		for (const v of Object.values(a)) {
 			expect(Number.isFinite(v)).toBe(true);
-			expect(Math.abs(v)).toBeLessThanOrEqual(2);
+			expect(v).toBeGreaterThanOrEqual(-1);
+			expect(v).toBeLessThanOrEqual(1);
 		}
 	});
 });
