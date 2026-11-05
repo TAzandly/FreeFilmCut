@@ -17,7 +17,7 @@ import { resolveEffectParamsAtTime } from "@/animation/effect-param-channel";
 	} from "@/effects";
 import { isVfxPackEffectType } from "@/vfxpack/effect-id";
 import type { Effect, EffectPass } from "@/effects/types";
-import { getSourceTimeAtClipTime } from "@/retime";
+import { getMappedSourceTime } from "@/retime";
 import {
 	DEFAULT_GRAPHIC_SOURCE_SIZE,
 	resolveGraphicElementParamsAtTime,
@@ -347,13 +347,13 @@ async function resolveVideoNode({
 		return null;
 	}
 
-	const sourceTimeTicks =
-		node.params.trimStart +
-		getSourceTimeAtClipTime({
-			clipTime,
-			retime: node.params.retime,
-			clipDuration: node.params.duration,
-		});
+	const sourceTimeTicks = getMappedSourceTime({
+		clipTime,
+		clipDuration: node.params.duration,
+		trimStart: node.params.trimStart,
+		retime: node.params.retime,
+		reversed: node.params.reversed === true,
+	});
 	const frame = await videoCache.getFrameAt({
 		mediaId: node.params.mediaId,
 		file: node.params.file,
@@ -625,13 +625,13 @@ async function resolveBackdropSource({
 	clipTime: number;
 }): Promise<BackdropSource | null> {
 	if (node.params.mediaType === "video") {
-		const sourceTimeTicks =
-			node.params.trimStart +
-			getSourceTimeAtClipTime({
-				clipTime,
-				retime: node.params.retime,
-				clipDuration: node.params.duration,
-			});
+		const sourceTimeTicks = getMappedSourceTime({
+			clipTime,
+			clipDuration: node.params.duration,
+			trimStart: node.params.trimStart,
+			retime: node.params.retime,
+			reversed: node.params.reversed === true,
+		});
 		const frame = await videoCache.getFrameAt({
 			mediaId: node.params.mediaId,
 			file: node.params.file,

@@ -1,7 +1,7 @@
 import { PitchShifter } from "soundtouchjs";
 import { clampRetimeRate, shouldMaintainPitch } from "@/retime/rate";
 import type { RetimeConfig } from "@/timeline";
-import { getSourceTimeAtClipTime } from "./resolve";
+import { getMappedSourceTime } from "./source-time";
 
 const RATE_EPSILON = 1e-6;
 
@@ -18,7 +18,7 @@ function sampleLinear({
 	const lower = Math.floor(position);
 	const upper = Math.min(channelData.length - 1, lower + 1);
 	if (lower >= channelData.length) {
-		return 0;
+		return channelData[channelData.length - 1] ?? 0;
 	}
 	const fraction = position - lower;
 	return channelData[lower] * (1 - fraction) + channelData[upper] * fraction;
@@ -31,6 +31,7 @@ function buildResampledBuffer({
 	clipDuration,
 	targetSampleRate,
 	retime,
+	reversed = false,
 }: {
 	audioContext: BaseAudioContext;
 	sourceBuffer: AudioBuffer;
@@ -38,6 +39,7 @@ function buildResampledBuffer({
 	clipDuration: number;
 	targetSampleRate: number;
 	retime?: RetimeConfig;
+	reversed?: boolean;
 }): AudioBuffer {
 	const outputLength = Math.max(1, Math.ceil(clipDuration * targetSampleRate));
 	const numChannels = Math.max(1, Math.min(2, sourceBuffer.numberOfChannels));
@@ -55,13 +57,13 @@ function buildResampledBuffer({
 
 		for (let i = 0; i < outputLength; i++) {
 			const clipTime = i / targetSampleRate;
-			const sourceTime =
-				trimStart +
-				getSourceTimeAtClipTime({
-					clipTime,
-					retime,
-					clipDuration,
-				});
+			const sourceTime = getMappedSourceTime({
+				clipTime,
+				clipDuration,
+				trimStart,
+				retime,
+				reversed,
+			});
 			outputData[i] = sampleLinear({
 				channelData: sourceData,
 				position: sourceTime * sourceBuffer.sampleRate,
@@ -78,12 +80,14 @@ async function buildPitchPreservedBuffer({
 	clipDuration,
 	rate,
 	targetSampleRate,
+	reversed = false,
 }: {
 	sourceBuffer: AudioBuffer;
 	trimStart: number;
 	clipDuration: number;
 	rate: number;
 	targetSampleRate: number;
+	reversed?: boolean;
 }): Promise<AudioBuffer> {
 	const nativeSampleRate = sourceBuffer.sampleRate;
 	const sourceDuration = clipDuration * rate;
@@ -117,10 +121,12 @@ async function buildPitchPreservedBuffer({
 		const src = sourceBuffer.getChannelData(
 			Math.min(ch, sourceBuffer.numberOfChannels - 1),
 		);
-		nativeBuffer.copyToChannel(
-			src.subarray(startSample, startSample + actualSamples),
-			ch,
-		);
+		const slice = src.subarray(startSample, startSample + actualSamples);
+		const channelData = new Float32Array(slice);
+		// Constant-rate reverse matches getMappedSourceTime: flip the trimmed
+		// span, then stretch forward. playbackRate cannot be negative.
+		if (reversed) channelData.reverse();
+		nativeBuffer.copyToChannel(channelData, ch);
 	}
 
 	const resampleSourceNode = resampleCtx.createBufferSource();
@@ -152,6 +158,7 @@ export async function renderRetimedBuffer({
 	clipDuration,
 	retime,
 	maintainPitch = false,
+	reversed = false,
 }: {
 	audioContext: BaseAudioContext;
 	sourceBuffer: AudioBuffer;
@@ -159,6 +166,11 @@ export async function renderRetimedBuffer({
 	clipDuration: number;
 	retime?: RetimeConfig;
 	maintainPitch?: boolean;
+	/**
+	 * Bake end→start into the output. Callers play the buffer forward;
+	 * do not apply reverse mapping again.
+	 */
+	reversed?: boolean;
 }): Promise<AudioBuffer> {
 	const targetSampleRate = audioContext.sampleRate;
 	const rate = clampRetimeRate({ rate: retime?.rate ?? 1 });
@@ -173,6 +185,7 @@ export async function renderRetimedBuffer({
 			clipDuration,
 			rate,
 			targetSampleRate,
+			reversed,
 		});
 	}
 
@@ -183,5 +196,6 @@ export async function renderRetimedBuffer({
 		clipDuration,
 		targetSampleRate,
 		retime,
+		reversed,
 	});
 }

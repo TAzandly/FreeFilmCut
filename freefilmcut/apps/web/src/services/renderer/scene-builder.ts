@@ -245,6 +245,7 @@ function buildElementNodes({
 								trimStart: element.trimStart,
 								trimEnd: element.trimEnd,
 								retime: element.retime,
+								reversed: element.reversed === true,
 								transform: buildTransformFromParams({ params: element.params }),
 								animations: element.animations,
 								opacity: readOpacityFromParams({ params: element.params }),
@@ -360,6 +361,7 @@ function buildElementNodes({
 			trimStart: number;
 			trimEnd: number;
 			retime?: import("@/timeline").RetimeConfig;
+			reversed?: boolean;
 		};
 		mediaAsset: MediaAsset;
 		cutTransitions?: import("./cut-transition").CutTransitionBinding[];
@@ -390,6 +392,8 @@ function buildElementNodes({
 					trimStart: element.trimStart,
 					trimEnd: element.trimEnd,
 					retime: element.type === "video" ? element.retime : undefined,
+					reversed:
+						element.type === "video" ? element.reversed === true : undefined,
 					blurIntensity: fill.blurIntensity,
 					...transitionOpts,
 				}),

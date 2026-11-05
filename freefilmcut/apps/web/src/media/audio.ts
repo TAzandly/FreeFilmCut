@@ -18,7 +18,7 @@ import { doesElementHaveEnabledAudio } from "@/timeline/audio-separation";
 import { canElementHaveAudio, hasMediaId } from "@/timeline/element-utils";
 import { canTrackHaveAudio } from "@/timeline";
 import { mediaSupportsAudio } from "@/media/media-utils";
-import { getSourceTimeAtClipTime, renderRetimedBuffer } from "@/retime";
+import { getMappedSourceTime, renderRetimedBuffer } from "@/retime";
 import { Input, ALL_FORMATS, BlobSource, AudioBufferSink } from "mediabunny";
 import { TICKS_PER_SECOND } from "@/wasm";
 import {
@@ -371,6 +371,8 @@ export interface AudioClipSource {
 	volume: number;
 	muted: boolean;
 	retime?: RetimeConfig;
+	/** Trimmed source plays end→start when true. */
+	reversed?: boolean;
 }
 
 async function fetchLibraryAudioSource({
@@ -439,6 +441,7 @@ async function fetchLibraryAudioClip({
 			volume,
 			muted,
 			retime: element.retime,
+			reversed: element.reversed === true,
 		};
 	} catch (error) {
 		console.warn("Failed to fetch library audio:", error);
@@ -490,6 +493,7 @@ function collectMediaAudioClip({
 		volume,
 		muted,
 		retime: element.retime,
+		reversed: element.reversed === true,
 	};
 }
 
@@ -671,6 +675,7 @@ export async function createTimelineAudioBuffer({
 	for (const element of audioElements) {
 		if (element.muted) continue;
 
+		const clipReversed = element.timelineElement.reversed === true;
 		const renderedBuffer = shouldMaintainPitch({
 			rate: element.retime?.rate ?? 1,
 			maintainPitch: element.retime?.maintainPitch,
@@ -682,6 +687,7 @@ export async function createTimelineAudioBuffer({
 					clipDuration: element.duration,
 					retime: element.retime,
 					maintainPitch: true,
+					reversed: clipReversed,
 				})
 			: undefined;
 
@@ -690,6 +696,8 @@ export async function createTimelineAudioBuffer({
 			buffer: renderedBuffer ?? element.buffer,
 			trimStart: renderedBuffer ? 0 : element.trimStart,
 			retime: renderedBuffer ? undefined : element.retime,
+			// Pitch-preserved buffers already bake reverse; don't map twice.
+			reversed: renderedBuffer ? false : clipReversed,
 			outputBuffer,
 			outputLength,
 			sampleRate,
@@ -836,6 +844,7 @@ function mixAudioChannels({
 	buffer,
 	trimStart,
 	retime,
+	reversed = false,
 	outputBuffer,
 	outputLength,
 	sampleRate,
@@ -844,6 +853,7 @@ function mixAudioChannels({
 	buffer: AudioBuffer;
 	trimStart: number;
 	retime?: RetimeConfig;
+	reversed?: boolean;
 	outputBuffer: AudioBuffer;
 	outputLength: number;
 	sampleRate: number;
@@ -864,19 +874,28 @@ function mixAudioChannels({
 			if (outputIndex >= outputLength) break;
 
 			const clipTime = i / sampleRate;
-			const sourceTime =
-				trimStart +
-				getSourceTimeAtClipTime({
-					clipTime,
-					retime,
-					clipDuration: elementDuration,
-				});
+			const sourceTime = getMappedSourceTime({
+				clipTime,
+				clipDuration: elementDuration,
+				trimStart,
+				retime,
+				reversed,
+			});
 			const sourceIndex = sourceTime * buffer.sampleRate;
-			if (sourceIndex >= sourceData.length) break;
+			// Forward source time only increases, so past-the-end ends the clip.
+			// Reversed time starts at the span end and walks backward; clamping
+			// that first sample keeps a full-length reverse from going silent.
+			if (sourceIndex >= sourceData.length && !reversed) break;
 
-			const lowerIndex = Math.floor(sourceIndex);
+			const readableIndex = reversed
+				? Math.min(
+						Math.max(sourceIndex, 0),
+						Math.max(0, sourceData.length - 1),
+					)
+				: sourceIndex;
+			const lowerIndex = Math.floor(readableIndex);
 			const upperIndex = Math.min(sourceData.length - 1, lowerIndex + 1);
-			const fraction = sourceIndex - lowerIndex;
+			const fraction = readableIndex - lowerIndex;
 			const gain = needsTimeVaryingAudioGain({
 				element: element.timelineElement,
 			})

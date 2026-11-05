@@ -12,8 +12,8 @@ import {
 } from "@/timeline/audio-state";
 import { createAudioMasteringChain } from "@/media/audio-mastering";
 import {
-	getClipTimeAtSourceTime,
-	getSourceTimeAtClipTime,
+	getMappedClipTimeFromSource,
+	getMappedSourceTime,
 	renderRetimedBuffer,
 } from "@/retime";
 import {
@@ -271,7 +271,13 @@ export class AudioManager {
 			if (clip.startTime > windowEnd) continue;
 
 			this.activeClipIds.add(clip.id);
-			if (this.shouldUsePreparedClipBuffer({ clip })) {
+			// AudioBufferSink.buffers() only walks source time forward, and
+			// AudioBufferSourceNode.playbackRate cannot be negative. Reversed
+			// clips are baked once into a cached AudioBuffer (end→start, retime
+			// included). playReversedBuffer: schedule that buffer forward so
+			// timeline mapping stays identity.
+			const playReversedBuffer = clip.reversed === true;
+			if (playReversedBuffer || this.shouldUsePreparedClipBuffer({ clip })) {
 				void this.schedulePreparedClip({
 					clip,
 					startTime: currentTime,
@@ -335,13 +341,15 @@ export class AudioManager {
 		if (iteratorStartTime >= clipEnd) {
 			return;
 		}
-		const sourceStartTime =
-			clip.trimStart +
-			getSourceTimeAtClipTime({
-				clipTime: iteratorStartTime - clip.startTime,
-				retime: clip.retime,
-				clipDuration: clip.duration,
-			});
+		// Forward sink path only. Reversed clips use the baked buffer above
+		// (playReversedBuffer), so this mapping stays identity.
+		const sourceStartTime = getMappedSourceTime({
+			clipTime: iteratorStartTime - clip.startTime,
+			clipDuration: clip.duration,
+			trimStart: clip.trimStart,
+			retime: clip.retime,
+			reversed: false,
+		});
 
 		const iterator = sink.buffers(sourceStartTime);
 		this.clipIterators.set(clip.id, iterator);
@@ -353,10 +361,12 @@ export class AudioManager {
 
 			const timelineTime =
 				clip.startTime +
-				getClipTimeAtSourceTime({
-					sourceTime: timestamp - clip.trimStart,
-					retime: clip.retime,
+				getMappedClipTimeFromSource({
+					sourceTime: timestamp,
 					clipDuration: clip.duration,
+					trimStart: clip.trimStart,
+					retime: clip.retime,
+					reversed: false,
 				});
 			if (timelineTime >= clipEnd) break;
 
@@ -632,6 +642,7 @@ export class AudioManager {
 			trimStart: clip.trimStart,
 			trimEnd: clip.trimEnd,
 			retime: clip.retime ?? null,
+			reversed: clip.reversed === true,
 		});
 	}
 
@@ -664,6 +675,8 @@ export class AudioManager {
 				clipDuration: clip.duration,
 				retime: clip.retime,
 				maintainPitch: clip.retime?.maintainPitch === true,
+				// Cache key includes reversed. The buffer is already end→start.
+				reversed: clip.reversed === true,
 			});
 		})();
 

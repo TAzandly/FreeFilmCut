@@ -13,6 +13,8 @@ export interface VisualNodeParams {
 	trimStart: number;
 	trimEnd: number;
 	retime?: RetimeConfig;
+	/** When true, play trimmed source from end→start (orthogonal to retime). */
+	reversed?: boolean;
 	transform: Transform;
 	animations?: VisualElement["animations"];
 	opacity: number;

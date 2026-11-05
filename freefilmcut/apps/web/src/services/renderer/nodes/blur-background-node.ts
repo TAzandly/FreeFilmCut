@@ -12,6 +12,8 @@ export type BlurBackgroundNodeParams = {
 	trimStart: number;
 	trimEnd: number;
 	retime?: RetimeConfig;
+	/** When true, play trimmed source from end→start (orthogonal to retime). */
+	reversed?: boolean;
 	blurIntensity: number;
 	/** When set, fill is suppressed inside these cut windows (baked into uFrom/uTo). */
 	cutTransitions?: CutTransitionBinding[];

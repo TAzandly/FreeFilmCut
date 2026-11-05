@@ -114,6 +114,8 @@ interface BaseAudioElement extends BaseTimelineElement {
 	type: "audio";
 	buffer?: AudioBuffer;
 	retime?: RetimeConfig;
+	/** When true, play trimmed source from end→start (orthogonal to retime). */
+	reversed?: boolean;
 }
 
 export interface UploadAudioElement extends BaseAudioElement {
@@ -152,6 +154,8 @@ export interface VideoElement extends BaseTimelineElement {
 	isSourceAudioEnabled?: boolean;
 	hidden?: boolean;
 	retime?: RetimeConfig;
+	/** When true, play trimmed source from end→start (orthogonal to retime). */
+	reversed?: boolean;
 	effects?: Effect[];
 	masks?: Mask[];
 	/** Clip-anim library (in / out / combo). Mutually exclusive combo vs in+out. */
