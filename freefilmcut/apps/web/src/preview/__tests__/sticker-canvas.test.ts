@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { getVisibleElementsWithBounds } from "@/preview/element-bounds";
+import {
+	elementBoundsFollowPlayhead,
+	getVisibleElementsWithBounds,
+} from "@/preview/element-bounds";
 import { resolveAnimationTarget } from "@/timeline/animation-targets";
 import type { EffectElement, SceneTracks } from "@/timeline";
 import { toVfxPackEffectType } from "@/vfxpack/effect-id";
@@ -134,5 +137,15 @@ describe("sticker pack canvas", () => {
 		expect(
 			resolveAnimationTarget({ element, path: "transform.scaleY" }),
 		).not.toBeNull();
+	});
+
+	test("handles follow playhead only when sticker library motion is assigned", () => {
+		const plain = effectElement({ packId: "heart" });
+		expect(elementBoundsFollowPlayhead({ element: plain })).toBe(false);
+		const withAnim: EffectElement = {
+			...plain,
+			stickerAnims: { in: { packId: "anim-in" } },
+		};
+		expect(elementBoundsFollowPlayhead({ element: withAnim })).toBe(true);
 	});
 });

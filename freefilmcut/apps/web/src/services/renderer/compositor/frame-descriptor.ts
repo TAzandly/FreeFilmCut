@@ -81,6 +81,9 @@ export async function buildFrameDescriptor({
 		frame: {
 			width: renderer.width,
 			height: renderer.height,
+			logicalWidth: renderer.logicalWidth || renderer.width,
+			logicalHeight: renderer.logicalHeight || renderer.height,
+			contentScale: renderer.contentScale || 1,
 			clear: {
 				color: [0, 0, 0, 1],
 			},
@@ -195,6 +198,7 @@ async function collectNode({
 		}
 		items.push({
 			type: "sceneEffect",
+			elementId: node.params.elementId,
 			effectType: node.params.effectType,
 			effectPassGroups: [node.resolved.passes],
 			effectParams: node.params.effectParams,
@@ -344,6 +348,10 @@ async function collectVisualSourceNode({
 		source,
 		width: sourceWidth,
 		height: sourceHeight,
+		frameKey:
+			node instanceof GraphicNode
+				? undefined
+				: (node.resolved as ResolvedVisualSourceNodeState).sourceFrameKey,
 	});
 
 	const transform = computeVisualTransform({

@@ -7,6 +7,14 @@ import type { EffectPass } from "@/effects/types";
 export type FrameDescriptor = {
 	width: number;
 	height: number;
+	/**
+	 * Project canvas size (authored pixels). `width`/`height` are the compose
+	 * buffer and may be smaller when preview quality scales down.
+	 */
+	logicalWidth: number;
+	logicalHeight: number;
+	/** bufferWidth / logicalWidth — multiply authored positions into buffer space. */
+	contentScale: number;
 	clear: {
 		color: [number, number, number, number];
 	};
@@ -43,16 +51,18 @@ export type FrameItemDescriptor =
 			clipDurationSec?: number;
 			mediaAnims?: import("@/timeline").MediaAnimAssignment;
 	  }
-	| {
-			type: "sceneEffect";
-			effectType: string;
-			effectPassGroups: EffectPass[][];
-			effectParams?: import("@/params").ParamValues;
-			/** Seconds within the timeline clip (0..duration). Used to sample pack .anim. */
-			clipLocalTime?: number;
-			clipDurationSec?: number;
-			stickerAnims?: import("@/timeline").StickerAnimAssignment;
-	  }
+		| {
+				type: "sceneEffect";
+				/** Timeline element id — live canvas-drag overlays resolve through this. */
+				elementId?: string;
+				effectType: string;
+				effectPassGroups: EffectPass[][];
+				effectParams?: import("@/params").ParamValues;
+				/** Seconds within the timeline clip (0..duration). Used to sample pack .anim. */
+				clipLocalTime?: number;
+				clipDurationSec?: number;
+				stickerAnims?: import("@/timeline").StickerAnimAssignment;
+		  }
 	| {
 			type: "transition";
 			packId: string;
@@ -121,6 +131,11 @@ export type ExternalTextureDescriptor = {
 	source: CanvasImageSource;
 	width: number;
 	height: number;
+	/**
+	 * Content version for sources mutated in place (pooled video canvases).
+	 * When set and unchanged, the compositor skips re-uploading the canvas.
+	 */
+	frameKey?: string;
 };
 
 /**

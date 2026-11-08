@@ -87,21 +87,35 @@ function buildColorCorrectionParam({
 type CachedElementNodes = {
 	deps: readonly unknown[];
 	nodes: AnyBaseNode[];
+	/** Last element object that was built or patched into `nodes`. */
+	element: TimelineElement;
 };
 
 /**
- * Reuses scene nodes across preview rebuilds. Elements are immutable (every
- * edit installs a new object), so an element whose object and inputs are
- * unchanged maps to the same nodes, and an unchanged scene to the same tree.
+ * Reuses scene nodes across preview rebuilds.
+ *
+ * Timeline edits install a **new element object** every time (preview overlay
+ * spreads). A WeakMap keyed on object identity therefore misses on every
+ * Basic/HSL slider tick and rebuilds VideoNode — the "drag one slider, FPS
+ * dies" path. Cache by `element.id` instead: structural deps decide rebuild vs
+ * in-place param patch; a params-only scrub keeps the GPU node and only forces
+ * a new root so preview recomposes.
  */
 export type SceneNodeCache = {
-	elements: WeakMap<TimelineElement, CachedElementNodes>;
+	elements: Map<string, CachedElementNodes>;
 	projectColor: ColorNode | null;
 	lastRoot: RootNode | null;
+	/** True when the last buildScene patched node params without rebuilding. */
+	paramsPatched: boolean;
 };
 
 export function createSceneNodeCache(): SceneNodeCache {
-	return { elements: new WeakMap(), projectColor: null, lastRoot: null };
+	return {
+		elements: new Map(),
+		projectColor: null,
+		lastRoot: null,
+		paramsPatched: false,
+	};
 }
 
 function sameDeps(a: readonly unknown[], b: readonly unknown[]): boolean {
@@ -112,7 +126,7 @@ function sameDeps(a: readonly unknown[], b: readonly unknown[]): boolean {
 	return true;
 }
 
-/** Everything `buildElementNodes` reads besides the element itself. */
+/** Structural inputs — param-only edits (color grade, opacity, …) must NOT be here. */
 function getElementNodeDeps({
 	track,
 	element,
@@ -128,10 +142,57 @@ function getElementNodeDeps({
 	canvasSize: TCanvasSize;
 	isPreview?: boolean;
 }): unknown[] {
-	const deps: unknown[] = [canvasSize.width, canvasSize.height, isPreview];
+	const deps: unknown[] = [
+		element.type,
+		canvasSize.width,
+		canvasSize.height,
+		isPreview,
+	];
+
+	if (element.type === "effect") {
+		deps.push(element.effectType);
+		return deps;
+	}
+	if (element.type === "sticker") {
+		deps.push(
+			element.stickerId,
+			element.intrinsicWidth,
+			element.intrinsicHeight,
+		);
+		return deps;
+	}
+	if (element.type === "graphic") {
+		deps.push(element.definitionId);
+		return deps;
+	}
+	if (element.type === "text") {
+		// Glyph / flower layout keys — transform/opacity still patch in place.
+		const p = element.params;
+		deps.push(
+			p.content,
+			p.fontSize,
+			p.fontFamily,
+			p.fontWeight,
+			p.fontStyle,
+			p.textAlign,
+			p.letterSpacing,
+			p.lineHeight,
+			element.flowerStyle ?? null,
+			element.flowerBaseFontSize ?? null,
+			element.flowerTemplateId ?? null,
+			element.textTemplatePackId ?? null,
+			element.textFxStack ?? null,
+		);
+		return deps;
+	}
 	if (element.type !== "video" && element.type !== "image") return deps;
 
 	deps.push(mediaMap.get(element.mediaId));
+	const fill = readBackgroundFillFromParams({ params: element.params });
+	const fillActive = isBackgroundFillActive({ fill });
+	deps.push(fillActive, fill.mode);
+	if (fillActive && fill.mode === "style") deps.push(fill.styleId);
+	if (fillActive && fill.mode === "color") deps.push(fill.color);
 	// Cut-transition bindings read the neighbouring clip and its media.
 	const inTransition =
 		track.type === "video" &&
@@ -143,6 +204,134 @@ function getElementNodeDeps({
 		deps.push(track.elements, track.transitions, mediaAssets);
 	}
 	return deps;
+}
+
+/** Sync timeline fields onto an already-built node (slider scrub / live preview). */
+export function patchElementNodes({
+	nodes,
+	element,
+	canvasSize,
+}: {
+	nodes: AnyBaseNode[];
+	element: TimelineElement;
+	canvasSize: TCanvasSize;
+}): void {
+	for (const node of nodes) {
+		if (
+			(node instanceof VideoNode || node instanceof ImageNode) &&
+			(element.type === "video" || element.type === "image")
+		) {
+			const p = node.params;
+			p.elementId = element.id;
+			p.duration = element.duration;
+			p.timeOffset = element.startTime;
+			p.trimStart = element.trimStart;
+			p.trimEnd = element.trimEnd;
+			if (element.type === "video") {
+				p.retime = element.retime;
+				p.reversed = element.reversed === true;
+			}
+			p.transform = buildTransformFromParams({ params: element.params });
+			p.animations = element.animations;
+			p.opacity = readOpacityFromParams({ params: element.params });
+			p.blendMode = readBlendModeFromParams({ params: element.params });
+			p.effects = element.effects ?? [];
+			p.masks = element.masks ?? [];
+			p.mediaAnims = element.mediaAnims;
+			p.chromaKey = buildChromaKeyParam({ element }).chromaKey;
+			p.colorGrade = buildColorGradeParam({ element }).colorGrade;
+			p.colorCorrection = buildColorCorrectionParam({ element }).colorCorrection;
+			continue;
+		}
+		if (node instanceof BlurBackgroundNode && (element.type === "video" || element.type === "image")) {
+			const fill = readBackgroundFillFromParams({ params: element.params });
+			node.params.duration = element.duration;
+			node.params.timeOffset = element.startTime;
+			node.params.trimStart = element.trimStart;
+			node.params.trimEnd = element.trimEnd;
+			if (element.type === "video") {
+				node.params.retime = element.retime;
+				node.params.reversed = element.reversed === true;
+			}
+			if (fill.mode === "blur") {
+				node.params.blurIntensity = fill.blurIntensity;
+			}
+			continue;
+		}
+		if (node instanceof CoverFillNode && (element.type === "video" || element.type === "image")) {
+			node.params.duration = element.duration;
+			node.params.timeOffset = element.startTime;
+			continue;
+		}
+		if (node instanceof ColorNode && (element.type === "video" || element.type === "image")) {
+			const fill = readBackgroundFillFromParams({ params: element.params });
+			node.params.duration = element.duration;
+			node.params.timeOffset = element.startTime;
+			if (fill.mode === "color") {
+				node.params.color = fill.color;
+			}
+			continue;
+		}
+		if (node instanceof EffectLayerNode && element.type === "effect") {
+			node.params.elementId = element.id;
+			node.params.effectType = element.effectType;
+			node.params.effectParams = element.params;
+			node.params.timeOffset = element.startTime;
+			node.params.duration = element.duration;
+			node.params.animations = element.animations;
+			node.params.stickerAnims = element.stickerAnims;
+			continue;
+		}
+		if (node instanceof StickerNode && element.type === "sticker") {
+			const p = node.params;
+			p.elementId = element.id;
+			p.stickerId = element.stickerId;
+			p.stickerAnims = element.stickerAnims;
+			p.intrinsicWidth = element.intrinsicWidth;
+			p.intrinsicHeight = element.intrinsicHeight;
+			p.duration = element.duration;
+			p.timeOffset = element.startTime;
+			p.trimStart = element.trimStart;
+			p.trimEnd = element.trimEnd;
+			p.transform = buildTransformFromParams({ params: element.params });
+			p.animations = element.animations;
+			p.opacity = readOpacityFromParams({ params: element.params });
+			p.blendMode = readBlendModeFromParams({ params: element.params });
+			p.effects = element.effects ?? [];
+			continue;
+		}
+		if (node instanceof GraphicNode && element.type === "graphic") {
+			const p = node.params;
+			p.elementId = element.id;
+			p.definitionId = element.definitionId;
+			p.params = element.params;
+			p.duration = element.duration;
+			p.timeOffset = element.startTime;
+			p.trimStart = element.trimStart;
+			p.trimEnd = element.trimEnd;
+			p.transform = buildTransformFromParams({ params: element.params });
+			p.animations = element.animations;
+			p.opacity = readOpacityFromParams({ params: element.params });
+			p.blendMode = readBlendModeFromParams({ params: element.params });
+			p.effects = element.effects ?? [];
+			p.masks = element.masks ?? [];
+			continue;
+		}
+		if (node instanceof TextNode && element.type === "text") {
+			Object.assign(node.params, element, {
+				transform: buildTransformFromParams({ params: element.params }),
+				opacity: readOpacityFromParams({ params: element.params }),
+				blendMode: readBlendModeFromParams({ params: element.params }),
+				canvasCenter: {
+					x: canvasSize.width / 2,
+					y: canvasSize.height / 2,
+				},
+				canvasHeight: canvasSize.height,
+				textBaseline: node.params.textBaseline ?? "middle",
+				effects: element.effects ?? [],
+			});
+		}
+	}
 }
 
 function buildTrackNodes({
@@ -161,6 +350,7 @@ function buildTrackNodes({
 	cache?: SceneNodeCache;
 }): AnyBaseNode[] {
 	const nodes: AnyBaseNode[] = [];
+	const seenIds = new Set<string>();
 
 	for (const track of tracks) {
 		const elements = getVisibleSortedElements({ track });
@@ -172,6 +362,7 @@ function buildTrackNodes({
 				);
 				continue;
 			}
+			seenIds.add(element.id);
 			const deps = getElementNodeDeps({
 				track,
 				element,
@@ -180,7 +371,7 @@ function buildTrackNodes({
 				canvasSize,
 				isPreview,
 			});
-			let entry = cache.elements.get(element);
+			let entry = cache.elements.get(element.id);
 			if (!entry || !sameDeps(entry.deps, deps)) {
 				entry = {
 					deps,
@@ -191,10 +382,22 @@ function buildTrackNodes({
 						canvasSize,
 						isPreview,
 					}),
+					element,
 				};
-				cache.elements.set(element, entry);
+				cache.elements.set(element.id, entry);
+			} else if (entry.element !== element) {
+				// New element object, same structure — Basic/HSL scrub, opacity, …
+				patchElementNodes({ nodes: entry.nodes, element, canvasSize });
+				entry.element = element;
+				cache.paramsPatched = true;
 			}
 			nodes.push(...entry.nodes);
+		}
+	}
+
+	if (cache) {
+		for (const id of [...cache.elements.keys()]) {
+			if (!seenIds.has(id)) cache.elements.delete(id);
 		}
 	}
 
@@ -219,6 +422,7 @@ function buildElementNodes({
 			if (element.type === "effect") {
 				nodes.push(
 					new EffectLayerNode({
+						elementId: element.id,
 						effectType: element.effectType,
 						effectParams: element.params,
 						timeOffset: element.startTime,
@@ -252,6 +456,7 @@ function buildElementNodes({
 						nodes.push(...fillNodes);
 						nodes.push(
 							new VideoNode({
+								elementId: element.id,
 								mediaId: mediaAsset.id,
 								url: mediaAsset.url,
 								file: mediaAsset.file,
@@ -284,6 +489,7 @@ function buildElementNodes({
 						nodes.push(...fillNodes);
 						nodes.push(
 							new ImageNode({
+								elementId: element.id,
 								url: mediaAsset.url,
 								duration: element.duration,
 								timeOffset: element.startTime,
@@ -326,6 +532,7 @@ function buildElementNodes({
 			if (element.type === "sticker") {
 				nodes.push(
 					new StickerNode({
+						elementId: element.id,
 						stickerId: element.stickerId,
 						stickerAnims: element.stickerAnims,
 						intrinsicWidth: element.intrinsicWidth,
@@ -346,6 +553,7 @@ function buildElementNodes({
 			if (element.type === "graphic") {
 				nodes.push(
 					new GraphicNode({
+						elementId: element.id,
 						definitionId: element.definitionId,
 						params: element.params,
 						duration: element.duration,
@@ -480,6 +688,7 @@ function buildElementNodes({
 		isPreview,
 		cache,
 	}: BuildSceneParams): RootNode {
+		if (cache) cache.paramsPatched = false;
 		const mediaMap = new Map(mediaAssets.map((m) => [m.id, m]));
 
 		const visibleTracks = [
@@ -510,8 +719,11 @@ function buildElementNodes({
 		children.push(...allNodes);
 
 		const last = cache?.lastRoot;
+		// Params-only scrub patches nodes in place but must still publish a new
+		// root — same child refs would otherwise reuse lastRoot and skip compose.
 		if (
 			last &&
+			!cache?.paramsPatched &&
 			last.params.duration === duration &&
 			sameDeps(last.children, children)
 		) {

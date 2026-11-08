@@ -14,7 +14,12 @@ export function isStickerPackEffectElement(
 	return pack != null && normalizeVfxPackType(pack.type) === "sticker";
 }
 
-/** Pixel size the sticker is rendered at before it is fitted onto the project canvas. */
+/**
+ * Pixel size the sticker is rendered at before it is fitted onto the project
+ * canvas. Prefer manifest.resolution (design size, e.g. 400×400): scene
+ * resolution is often rewritten to the project canvas and would desync
+ * contain-fit / drag travel from the authored pack layout.
+ */
 export function stickerPackSourceSize({
 	pack,
 }: {
@@ -23,11 +28,15 @@ export function stickerPackSourceSize({
 	return {
 		width: Math.max(
 			1,
-			pack.scene?.resolution?.width || pack.manifest.resolution?.width || 1920,
+			pack.manifest.resolution?.width ||
+				pack.scene?.resolution?.width ||
+				1920,
 		),
 		height: Math.max(
 			1,
-			pack.scene?.resolution?.height || pack.manifest.resolution?.height || 1080,
+			pack.manifest.resolution?.height ||
+				pack.scene?.resolution?.height ||
+				1080,
 		),
 	};
 }

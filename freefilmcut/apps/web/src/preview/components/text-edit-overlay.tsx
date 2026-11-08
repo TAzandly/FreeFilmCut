@@ -30,10 +30,16 @@ export function TextEditOverlay({
 	const editor = useEditor();
 	const viewport = usePreviewViewport();
 	const divRef = useRef<HTMLDivElement>(null);
+	const composingRef = useRef(false);
+	/** Seed once — never rebind children from props while editing (IME + caret). */
+	const initialContentRef = useRef(
+		typeof element.params.content === "string" ? element.params.content : "",
+	);
 
 	useEffect(() => {
 		const div = divRef.current;
 		if (!div) return;
+		div.textContent = initialContentRef.current;
 		div.focus();
 		const range = document.createRange();
 		range.selectNodeContents(div);
@@ -44,10 +50,25 @@ export function TextEditOverlay({
 
 	const handleInput = useCallback(() => {
 		const div = divRef.current;
-		if (!div) return;
+		if (!div || composingRef.current) return;
 		const text = div.innerText;
 		editor.timeline.previewElements({
 			updates: [{ trackId, elementId, updates: { params: { content: text } } }],
+		});
+	}, [editor.timeline, trackId, elementId]);
+
+	const handleCompositionEnd = useCallback(() => {
+		composingRef.current = false;
+		const div = divRef.current;
+		if (!div) return;
+		editor.timeline.previewElements({
+			updates: [
+				{
+					trackId,
+					elementId,
+					updates: { params: { content: div.innerText } },
+				},
+			],
 		});
 	}, [editor.timeline, trackId, elementId]);
 
@@ -146,11 +167,13 @@ export function TextEditOverlay({
 					minWidth: 1,
 				}}
 				onInput={handleInput}
+				onCompositionStart={() => {
+					composingRef.current = true;
+				}}
+				onCompositionEnd={handleCompositionEnd}
 				onBlur={onCommit}
 				onKeyDown={(event) => handleKeyDown({ event })}
-			>
-				{textParams.content}
-			</div>
+			></div>
 		</div>
 	);
 }

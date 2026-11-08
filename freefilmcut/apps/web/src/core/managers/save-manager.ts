@@ -1,11 +1,16 @@
 import type { EditorCore } from "@/core";
 
+export const DEFAULT_AUTOSAVE_INTERVAL_MS = 5 * 60 * 1000;
+
 type SaveManagerOptions = {
+	/** Max wait from first dirty mark until disk save. Edits do not reset the timer. */
+	autosaveIntervalMs?: number;
+	/** @deprecated Use autosaveIntervalMs */
 	debounceMs?: number;
 };
 
 export class SaveManager {
-	private debounceMs: number;
+	private autosaveIntervalMs: number;
 	private isPaused = false;
 	private isSaving = false;
 	private hasPendingSave = false;
@@ -14,12 +19,14 @@ export class SaveManager {
 
 	constructor({
 		editor,
-		debounceMs = 800,
+		autosaveIntervalMs,
+		debounceMs,
 	}: {
 		editor: EditorCore;
 	} & SaveManagerOptions) {
 		this.editor = editor;
-		this.debounceMs = debounceMs;
+		this.autosaveIntervalMs =
+			autosaveIntervalMs ?? debounceMs ?? DEFAULT_AUTOSAVE_INTERVAL_MS;
 	}
 
 	private editor: EditorCore;
@@ -53,14 +60,14 @@ export class SaveManager {
 	resume(): void {
 		this.isPaused = false;
 		if (this.hasPendingSave) {
-			this.queueSave();
+			this.ensureAutosaveScheduled();
 		}
 	}
 
 	markDirty({ force = false }: { force?: boolean } = {}): void {
 		if (this.isPaused && !force) return;
 		this.hasPendingSave = true;
-		this.queueSave();
+		this.ensureAutosaveScheduled();
 	}
 
 	async flush(): Promise<void> {
@@ -72,14 +79,17 @@ export class SaveManager {
 		return this.hasPendingSave || this.isSaving;
 	}
 
-	private queueSave(): void {
+	/**
+	 * Schedule one autosave from the first dirty mark. Later edits keep the
+	 * pending flag but do not reset the countdown (throttle-from-first-dirty).
+	 */
+	private ensureAutosaveScheduled(): void {
 		if (this.isSaving) return;
-		if (this.saveTimer) {
-			clearTimeout(this.saveTimer);
-		}
+		if (this.saveTimer) return;
 		this.saveTimer = setTimeout(() => {
+			this.saveTimer = null;
 			void this.saveNow();
-		}, this.debounceMs);
+		}, this.autosaveIntervalMs);
 	}
 
 	private async saveNow(): Promise<void> {
@@ -105,7 +115,7 @@ export class SaveManager {
 		} finally {
 			this.isSaving = false;
 			if (this.hasPendingSave) {
-				this.queueSave();
+				this.ensureAutosaveScheduled();
 			}
 		}
 	}

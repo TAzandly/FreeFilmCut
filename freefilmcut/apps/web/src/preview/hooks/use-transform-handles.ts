@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { usePreviewViewport } from "@/preview/components/preview-viewport";
 import type { OnSnapLinesChange } from "@/preview/hooks/use-preview-interaction";
 import { useEditor } from "@/editor/use-editor";
@@ -10,6 +10,9 @@ import {
 	TransformHandleController,
 	type TransformHandleDeps,
 } from "@/preview/controllers/transform-handle-controller";
+import { onLiveDragEpoch } from "@/preview/live-drag-transform";
+import { elementBoundsFollowPlayhead } from "@/preview/element-bounds";
+import type { TimelineElement } from "@/timeline";
 
 export function useTransformHandles({
 	onSnapLinesChange,
@@ -59,13 +62,36 @@ export function useTransformHandles({
 
 	const [, rerender] = useReducer((n: number) => n + 1, 0);
 	useEffect(() => controller.subscribe(rerender), [controller]);
-	// Seek/scrub only — play ticks use onUpdate and must not React-commit handles every rAF.
+
+	// Sticker/text library motion moves the drawn picture every play tick — the
+	// handle box must follow. Other clips stay seek-only so play does not React-
+	// commit the overlay every rAF.
+	const selectionFollowsPlayhead = useMemo(() => {
+		if (selectedElements.length === 0) return false;
+		const selectedIds = new Set(selectedElements.map((ref) => ref.elementId));
+		const elements: TimelineElement[] = [
+			...tracks.overlay.flatMap((track) => track.elements),
+			...tracks.main.elements,
+		];
+		for (const element of elements) {
+			if (!selectedIds.has(element.id)) continue;
+			if (elementBoundsFollowPlayhead({ element })) return true;
+		}
+		return false;
+	}, [selectedElements, tracks]);
+
 	useEffect(() => {
 		const unsubSeek = editor.playback.onSeek(() => rerender());
+		const unsubUpdate = selectionFollowsPlayhead
+			? editor.playback.onUpdate(() => rerender())
+			: null;
 		return () => {
 			unsubSeek();
+			unsubUpdate?.();
 		};
-	}, [editor.playback]);
+	}, [editor.playback, selectionFollowsPlayhead]);
+	// Canvas body-drag moves handles via live overlay without timeline preview notify.
+	useEffect(() => onLiveDragEpoch(rerender), []);
 
 	useEffect(() => {
 		if (!controller.isActive) return;

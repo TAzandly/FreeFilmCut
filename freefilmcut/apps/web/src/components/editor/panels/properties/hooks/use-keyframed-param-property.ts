@@ -12,13 +12,14 @@ import type {
 	AnimationPath,
 	ElementAnimations,
 } from "@/animation/types";
+import { pushLiveElementPreview } from "@/preview/push-live-element-preview";
 import {
 	coerceParamValue,
 	getParamChannelLayout,
 	type ParamDefinition,
 	type ParamValue,
 } from "@/params";
-import type { TimelineElement } from "@/timeline";
+import { findTrackInSceneTracks, type TimelineElement } from "@/timeline";
 import type { MediaTime } from "@/wasm";
 
 export interface KeyframedParamPropertyResult {
@@ -102,14 +103,17 @@ export function useKeyframedParamProperty({
 			return;
 		}
 
-		editor.timeline.previewElements({
-			updates: [
-				{
-					trackId,
-					elementId,
-					updates: buildBaseUpdates({ value }),
-				},
-			],
+		pushLiveElementPreview({
+			previewElements: (args) => editor.timeline.previewElements(args),
+			getPreviewElement: () => {
+				const tracks = editor.timeline.getPreviewTracks();
+				if (!tracks) return null;
+				const track = findTrackInSceneTracks({ tracks, trackId });
+				return track?.elements.find((element) => element.id === elementId);
+			},
+			trackId,
+			elementId,
+			updates: buildBaseUpdates({ value }),
 		});
 	};
 
@@ -162,7 +166,7 @@ export function useKeyframedParamProperty({
 		onPreview: previewValue,
 		onCommit: () => {
 			// Commit reads the overlay: flush the pending frame first or the last
-			// scrub value would be lost.
+			// scrub value would be lost. commitPreview also clears live param state.
 			flushPreview();
 			editor.timeline.commitPreview();
 		},

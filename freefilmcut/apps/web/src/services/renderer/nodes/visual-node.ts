@@ -12,6 +12,8 @@ import type { BlendMode, Transform } from "@/rendering";
 import type { MediaAnimAssignment, RetimeConfig, VisualElement } from "@/timeline";
 
 export interface VisualNodeParams {
+	/** Timeline element id — used for live canvas-drag position overlays. */
+	elementId?: string;
 	duration: number;
 	timeOffset: number;
 	trimStart: number;
@@ -85,6 +87,11 @@ export interface ResolvedVisualSourceNodeState extends ResolvedVisualNodeState {
 	source: CanvasImageSource;
 	sourceWidth: number;
 	sourceHeight: number;
+	/**
+	 * Distinguishes decoded frames when a pooled canvas is reused (video).
+	 * Same key + same source object → GPU copy is current, skip re-upload.
+	 */
+	sourceFrameKey?: string;
 	/** Set while the playhead is inside this clip's cut-transition window. */
 	cutTransition?: CutTransitionComposite;
 }

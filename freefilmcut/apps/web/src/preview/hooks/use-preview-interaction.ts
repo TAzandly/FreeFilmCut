@@ -49,7 +49,12 @@ export function usePreviewInteraction({
 			previewElements: (updates) =>
 				editor.timeline.previewElements({ updates: [...updates] }),
 			commitPreview: () => editor.timeline.commitPreview(),
+			commitElements: (updates) =>
+				editor.timeline.commitElements({ updates: [...updates] }),
 			discardPreview: () => editor.timeline.discardPreview(),
+		},
+		renderer: {
+			getRenderTree: () => editor.renderer.getRenderTree(),
 		},
 		playback: {
 			getIsPlaying: () => editor.playback.getIsPlaying(),

@@ -22,9 +22,20 @@ import {
 	snapPosition,
 	type SnapLine,
 } from "@/preview/preview-snap";
+import {
+	clearLiveDragTransforms,
+	getLiveDragTransform,
+	setLiveDragTransforms,
+} from "@/preview/live-drag-transform";
+import {
+	bindLiveDragNodes,
+	type BoundLiveDragNode,
+	type LiveDragBindKey,
+} from "@/preview/live-drag-scene-bind";
 import type { TCanvasSize } from "@/project/types";
 import type { ParamValues } from "@/params";
 import { buildTransformFromParams, type Transform } from "@/rendering";
+import type { RootNode } from "@/services/renderer/nodes/root-node";
 import { isVisualElement } from "@/timeline/element-utils";
 import { isStickerPackEffectElement } from "@/vfxpack/sticker-canvas";
 import type {
@@ -64,6 +75,7 @@ interface DragElementSnapshot {
 	readonly elementId: string;
 	readonly initialTransform: Transform;
 	readonly initialParams: ParamValues;
+	readonly bindKey: LiveDragBindKey;
 }
 
 interface DraggingGesture extends CapturedPointerState {
@@ -75,6 +87,8 @@ interface DraggingGesture extends CapturedPointerState {
 		readonly rotation: number;
 	};
 	readonly elements: readonly DragElementSnapshot[];
+	/** Scene nodes mutated in-place during the gesture for live GPU feedback. */
+	boundNodes: BoundLiveDragNode[];
 }
 
 type GestureSession =
@@ -136,7 +150,12 @@ export interface TimelineOps {
 	}) => Array<{ track: TimelineTrack; element: TimelineElement }>;
 	previewElements: (updates: readonly TimelinePreviewUpdate[]) => void;
 	commitPreview: () => void;
+	commitElements: (updates: readonly TimelinePreviewUpdate[]) => void;
 	discardPreview: () => void;
+}
+
+export interface RendererReader {
+	getRenderTree: () => RootNode | null;
 }
 
 export interface PlaybackApi {
@@ -155,6 +174,7 @@ export interface PreviewInteractionDeps {
 	scene: SceneReader;
 	selection: SelectionApi;
 	timeline: TimelineOps;
+	renderer: RendererReader;
 	playback: PlaybackApi;
 	preview: PreviewOptions;
 }
@@ -217,8 +237,10 @@ function movedPastDragThreshold({
 
 function toDragElementSnapshots({
 	elementsWithTracks,
+	mediaAssets,
 }: {
 	elementsWithTracks: Array<{ track: TimelineTrack; element: TimelineElement }>;
+	mediaAssets: readonly MediaAsset[];
 }): DragElementSnapshot[] {
 	const isVisualTrackedElement = (value: {
 		track: TimelineTrack;
@@ -226,14 +248,36 @@ function toDragElementSnapshots({
 	}): value is { track: TimelineTrack; element: VisualElement | EffectElement } =>
 		isVisualElement(value.element) || isStickerPackEffectElement(value.element);
 
+	const mediaById = new Map(mediaAssets.map((asset) => [asset.id, asset]));
+
 	return elementsWithTracks
 		.filter(isVisualTrackedElement)
-		.map(({ track, element }) => ({
-			trackId: track.id,
-			elementId: element.id,
-			initialTransform: buildTransformFromParams({ params: element.params }),
-			initialParams: element.params,
-		}));
+		.map(({ track, element }) => {
+			const mediaId =
+				element.type === "video" || element.type === "image"
+					? element.mediaId
+					: undefined;
+			const media = mediaId ? mediaById.get(mediaId) : undefined;
+			return {
+				trackId: track.id,
+				elementId: element.id,
+				initialTransform: buildTransformFromParams({ params: element.params }),
+				initialParams: element.params,
+				bindKey: {
+					elementId: element.id,
+					timeOffset: element.startTime,
+					duration: element.duration,
+					mediaId,
+					stickerId: element.type === "sticker" ? element.stickerId : undefined,
+					definitionId:
+						element.type === "graphic" ? element.definitionId : undefined,
+					url:
+						element.type === "image" && media?.url ? media.url : undefined,
+					effectType:
+						element.type === "effect" ? element.effectType : undefined,
+				},
+			};
+		});
 }
 
 export class PreviewInteractionController {
@@ -248,17 +292,9 @@ export class PreviewInteractionController {
 	/**
 	 * Coalesces pointer-move events to at most one drag update per frame.
 	 *
-	 * A 1000Hz mouse reports ~16 positions for every displayed frame, and each
-	 * update runs the whole pipeline below: read the viewport rect (a forced
-	 * synchronous layout), resolve snapping, rebuild the preview overlay and
-	 * notify every editor subscriber. Doing that per event saturates the main
-	 * thread, so the frame rate collapses to "one drag update per displayed
-	 * frame" while every queued event still has to be processed.
-	 *
-	 * The timeline drag controllers (`element-interaction`, `resize`,
-	 * `playhead`) already coalesce for exactly this reason; the canvas drag
-	 * was the one path that did not, which is why dragging a clip on the
-	 * timeline and dragging it on the canvas do not feel the same.
+	 * A 1000Hz mouse reports ~16 positions for every displayed frame. Canvas
+	 * drag writes a live position overlay (no SceneTracks / buildScene) and
+	 * wakes preview compose; commit happens once on pointer-up.
 	 */
 	private readonly rafPointerMove = createRafPointerMove({
 		onFrame: (point) => this.applyCoalescedMove({ point }),
@@ -319,6 +355,7 @@ export class PreviewInteractionController {
 		this.rafPointerMove.cancel();
 
 		if (this.gesture.kind === "dragging") {
+			clearLiveDragTransforms();
 			this.deps.timeline.discardPreview();
 		}
 
@@ -465,13 +502,14 @@ export class PreviewInteractionController {
 
 			if (type === "pointercancel") {
 				this.rafPointerMove.cancel();
+				clearLiveDragTransforms();
 				this.deps.timeline.discardPreview();
 			} else {
 				// Apply the last coalesced position before committing: otherwise a
 				// fast release drops the final few pixels of the drag, because the
 				// pending frame never ran.
 				this.rafPointerMove.flushNow();
-				this.deps.timeline.commitPreview();
+				this.commitLiveDrag({ drag });
 			}
 
 			this.gesture = IDLE_GESTURE;
@@ -560,6 +598,7 @@ export class PreviewInteractionController {
 			elementsWithTracks: this.deps.timeline.getElementsWithTracks({
 				elements: dragSelection,
 			}),
+			mediaAssets: this.deps.scene.getMediaAssets(),
 		});
 
 		if (draggableElements.length === 0) {
@@ -578,6 +617,11 @@ export class PreviewInteractionController {
 			]);
 		}
 
+		const boundNodes = bindLiveDragNodes({
+			root: this.deps.renderer.getRenderTree(),
+			keys: draggableElements.map((element) => element.bindKey),
+		});
+
 		this.gesture = {
 			kind: "dragging",
 			origin: pending.origin,
@@ -589,6 +633,7 @@ export class PreviewInteractionController {
 				rotation: dragTarget.bounds.rotation,
 			},
 			elements: draggableElements,
+			boundNodes,
 		};
 		this.notify();
 	}
@@ -635,18 +680,82 @@ export class PreviewInteractionController {
 		const deltaSnappedY =
 			snappedPosition.y - firstElement.initialTransform.position.y;
 
-		this.deps.timeline.previewElements(
-			drag.elements.map(({ trackId, elementId, initialTransform, initialParams }) => ({
-				trackId,
+		const positions = new Map(
+			drag.elements.map(({ elementId, initialTransform }) => [
 				elementId,
-				updates: {
-					params: {
-						...initialParams,
-						"transform.positionX": initialTransform.position.x + deltaSnappedX,
-						"transform.positionY": initialTransform.position.y + deltaSnappedY,
-					},
+				{
+					x: initialTransform.position.x + deltaSnappedX,
+					y: initialTransform.position.y + deltaSnappedY,
 				},
-			})),
+			]),
 		);
+
+		if (drag.boundNodes.length === 0) {
+			// Bind failed (stale tree / unsupported node) — fall back to the
+			// full overlay rebuild so the user still sees the clip move.
+			this.deps.timeline.previewElements(
+				drag.elements.map(
+					({ trackId, elementId, initialTransform, initialParams }) => ({
+						trackId,
+						elementId,
+						updates: {
+							params: {
+								...initialParams,
+								"transform.positionX":
+									initialTransform.position.x + deltaSnappedX,
+								"transform.positionY":
+									initialTransform.position.y + deltaSnappedY,
+							},
+						},
+					}),
+				),
+			);
+			return;
+		}
+
+		// Live overlay only — resolve/compositor read it by elementId. Do not
+		// mutate scene-node transforms in place (that desynced stickers from
+		// their handles when stacked with the overlay).
+		setLiveDragTransforms({ positions });
+	}
+
+	/** Persist live positions in one tracks commit (no previewElements → commitPreview double rebuild). */
+	private commitLiveDrag({ drag }: { drag: DraggingGesture }): void {
+		if (drag.elements.length === 0) {
+			clearLiveDragTransforms({ silent: true });
+			return;
+		}
+
+		// Fallback path already wrote the overlay on every move.
+		if (drag.boundNodes.length === 0) {
+			this.deps.timeline.commitPreview();
+			return;
+		}
+
+		const updates = drag.elements.map(
+			({ trackId, elementId, initialTransform, initialParams }) => {
+				const live = getLiveDragTransform(elementId);
+				const x = live?.x ?? initialTransform.position.x;
+				const y = live?.y ?? initialTransform.position.y;
+				return {
+					trackId,
+					elementId,
+					updates: {
+						params: {
+							...initialParams,
+							"transform.positionX": x,
+							"transform.positionY": y,
+						},
+					},
+				};
+			},
+		);
+
+		// Keep the live overlay through the tracks commit: clearing it first
+		// lets an in-flight preview compose resolve against the old params and
+		// flash the pre-drag position. Live values are absolute and match the
+		// committed params, so stacking them during rebuild is a no-op.
+		this.deps.timeline.commitElements(updates);
+		clearLiveDragTransforms({ silent: true });
 	}
 }

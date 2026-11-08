@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
 import { useEditor } from "@/editor/use-editor";
+import { pushLiveElementPreview } from "@/preview/push-live-element-preview";
+import { onLiveParamPreviewElement } from "@/preview/live-param-preview";
 import { findTrackInSceneTracks, type TimelineElement } from "@/timeline";
 import { useCoalescedPreview } from "@/timeline/hooks/use-coalesced-preview";
 
@@ -28,7 +31,7 @@ export function useElementPreview<T extends TimelineElement>({
 	 * stable unless that element's own overlay changed, so untouched clips now
 	 * hit `Object.is` in useEditor's snapshot cache and stay put.
 	 */
-	const renderElement = useEditor((e) => {
+	const storeElement = useEditor((e) => {
 		const tracks =
 			e.timeline.getPreviewTracks() ??
 			e.scenes.getActiveSceneOrNull()?.tracks ??
@@ -43,6 +46,29 @@ export function useElementPreview<T extends TimelineElement>({
 	});
 
 	/**
+	 * Live param scrub skips timeline notify, so useEditor above would freeze.
+	 * Re-read the silent overlay when this element is touched.
+	 */
+	const [liveElement, setLiveElement] = useState<T | null>(null);
+	useEffect(() => {
+		setLiveElement(null);
+	}, [storeElement]);
+	useEffect(() => {
+		return onLiveParamPreviewElement((elementIds) => {
+			if (!elementIds.has(elementId)) return;
+			const tracks = editor.timeline.getPreviewTracks();
+			if (!tracks) return;
+			const track = findTrackInSceneTracks({ tracks, trackId });
+			const next = track?.elements.find((element) => element.id === elementId) as
+				| T
+				| undefined;
+			if (next) setLiveElement(next);
+		});
+	}, [editor.timeline, trackId, elementId]);
+
+	const renderElement = liveElement ?? storeElement;
+
+	/**
 	 * One preview write per frame — see use-coalesced-preview.ts. Callers hand in
 	 * complete sub-objects (`params: {...current, ...patch}`), so keeping only
 	 * the latest write is equivalent to keeping all of them, minus the 2–16
@@ -51,8 +77,17 @@ export function useElementPreview<T extends TimelineElement>({
 	const { push: previewUpdates, flush: flushPreview } =
 		useCoalescedPreview<Partial<TimelineElement>>({
 			apply: (updates) =>
-				editor.timeline.previewElements({
-					updates: [{ trackId, elementId, updates }],
+				pushLiveElementPreview({
+					previewElements: (args) => editor.timeline.previewElements(args),
+					getPreviewElement: () => {
+						const tracks = editor.timeline.getPreviewTracks();
+						if (!tracks) return null;
+						const track = findTrackInSceneTracks({ tracks, trackId });
+						return track?.elements.find((element) => element.id === elementId);
+					},
+					trackId,
+					elementId,
+					updates,
 				}),
 		});
 

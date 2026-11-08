@@ -168,6 +168,14 @@ export function ColorCorrectionSection({
 			sectionKey={`${element.id}:color-correction`}
 		>
 			<SectionHeader
+				leading={
+					<Switch
+						checked={correction.enabled}
+						onCheckedChange={handleEnabled}
+						onClick={(event) => event.stopPropagation()}
+						aria-label="Enable color correction"
+					/>
+				}
 				trailing={
 					<Button
 						variant="ghost"
@@ -184,26 +192,22 @@ export function ColorCorrectionSection({
 			>
 				<SectionTitle>Color Correction</SectionTitle>
 			</SectionHeader>
-			<SectionContent>
-				<SectionFields>
-					<div className="flex items-center justify-between px-0.5">
-						<span className="text-sm">Enabled</span>
-						<Switch
-							checked={correction.enabled}
-							onCheckedChange={handleEnabled}
-							aria-label="Enable color correction"
+			{correction.enabled ? (
+				<SectionContent>
+					<SectionFields>
+						{analyzing ? (
+							<p className="text-muted-foreground px-0.5 text-xs">
+								Analyzing…
+							</p>
+						) : null}
+						<ElementParamFields
+							element={renderElement}
+							trackId={trackId}
+							params={intensityParams}
 						/>
-					</div>
-					{analyzing ? (
-						<p className="text-muted-foreground px-0.5 text-xs">Analyzing…</p>
-					) : null}
-					<ElementParamFields
-						element={element}
-						trackId={trackId}
-						params={intensityParams}
-					/>
-				</SectionFields>
-			</SectionContent>
+					</SectionFields>
+				</SectionContent>
+			) : null}
 		</Section>
 	);
 }

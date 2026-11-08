@@ -372,7 +372,26 @@ export type ColorCorrectionUniforms = {
 	shadowParam: number;
 	blackWhiteSlope: number;
 	blackWhiteBias: number;
+	/** 0..1 — CapCut-like midtone lift strength from Intensity alone. */
+	enableMidtoneLift: number;
+	midtoneLiftAmount: number;
 };
+
+/**
+ * Sample the auto midtone-lift curve (matches GPU). amount 0 = identity,
+ * 1 = full CapCut-style brightening (~+0.28 at midtones).
+ */
+export function sampleMidtoneLiftCurve({
+	x,
+	amount,
+}: {
+	x: number;
+	amount: number;
+}): number {
+	const t = Math.min(1, Math.max(0, x));
+	const a = Math.min(1, Math.max(0, amount));
+	return Math.min(1, Math.max(0, t + a * 4 * t * (1 - t) * 0.28));
+}
 
 export function packColorCorrectionUniforms({
 	analysis,
@@ -382,6 +401,8 @@ export function packColorCorrectionUniforms({
 	intensity: number;
 }): ColorCorrectionUniforms {
 	const scale = intensityScale({ intensity });
+	const midtoneLiftAmount = Math.min(100, Math.max(0, intensity)) / 100;
+	const enableMidtoneLift = boolToInt(midtoneLiftAmount > Eps);
 
 	const temperatureIntensity = axisIntensity(analysis.temperature, scale);
 	const tintIntensity = axisIntensity(analysis.tint, scale);
@@ -489,5 +510,7 @@ export function packColorCorrectionUniforms({
 		shadowParam,
 		blackWhiteSlope,
 		blackWhiteBias,
+		enableMidtoneLift,
+		midtoneLiftAmount,
 	};
 }

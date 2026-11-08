@@ -4,6 +4,7 @@ export {
 	IDENTITY_ANALYSIS,
 	intensityScale,
 	packColorCorrectionUniforms,
+	sampleMidtoneLiftCurve,
 } from "./math";
 export type {
 	ColorCorrectionSettings,

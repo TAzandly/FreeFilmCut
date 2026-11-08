@@ -3,6 +3,7 @@ import {
 	IDENTITY_ANALYSIS,
 	intensityScale,
 	packColorCorrectionUniforms,
+	sampleMidtoneLiftCurve,
 	type ColorCorrectionAnalysis,
 } from "../math";
 
@@ -21,8 +22,25 @@ describe("intensityScale", () => {
 	});
 });
 
+describe("sampleMidtoneLiftCurve", () => {
+	test("pins black and white", () => {
+		expect(sampleMidtoneLiftCurve({ x: 0, amount: 1 })).toBe(0);
+		expect(sampleMidtoneLiftCurve({ x: 1, amount: 1 })).toBe(1);
+	});
+
+	test("lifts midtones above the diagonal", () => {
+		const mid = sampleMidtoneLiftCurve({ x: 0.5, amount: 1 });
+		expect(mid).toBeGreaterThan(0.5);
+		expect(mid).toBeCloseTo(0.5 + 0.28, 5);
+	});
+
+	test("amount 0 is identity", () => {
+		expect(sampleMidtoneLiftCurve({ x: 0.4, amount: 0 })).toBeCloseTo(0.4, 8);
+	});
+});
+
 describe("packColorCorrectionUniforms", () => {
-	test("zero analysis → all enable flags false / identity-ish", () => {
+	test("zero analysis → analysis flags off, but midtone lift follows intensity", () => {
 		const u = packColorCorrectionUniforms({
 			analysis: IDENTITY_ANALYSIS,
 			intensity: 80,
@@ -30,6 +48,17 @@ describe("packColorCorrectionUniforms", () => {
 		expect(u.enableContrast).toBe(0);
 		expect(u.enableBrightness).toBe(0);
 		expect(u.enableSaturation).toBe(0);
+		expect(u.enableMidtoneLift).toBe(1);
+		expect(u.midtoneLiftAmount).toBeCloseTo(0.8, 8);
+	});
+
+	test("intensity 0 disables midtone lift", () => {
+		const u = packColorCorrectionUniforms({
+			analysis: IDENTITY_ANALYSIS,
+			intensity: 0,
+		});
+		expect(u.enableMidtoneLift).toBe(0);
+		expect(u.midtoneLiftAmount).toBe(0);
 	});
 
 	test("positive brightness analysis enables brightness and scales with intensity", () => {

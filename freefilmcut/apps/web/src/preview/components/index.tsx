@@ -42,6 +42,15 @@ import {
 	getFlowerTextFrameEpoch,
 	onFlowerTextFrameEpoch,
 } from "@/vfxpack/flower-text-epoch";
+import {
+	getLiveDragEpoch,
+	onLiveDragEpoch,
+} from "@/preview/live-drag-transform";
+import {
+	bindLiveParamPreviewScene,
+	getLiveParamPreviewEpoch,
+	onLiveParamPreviewEpoch,
+} from "@/preview/live-param-preview";
 import { usePreviewStore } from "@/preview/preview-store";
 import { playbackQualityScale } from "@/preview/playback-quality";
 
@@ -124,6 +133,13 @@ function RenderTreeController() {
 	const { width, height } = usePreviewSize();
 	const sceneCacheRef = useRef(createSceneNodeCache());
 
+	useEffect(() => {
+		return bindLiveParamPreviewScene({
+			cache: sceneCacheRef.current,
+			getCanvasSize: () => ({ width, height }),
+		});
+	}, [width, height]);
+
 	/**
 	 * Was `useDeepCompareEffect`, which is a tax paid on EVERY render, not just
 	 * on change: `dequal` walks the whole dependency array first. With a real
@@ -200,6 +216,8 @@ function PreviewCanvas({
 	const lastVideoVolRef = useRef(1);
 	const lastVideoEpochRef = useRef(0);
 	const lastFlowerTextEpochRef = useRef(0);
+	const lastLiveDragEpochRef = useRef(0);
+	const lastLiveParamEpochRef = useRef(0);
 	const lastSceneRef = useRef<RootNode | null>(null);
 	const renderingRef = useRef(false);
 	/** fcc-tl-flower-57: coalesce when a slow flower/PP frame is in flight. */
@@ -297,17 +315,25 @@ function PreviewCanvas({
 		const frame = Math.floor(renderTime / ticksPerFrame);
 		const videoEpoch = getPackVideoFrameEpoch();
 		const flowerTextEpoch = getFlowerTextFrameEpoch();
+		const liveDragEpoch = getLiveDragEpoch();
+		const liveParamEpoch = getLiveParamPreviewEpoch();
 		// Frame-gated, playing or not: the canvas keeps the last frame
 		// (preserveDrawingBuffer), and video/pack sources are sampled at the
 		// snapped project frame, so re-composing an unchanged frame is pure waste.
 		// Preview therefore steps at project fps, like export.
+		// Live canvas-drag / property scrub bumps an epoch so the frame moves
+		// without a new scene tree.
 		const videoFrameDirty = videoEpoch !== lastVideoEpochRef.current;
 		const flowerTextDirty = flowerTextEpoch !== lastFlowerTextEpochRef.current;
+		const liveDragDirty = liveDragEpoch !== lastLiveDragEpochRef.current;
+		const liveParamDirty = liveParamEpoch !== lastLiveParamEpochRef.current;
 		const pending = pendingRenderRef.current;
 		const transportActive = playing || scrubbing;
 		const frameDirty =
 			videoFrameDirty ||
 			flowerTextDirty ||
+			liveDragDirty ||
+			liveParamDirty ||
 			frame !== lastFrameRef.current ||
 			renderTree !== lastSceneRef.current;
 
@@ -328,6 +354,8 @@ function PreviewCanvas({
 		lastFrameRef.current = frame;
 		lastVideoEpochRef.current = videoEpoch;
 		lastFlowerTextEpochRef.current = flowerTextEpoch;
+		lastLiveDragEpochRef.current = liveDragEpoch;
+		lastLiveParamEpochRef.current = liveParamEpoch;
 		// Dev-only: `render()` is async, but everything before its first truly
 		// yielding await — shader compile, texture upload, RT reallocation —
 		// runs in the caller's task and blocks the frame. `compose:sync` measures
@@ -377,6 +405,8 @@ function PreviewCanvas({
 		const unsubUpdate = editor.playback.onUpdate(() => schedule());
 		const unsubSeek = editor.playback.onSeek(() => schedule());
 		const unsubEpoch = onFlowerTextFrameEpoch(schedule);
+		const unsubLiveDrag = onLiveDragEpoch(schedule);
+		const unsubLiveParam = onLiveParamPreviewEpoch(schedule);
 
 		schedule();
 
@@ -388,6 +418,8 @@ function PreviewCanvas({
 			unsubUpdate();
 			unsubSeek();
 			unsubEpoch();
+			unsubLiveDrag();
+			unsubLiveParam();
 		};
 	}, [render, editor.playback]);
 

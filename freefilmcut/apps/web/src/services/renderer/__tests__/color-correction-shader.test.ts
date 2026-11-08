@@ -18,4 +18,7 @@ void main() {
 	expect(COLOR_CORRECTION_SHADER_HELPERS).toContain(
 		"uColorCorrectionEnableContrast",
 	);
+	expect(COLOR_CORRECTION_SHADER_HELPERS).toContain(
+		"uColorCorrectionEnableMidtoneLift",
+	);
 });

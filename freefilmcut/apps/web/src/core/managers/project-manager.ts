@@ -549,12 +549,15 @@ export class ProjectManager {
 		if (!this.active) return;
 
 		try {
-			const didUpdateThumbnail = await this.updateThumbnailFromTimeline();
-			if (didUpdateThumbnail) {
-				await this.editor.save.flush();
-			}
+			await this.updateThumbnailFromTimeline();
 		} catch (error) {
 			console.error("Failed to generate project thumbnail on exit:", error);
+		}
+
+		// Always flush dirty project data on exit — thumbnail failure must not
+		// skip IndexedDB save.
+		if (this.editor.save.getIsDirty()) {
+			await this.editor.save.flush();
 		}
 	}
 

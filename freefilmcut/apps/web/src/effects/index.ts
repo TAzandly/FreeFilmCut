@@ -1,5 +1,8 @@
 import { generateUUID } from "@/utils/id";
-import { buildDefaultParamValues } from "@/params/registry";
+import {
+	buildDefaultParamValues,
+	getCanvasTransformParams,
+} from "@/params/registry";
 import { effectsRegistry } from "./registry";
 import type { ParamValues } from "@/params";
 import type { Effect, EffectDefinition, EffectPass } from "@/effects/types";
@@ -13,6 +16,7 @@ import {
 	normalizeExposedParams,
 	buildDefaultExposedParamValues,
 } from "@/vfxpack/exposed-params";
+import { normalizeVfxPackType } from "@/vfxpack/pack-placement";
 
 export { effectsRegistry } from "./registry";
 export { registerDefaultEffects } from "./definitions";
@@ -51,10 +55,18 @@ export function buildDefaultEffectInstance({
 			manifest: pack?.manifest,
 			scene: pack?.scene ?? null,
 		});
+		const params: ParamValues = {
+			...buildDefaultExposedParamValues({ exposed }),
+		};
+		// Stickers share the same canvas transform contract as images/video so
+		// selection bounds, live-drag, and pack blit all read the same keys.
+		if (pack && normalizeVfxPackType(pack.type) === "sticker") {
+			Object.assign(params, buildDefaultParamValues(getCanvasTransformParams()));
+		}
 		return {
 			id: generateUUID(),
 			type: effectType,
-			params: buildDefaultExposedParamValues({ exposed }),
+			params,
 			enabled: true,
 		};
 	}

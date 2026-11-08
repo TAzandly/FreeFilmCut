@@ -2,6 +2,10 @@ import type { EditorCore } from "@/core";
 import { toast } from "sonner";
 import { flushPendingPreviews } from "@/timeline/preview-flush";
 import type { ElementBounds } from "@/preview/element-bounds";
+import {
+	clearLiveParamPreview,
+	hasLiveParamPreview,
+} from "@/preview/live-param-preview";
 import type { ParamValues } from "@/params";
 import type {
 	SceneTracks,
@@ -834,12 +838,22 @@ export class TimelineManager {
 
 	previewElements({
 		updates,
+		notify = true,
+		forceNotify = false,
 	}: {
 		updates: readonly {
 			trackId: string;
 			elementId: string;
 			updates: Partial<TimelineElement>;
 		}[];
+		/**
+		 * When false, still updates the overlay (so commitPreview can land the
+		 * edit) but skips the React fan-out. Used by live property scrub —
+		 * scene nodes are patched in place and preview wakes via epoch.
+		 */
+		notify?: boolean;
+		/** Wake React even when the overlay values did not change. */
+		forceNotify?: boolean;
 	}): void {
 		let changedOverlayCount = 0;
 		for (const { elementId, updates: elementUpdates } of updates) {
@@ -863,17 +877,21 @@ export class TimelineManager {
 		if (!committedTracks) {
 			return;
 		}
-		if (changedOverlayCount === 0) {
+		if (changedOverlayCount === 0 && !forceNotify) {
 			return;
 		}
 		// O(all tracks + elements): every preview frame rebuilds every track array,
 		// so subscriber identity checks below all come back "changed". Measured so a
 		// per-frame drag can be split into "rebuild overlay" vs "React render".
-		this.previewTracks = measureSpanSync({
-			name: "timeline:applyPreviewOverlay",
-			fn: () => this.applyPreviewOverlay(committedTracks),
-		});
-		this.notify("preview");
+		if (changedOverlayCount > 0) {
+			this.previewTracks = measureSpanSync({
+				name: "timeline:applyPreviewOverlay",
+				fn: () => this.applyPreviewOverlay(committedTracks),
+			});
+		}
+		if (notify || forceNotify) {
+			this.notify("preview");
+		}
 	}
 
 	commitPreview(): void {
@@ -895,14 +913,58 @@ export class TimelineManager {
 		this.editor.command.push({ command });
 		this.previewOverlay.clear();
 		this.previewTracks = null;
+		clearLiveParamPreview({ silent: true });
+		this.updateTracks(afterTracks);
+	}
+
+	/**
+	 * Apply element updates and commit in one notify — used by canvas live-drag
+	 * pointer-up so we do not pay previewElements (notify + buildScene) and then
+	 * commitPreview (updateTracks + buildScene) back-to-back.
+	 */
+	commitElements({
+		updates,
+	}: {
+		updates: readonly {
+			trackId: string;
+			elementId: string;
+			updates: Partial<TimelineElement>;
+		}[];
+	}): void {
+		flushPendingPreviews();
+		if (updates.length === 0) return;
+		const committedTracks = this.editor.scenes.getActiveSceneOrNull()?.tracks;
+		if (!committedTracks) return;
+
+		for (const { elementId, updates: elementUpdates } of updates) {
+			const existingOverlay = this.previewOverlay.get(elementId);
+			this.previewOverlay.set(elementId, {
+				...existingOverlay,
+				...elementUpdates,
+			} as Partial<TimelineElement>);
+		}
+
+		const afterTracks = this.applyPreviewOverlay(committedTracks);
+		const command = new TracksSnapshotCommand({
+			before: committedTracks,
+			after: afterTracks,
+		});
+		this.editor.command.push({ command });
+		this.previewOverlay.clear();
+		this.previewTracks = null;
+		clearLiveParamPreview({ silent: true });
 		this.updateTracks(afterTracks);
 	}
 
 	discardPreview(): void {
 		flushPendingPreviews();
-		if (this.previewOverlay.size === 0) return;
+		if (this.previewOverlay.size === 0 && !hasLiveParamPreview()) {
+			return;
+		}
 		this.previewOverlay.clear();
 		this.previewTracks = null;
+		// Live param scrub may have left GPU-facing node params without a notify.
+		clearLiveParamPreview({ silent: true });
 		this.notify("preview");
 	}
 

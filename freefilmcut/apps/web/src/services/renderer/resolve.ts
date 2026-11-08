@@ -35,6 +35,10 @@ import {
 	resolveColorGradeAtTime,
 } from "@/color-grade";
 import { resolveTransformAtTime } from "@/rendering/animation-values";
+import {
+	applyLiveDragToTransform,
+	getLiveDragTransform,
+} from "@/preview/live-drag-transform";
 import { videoCache } from "@/services/video-cache/service";
 import type { CanvasRenderer } from "./canvas-renderer";
 import type { AnyBaseNode } from "./nodes/base-node";
@@ -218,10 +222,13 @@ function resolveVisualState({
 		elementStartTime: params.timeOffset,
 		elementDuration: params.duration,
 	});
-	const transform = resolveTransformAtTime({
-		baseTransform: params.transform,
-		animations: params.animations,
-		localTime,
+	const transform = applyLiveDragToTransform({
+		elementId: params.elementId,
+		transform: resolveTransformAtTime({
+			baseTransform: params.transform,
+			animations: params.animations,
+			localTime,
+		}),
 	});
 	const opacity = resolveOpacityAtTime({
 		baseOpacity: params.opacity,
@@ -389,6 +396,7 @@ async function resolveVideoNode({
 		source: frame.canvas,
 		sourceWidth: frame.canvas.width,
 		sourceHeight: frame.canvas.height,
+		sourceFrameKey: `${node.params.mediaId}@${frame.timestamp}`,
 	};
 }
 
@@ -501,10 +509,13 @@ function resolveTextNode({
 
 	return {
 		localTime,
-		transform: resolveTransformAtTime({
-			baseTransform: node.params.transform,
-			animations: node.params.animations,
-			localTime,
+		transform: applyLiveDragToTransform({
+			elementId: node.params.id,
+			transform: resolveTransformAtTime({
+				baseTransform: node.params.transform,
+				animations: node.params.animations,
+				localTime,
+			}),
 		}),
 		opacity: resolveOpacityAtTime({
 			baseOpacity: node.params.opacity,
@@ -704,6 +715,13 @@ function resolveEffectLayerNode({
 				fallbackValue: staticValue,
 			}) as number | string | boolean | number[];
 		}
+	const liveDrag = node.params.elementId
+		? getLiveDragTransform(node.params.elementId)
+		: undefined;
+	if (liveDrag) {
+		resolvedParams["transform.positionX"] = liveDrag.x;
+		resolvedParams["transform.positionY"] = liveDrag.y;
+	}
 	// Keep resolved params on the node so frame-descriptor / compositor see live values.
 	node.params.effectParams = resolvedParams;
 

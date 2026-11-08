@@ -8,7 +8,12 @@ import {
 } from "@/animation";
 import { resolveTransformAtTime } from "@/rendering/animation-values";
 import { buildTransformFromParams } from "@/rendering";
+import { applyLiveDragToTransform } from "@/preview/live-drag-transform";
 import { stickerPackSourceSizeForElement } from "@/vfxpack/sticker-canvas";
+import { resolveAppliedStickerPose } from "@/vfxpack/sticker-motion";
+import { getPackRegistrySnapshot } from "@/vfxpack/pack-registry";
+import type { StickerAnimAssignment } from "@/timeline";
+import { mediaTime, mediaTimeToSeconds } from "@/wasm";
 
 export interface ElementBounds {
 	cx: number;
@@ -58,6 +63,46 @@ function getVisualElementBounds({
 		width: scaledWidth,
 		height: scaledHeight,
 		rotation: transform.rotate,
+	};
+}
+
+/** Match compositor sticker-anim pose so handles track the drawn picture. */
+function applyStickerAnimToBounds({
+	bounds,
+	stickerAnims,
+	localTime,
+	duration,
+}: {
+	bounds: ElementBounds;
+	stickerAnims: StickerAnimAssignment | null | undefined;
+	localTime: number;
+	duration: number;
+}): ElementBounds {
+	if (!stickerAnims) return bounds;
+	const pose = resolveAppliedStickerPose({
+		stickerAnims,
+		localTimeSec: mediaTimeToSeconds({
+			time: mediaTime({ ticks: localTime }),
+		}),
+		clipDurationSec: mediaTimeToSeconds({
+			time: mediaTime({ ticks: duration }),
+		}),
+		motionForPack: (packId) => {
+			const pack = getPackRegistrySnapshot().packs.find(
+				(entry) => entry.id === packId,
+			);
+			return pack?.manifest.motion ?? null;
+		},
+	});
+	const placedW = bounds.width;
+	const placedH = bounds.height;
+	return {
+		cx: bounds.cx + pose.positionX * placedW,
+		// Canvas camera is Y-down. Animation +Y is up.
+		cy: bounds.cy - pose.positionY * placedH,
+		width: placedW * pose.scale,
+		height: placedH * pose.scale,
+		rotation: bounds.rotation + pose.rotate,
 	};
 }
 
@@ -126,25 +171,36 @@ function getElementBounds({
 	if (element.type === "effect") {
 		const sourceSize = stickerPackSourceSizeForElement({ element });
 		if (!sourceSize) return null;
-		const transform = resolveTransformAtTime({
-			baseTransform: buildTransformFromParams({ params: element.params }),
-			animations: element.animations,
-			localTime,
+		const transform = applyLiveDragToTransform({
+			elementId: element.id,
+			transform: resolveTransformAtTime({
+				baseTransform: buildTransformFromParams({ params: element.params }),
+				animations: element.animations,
+				localTime,
+			}),
 		});
-		return getVisualElementBounds({
-			canvasWidth,
-			canvasHeight,
-			sourceWidth: sourceSize.width,
-			sourceHeight: sourceSize.height,
-			transform,
+		return applyStickerAnimToBounds({
+			bounds: getVisualElementBounds({
+				canvasWidth,
+				canvasHeight,
+				sourceWidth: sourceSize.width,
+				sourceHeight: sourceSize.height,
+				transform,
+			}),
+			stickerAnims: element.stickerAnims,
+			localTime,
+			duration: element.duration,
 		});
 	}
 
 	if (element.type === "video" || element.type === "image") {
-		const transform = resolveTransformAtTime({
-			baseTransform: buildTransformFromParams({ params: element.params }),
-			animations: element.animations,
-			localTime,
+		const transform = applyLiveDragToTransform({
+			elementId: element.id,
+			transform: resolveTransformAtTime({
+				baseTransform: buildTransformFromParams({ params: element.params }),
+				animations: element.animations,
+				localTime,
+			}),
 		});
 		const sourceWidth = mediaAsset?.width ?? canvasWidth;
 		const sourceHeight = mediaAsset?.height ?? canvasHeight;
@@ -158,25 +214,36 @@ function getElementBounds({
 	}
 
 	if (element.type === "sticker") {
-		const transform = resolveTransformAtTime({
-			baseTransform: buildTransformFromParams({ params: element.params }),
-			animations: element.animations,
-			localTime,
+		const transform = applyLiveDragToTransform({
+			elementId: element.id,
+			transform: resolveTransformAtTime({
+				baseTransform: buildTransformFromParams({ params: element.params }),
+				animations: element.animations,
+				localTime,
+			}),
 		});
-		return getVisualElementBounds({
-			canvasWidth,
-			canvasHeight,
-			sourceWidth: element.intrinsicWidth ?? STICKER_INTRINSIC_SIZE_FALLBACK,
-			sourceHeight: element.intrinsicHeight ?? STICKER_INTRINSIC_SIZE_FALLBACK,
-			transform,
+		return applyStickerAnimToBounds({
+			bounds: getVisualElementBounds({
+				canvasWidth,
+				canvasHeight,
+				sourceWidth: element.intrinsicWidth ?? STICKER_INTRINSIC_SIZE_FALLBACK,
+				sourceHeight: element.intrinsicHeight ?? STICKER_INTRINSIC_SIZE_FALLBACK,
+				transform,
+			}),
+			stickerAnims: element.stickerAnims,
+			localTime,
+			duration: element.duration,
 		});
 	}
 
 	if (element.type === "graphic") {
-		const transform = resolveTransformAtTime({
-			baseTransform: buildTransformFromParams({ params: element.params }),
-			animations: element.animations,
-			localTime,
+		const transform = applyLiveDragToTransform({
+			elementId: element.id,
+			transform: resolveTransformAtTime({
+				baseTransform: buildTransformFromParams({ params: element.params }),
+				animations: element.animations,
+				localTime,
+			}),
 		});
 		return getVisualElementBounds({
 			canvasWidth,
@@ -188,10 +255,13 @@ function getElementBounds({
 	}
 
 	if (element.type === "text") {
-		const transform = resolveTransformAtTime({
-			baseTransform: buildTransformFromParams({ params: element.params }),
-			animations: element.animations,
-			localTime,
+		const transform = applyLiveDragToTransform({
+			elementId: element.id,
+			transform: resolveTransformAtTime({
+				baseTransform: buildTransformFromParams({ params: element.params }),
+				animations: element.animations,
+				localTime,
+			}),
 		});
 
 		const canvas = document.createElement("canvas");
@@ -214,6 +284,27 @@ function getElementBounds({
 	}
 
 	return null;
+}
+
+/**
+ * True when selection handles must track the playhead (sticker / text library
+ * motion changes bounds every frame). Ordinary clips keep handles frozen during
+ * play so React does not commit every rAF.
+ */
+export function elementBoundsFollowPlayhead({
+	element,
+}: {
+	element: TimelineElement;
+}): boolean {
+	if (element.type === "effect" || element.type === "sticker") {
+		const anims = element.stickerAnims;
+		return !!(anims?.in || anims?.out || anims?.loop);
+	}
+	if (element.type === "text") {
+		const anims = element.textAnims;
+		return !!(anims?.in || anims?.out || anims?.loop);
+	}
+	return false;
 }
 
 export const ROTATION_HANDLE_OFFSET = 24;

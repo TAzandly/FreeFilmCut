@@ -98,6 +98,11 @@ import {
 } from "@/vfxpack/textanim/apply-pack";
 import { samplePackAnimPostProcess } from "@/vfxpack/text-template-textanim";
 import { ensureEmbeddedTextAnimFromTemplatePack } from "@/vfxpack/apply-text-template";
+import {
+	resolveStickerPackRenderSize,
+	scaleStickerPlacementToBuffer,
+} from "@/vfxpack/sticker-pack-blit";
+import { getLiveDragTransform } from "@/preview/live-drag-transform";
 
 function readStickerPlacement(params: ParamValues | null | undefined): {
 	scaleX: number;
@@ -118,6 +123,28 @@ function readStickerPlacement(params: ParamValues | null | undefined): {
 		rotate: read("transform.rotate", 0),
 	};
 }
+
+/** Overlay live-drag absolute position onto effectParams for sticker pack blit. */
+function mergeSceneEffectLiveParams({
+	elementId,
+	effectParams,
+}: {
+	elementId?: string;
+	effectParams?: ParamValues | null;
+}): ParamValues | null {
+	const base = effectParams ? { ...effectParams } : {};
+	if (!elementId) {
+		return Object.keys(base).length > 0 ? base : null;
+	}
+	const live = getLiveDragTransform(elementId);
+	if (!live) {
+		return Object.keys(base).length > 0 ? base : null;
+	}
+	base["transform.positionX"] = live.x;
+	base["transform.positionY"] = live.y;
+	return base;
+}
+
 import { parseVfxPackIdFromEffectType } from "@/vfxpack/effect-id";
 import {
 	BELOW_INPUT_UNIFORM_NAMES,
@@ -243,6 +270,8 @@ type ExternalCacheEntry = {
 	texture: THREE.Texture;
 	width: number;
 	height: number;
+	/** Last uploaded frame version; see `ExternalTextureDescriptor.frameKey`. */
+	frameKey?: string;
 };
 
 type TextureCacheEntry = RenderedCacheEntry | ExternalCacheEntry;
@@ -607,10 +636,14 @@ class ThreeCompositor {
 						packId,
 						width: frame.width,
 						height: frame.height,
+						contentScale: frame.contentScale || 1,
 						clearFirst: !didDraw,
 						target: accumRT,
 						layersBelowCount: layersBelow,
-						liveParams: item.effectParams,
+						liveParams: mergeSceneEffectLiveParams({
+							elementId: item.elementId,
+							effectParams: item.effectParams,
+						}),
 						clipLocalTime: item.clipLocalTime ?? 0,
 						clipDurationSec: item.clipDurationSec ?? 0,
 						stickerAnims: item.stickerAnims,
@@ -1608,6 +1641,7 @@ class ThreeCompositor {
 		packId,
 		width,
 		height,
+		contentScale = 1,
 		clearFirst,
 		target,
 		layersBelowCount = 0,
@@ -1621,6 +1655,8 @@ class ThreeCompositor {
 		packId: string;
 		width: number;
 		height: number;
+		/** buffer / logical — NLE positions are logical pixels. */
+		contentScale?: number;
 		clearFirst: boolean;
 		target: THREE.WebGLRenderTarget | null;
 		layersBelowCount?: number;
@@ -1657,12 +1693,17 @@ class ThreeCompositor {
 		const meta = this.lookupPackMeta(packId);
 		const nativeSticker =
 			normalizeVfxPackType(meta?.type || built.packType) === "sticker";
-		const renderW = nativeSticker
-			? Math.max(1, built.resolution?.width || width)
-			: width;
-		const renderH = nativeSticker
-			? Math.max(1, built.resolution?.height || height)
-			: height;
+		// Stickers keep pack design resolution (e.g. 400×400) — same source as
+		// selection bounds (stickerPackSourceSize). Never fall back to canvas size
+		// or contain-fit / drag travel desyncs from the handle box.
+		const packSize = nativeSticker
+			? resolveStickerPackRenderSize({
+					packId,
+					builtResolution: built.resolution,
+				})
+			: null;
+		const renderW = packSize ? packSize.width : width;
+		const renderH = packSize ? packSize.height : height;
 		if (built.camera instanceof THREE.PerspectiveCamera) {
 			built.camera.aspect = renderW / Math.max(1, renderH);
 			built.camera.updateProjectionMatrix();
@@ -1915,7 +1956,14 @@ class ThreeCompositor {
 
 		if (clearPackBackground) packScene.background = prevPackBackground;
 		if (nativeSticker && stickerRT && target) {
-			const placement = readStickerPlacement(liveParams);
+			const placement = scaleStickerPlacementToBuffer({
+				placement: readStickerPlacement(liveParams),
+				contentScale,
+			});
+			// Use the actual destination RT size so NDC offset matches the buffer
+			// (same space as computeVisualTransform / contentScale).
+			const destW = Math.max(1, target.width || width);
+			const destH = Math.max(1, target.height || height);
 			let stickerOpacity = 1;
 			if (stickerAnims) {
 				const pose = resolveAppliedStickerPose({
@@ -1927,7 +1975,7 @@ class ThreeCompositor {
 						return pack?.manifest.motion ?? null;
 					},
 				});
-				const pixel = Math.min(width / renderW, height / renderH);
+				const pixel = Math.min(destW / renderW, destH / renderH);
 				const placedW = renderW * pixel * placement.scaleX;
 				const placedH = renderH * pixel * placement.scaleY;
 				placement.scaleX *= pose.scale;
@@ -1949,8 +1997,8 @@ class ThreeCompositor {
 				contain: {
 					sourceWidth: renderW,
 					sourceHeight: renderH,
-					destWidth: width,
-					destHeight: height,
+					destWidth: destW,
+					destHeight: destH,
 				},
 				placement,
 			});
@@ -3512,7 +3560,10 @@ class ThreeCompositor {
 		 * and CanvasTexture written by `syncRenderedTexture` flags itself. The
 		 * only case that needs a nudge is a canvas someone else mutates in place.
 		 */
-		const layerSource = entry.kind === "external" ? entry.source : null;
+		const layerSource =
+			entry.kind === "external" && entry.frameKey === undefined
+				? entry.source
+				: null;
 		if (isMutatedCanvasSource(layerSource)) {
 			entry.texture.needsUpdate = true;
 			incrementCounter({ name: "textureForceUpload" });
@@ -3627,8 +3678,18 @@ class ThreeCompositor {
 		) {
 			// Scratch OffscreenCanvas for cut transitions mutates in place — must
 			// re-upload or uFrom/uTo keep a stale frame (often media-only look).
+			// Versioned sources (pooled video frames) only re-upload when the
+			// decoded frame changed, so param scrubs on a paused frame stay cheap.
 			if (isMutatedCanvasSource(texture.source)) {
-				previous.texture.needsUpdate = true;
+				const unchangedFrame =
+					texture.frameKey !== undefined &&
+					previous.frameKey === texture.frameKey;
+				if (unchangedFrame) {
+					incrementCounter({ name: "textureFrameKeyHit" });
+				} else {
+					previous.texture.needsUpdate = true;
+					previous.frameKey = texture.frameKey;
+				}
 			}
 			incrementCounter({ name: "textureCacheHit" });
 			return;
@@ -3659,6 +3720,7 @@ class ThreeCompositor {
 			texture: threeTexture,
 			width: texture.width,
 			height: texture.height,
+			frameKey: texture.frameKey,
 		});
 	}
 

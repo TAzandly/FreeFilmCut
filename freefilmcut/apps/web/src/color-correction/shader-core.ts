@@ -15,6 +15,8 @@ uniform float uColorCorrectionEnableSaturation;
 uniform float uColorCorrectionEnableBrightness;
 uniform float uColorCorrectionEnableContrast;
 uniform float uColorCorrectionEnableBlackWhite;
+uniform float uColorCorrectionEnableMidtoneLift;
+uniform float uColorCorrectionMidtoneLiftAmount;
 
 uniform vec3 uColorCorrectionTemperatureTintRed;
 uniform vec3 uColorCorrectionTemperatureTintGreen;
@@ -143,6 +145,15 @@ vec3 applyFccColorCorrection(vec3 rgb) {
 		adjustVec = baseAdjustVec + vec3(0.0, 0.0, uColorCorrectionSaturationParam);
 		color.b = dot(color, adjustVec);
 		color = clamp(color, 0.0, 1.0);
+	}
+
+	// CapCut-style 亮度 curve: lift midtones, keep black/white pins.
+	// amount 0..1 from Intensity; peak lift ≈ 0.28 at midtones when amount=1.
+	if (uColorCorrectionEnableMidtoneLift > 0.5) {
+		float a = uColorCorrectionMidtoneLiftAmount;
+		color.r = clamp(color.r + a * 4.0 * color.r * (1.0 - color.r) * 0.28, 0.0, 1.0);
+		color.g = clamp(color.g + a * 4.0 * color.g * (1.0 - color.g) * 0.28, 0.0, 1.0);
+		color.b = clamp(color.b + a * 4.0 * color.b * (1.0 - color.b) * 0.28, 0.0, 1.0);
 	}
 
 	return clamp(color, 0.0, 1.0);

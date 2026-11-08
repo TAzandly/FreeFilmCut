@@ -60,6 +60,8 @@ import {
 	preparePackVideos,
 	rebindPackRenderTextures,
 } from "@/vfxpack/pack-video";
+import { normalizeVfxPackType } from "@/vfxpack/pack-placement";
+import { stickerPackSourceSize } from "@/vfxpack/sticker-canvas";
 
 /** Baseline-anchored fake italic: x' = x + k*(y - yBottom) via makeShear(0,0,k,...). */
 const _fccItalicShearMat = new THREE.Matrix4();
@@ -2458,10 +2460,23 @@ if (uFccTexUse > 0.5) {
 		timelines,
 		objectsByUuid,
 		buildRev: PACK_SCENE_BUILD_REV,
-		resolution: {
-			width: Math.max(1, sceneFile.resolution?.width || pack.manifest.resolution?.width || 1920),
-			height: Math.max(1, sceneFile.resolution?.height || pack.manifest.resolution?.height || 1080),
-		},
+		resolution: (() => {
+			// Stickers: same design size as selection bounds / pack blit (manifest first).
+			if (normalizeVfxPackType(pack.type) === "sticker") {
+				const size = stickerPackSourceSize({ pack });
+				return { width: size.width, height: size.height };
+			}
+			return {
+				width: Math.max(
+					1,
+					sceneFile.resolution?.width || pack.manifest.resolution?.width || 1920,
+				),
+				height: Math.max(
+					1,
+					sceneFile.resolution?.height || pack.manifest.resolution?.height || 1080,
+				),
+			};
+		})(),
 		hasUI: (() => {
 			let found = false;
 			root.traverse((o) => {

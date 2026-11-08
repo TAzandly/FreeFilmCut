@@ -78,7 +78,7 @@ const GRADE_BODY = /* glsl */ `
 	diffuseColor.rgb = applyFccColorGrade(diffuseColor.rgb);
 `;
 
-const PROGRAM_CACHE_KEY = "fcc-layer-color-grade-v4";
+const PROGRAM_CACHE_KEY = "fcc-layer-color-grade-v5";
 const AFTER_CHROMA_MARKER = "/* fcc-chroma-end */";
 
 type ColorCorrectionMaterialUniforms = {
@@ -90,6 +90,8 @@ type ColorCorrectionMaterialUniforms = {
 	uColorCorrectionEnableBrightness: { value: number };
 	uColorCorrectionEnableContrast: { value: number };
 	uColorCorrectionEnableBlackWhite: { value: number };
+	uColorCorrectionEnableMidtoneLift: { value: number };
+	uColorCorrectionMidtoneLiftAmount: { value: number };
 	uColorCorrectionTemperatureTintRed: { value: THREE.Vector3 };
 	uColorCorrectionTemperatureTintGreen: { value: THREE.Vector3 };
 	uColorCorrectionTemperatureTintBlue: { value: THREE.Vector3 };
@@ -342,6 +344,8 @@ function createColorCorrectionUniforms(): ColorCorrectionMaterialUniforms {
 		uColorCorrectionEnableBrightness: { value: 0 },
 		uColorCorrectionEnableContrast: { value: 0 },
 		uColorCorrectionEnableBlackWhite: { value: 0 },
+		uColorCorrectionEnableMidtoneLift: { value: 0 },
+		uColorCorrectionMidtoneLiftAmount: { value: 0 },
 		uColorCorrectionTemperatureTintRed: { value: new THREE.Vector3(1, 0, 0) },
 		uColorCorrectionTemperatureTintGreen: { value: new THREE.Vector3(0, 1, 0) },
 		uColorCorrectionTemperatureTintBlue: { value: new THREE.Vector3(0, 0, 1) },
@@ -378,6 +382,8 @@ function writePackedColorCorrection({
 	uniforms.uColorCorrectionEnableBrightness.value = values.enableBrightness;
 	uniforms.uColorCorrectionEnableContrast.value = values.enableContrast;
 	uniforms.uColorCorrectionEnableBlackWhite.value = values.enableBlackWhite;
+	uniforms.uColorCorrectionEnableMidtoneLift.value = values.enableMidtoneLift;
+	uniforms.uColorCorrectionMidtoneLiftAmount.value = values.midtoneLiftAmount;
 	uniforms.uColorCorrectionTemperatureTintRed.value.set(
 		values.temperatureTintRed[0],
 		values.temperatureTintRed[1],

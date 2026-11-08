@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type {
 	ParamDefinition,
 	NumberParamDefinition,
@@ -24,6 +25,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { usePropertyDraft } from "../hooks/use-property-draft";
+import { useImeSafeText } from "../hooks/use-ime-safe-text";
 import { KeyframeToggle } from "./keyframe-toggle";
 import { Textarea } from "@/components/ui/textarea";
 import { LocalFontPicker } from "@/components/ui/local-font-picker";
@@ -152,10 +154,10 @@ function ParamInput({
 
 	if (param.type === "text") {
 		return (
-			<Textarea
+			<ImeSafeTextarea
 				value={String(value)}
-				onChange={(event) => onPreview(event.currentTarget.value)}
-				onBlur={onCommit}
+				onPreview={onPreview}
+				onCommit={onCommit}
 			/>
 		);
 	}
@@ -243,6 +245,10 @@ function VectorParamField({
  * per frame downstream, but skipping identical writes keeps the comparison in
  * `useKeyframedParamProperty` cheap too. `onValueCommit` is the pointer-up that
  * lands the edit on the undo stack.
+ *
+ * Local `liveDisplay` keeps the thumb moving when the parent skips React notify
+ * (live color-grade scrub). Without it the controlled value would stick until
+ * commit and the handle would fight the pointer.
  */
 function SliderParamField({
 	param,
@@ -258,13 +264,19 @@ function SliderParamField({
 	const { min, max, step, displayMultiplier = 1 } = param;
 	const fractionDigits = getFractionDigitsForStep({ step });
 	const ceiling = max ?? Math.max(min, 100);
-	const displayValue = Math.min(ceiling, Math.max(min, value * displayMultiplier));
+	const committedDisplay = Math.min(
+		ceiling,
+		Math.max(min, value * displayMultiplier),
+	);
+	const [liveDisplay, setLiveDisplay] = useState<number | null>(null);
+	const displayValue = liveDisplay ?? committedDisplay;
 
 	const handleChange = (next: readonly number[]) => {
 		const raw = next[0];
 		if (raw === undefined) return;
 		const snapped = snapToStep({ value: raw, step });
 		if (snapped === displayValue) return;
+		setLiveDisplay(snapped);
 		onPreview(snapped / displayMultiplier);
 	};
 
@@ -277,7 +289,10 @@ function SliderParamField({
 				step={step}
 				aria-label={param.label}
 				onValueChange={handleChange}
-				onValueCommit={() => onCommit()}
+				onValueCommit={() => {
+					setLiveDisplay(null);
+					onCommit();
+				}}
 			/>
 			<span className="text-muted-foreground w-9 shrink-0 text-right text-xs tabular-nums">
 				{formatNumberForDisplay({
@@ -349,6 +364,33 @@ function NumberParamField({
 			onScrub={previewFromDisplay}
 			onScrubEnd={onCommit}
 			onReset={handleReset}
+		/>
+	);
+}
+
+function ImeSafeTextarea({
+	value,
+	onPreview,
+	onCommit,
+}: {
+	value: string;
+	onPreview: (value: ParamValue) => void;
+	onCommit: () => void;
+}) {
+	const field = useImeSafeText({
+		value,
+		onChange: (next) => onPreview(next),
+		onBlurCommit: onCommit,
+	});
+
+	return (
+		<Textarea
+			value={field.value}
+			onFocus={field.onFocus}
+			onCompositionStart={field.onCompositionStart}
+			onCompositionEnd={field.onCompositionEnd}
+			onChange={field.onChange}
+			onBlur={field.onBlur}
 		/>
 	);
 }

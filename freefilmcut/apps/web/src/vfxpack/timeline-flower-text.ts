@@ -26,6 +26,7 @@ import {
 } from "@/text/typography";
 import type { TextElement } from "@/timeline";
 import type { ParamValues } from "@/params";
+import { getLiveDragTransform } from "@/preview/live-drag-transform";
 import {
 	FCC_DEFAULT_TROIKA_FONT,
 	getDefaultTroikaFont,
@@ -220,6 +221,26 @@ export function readTextParamNumber(
 	const v = (params as Record<string, unknown>)[key];
 	const n = Number(v);
 	return Number.isFinite(n) ? n : fallback;
+}
+
+function readLiveOrParamNumber({
+	elementId,
+	params,
+	key,
+	axis,
+	fallback,
+}: {
+	elementId: string | undefined;
+	params: ParamValues | Record<string, unknown>;
+	key: string;
+	axis: "x" | "y";
+	fallback: number;
+}): number {
+	if (elementId) {
+		const live = getLiveDragTransform(elementId);
+		if (live) return axis === "x" ? live.x : live.y;
+	}
+	return readTextParamNumber(params, key, fallback);
 }
 
 export type TimelineFlowerTextProps = {
@@ -599,8 +620,26 @@ export function resolveTimelineFlowerTextProps({
 		textFxStack: readTextFxStack(element),
 		canvasWidth,
 		canvasHeight,
-		positionX: readTextParamNumber(p, "transform.positionX", 0),
-		positionY: readTextParamNumber(p, "transform.positionY", 0),
+		positionX: readLiveOrParamNumber({
+			elementId:
+				typeof (element as { id?: unknown }).id === "string"
+					? String((element as { id: string }).id)
+					: undefined,
+			params: p,
+			key: "transform.positionX",
+			axis: "x",
+			fallback: 0,
+		}),
+		positionY: readLiveOrParamNumber({
+			elementId:
+				typeof (element as { id?: unknown }).id === "string"
+					? String((element as { id: string }).id)
+					: undefined,
+			params: p,
+			key: "transform.positionY",
+			axis: "y",
+			fallback: 0,
+		}),
 		scaleX: readTextParamNumber(p, "transform.scaleX", 1),
 		scaleY: readTextParamNumber(p, "transform.scaleY", 1),
 		rotate: readTextParamNumber(p, "transform.rotate", 0),

@@ -5,11 +5,13 @@ import type { StickerAnimAssignment } from "@/timeline";
 import { BaseNode } from "./base-node";
 
 export type EffectLayerNodeParams = {
+	/** Timeline element id — live canvas-drag overlays resolve through this. */
+	elementId?: string;
 	effectType: string;
 	effectParams: ParamValues;
 	timeOffset: number;
 	duration: number;
-	anims?: ElementAnimations;
+	animations?: ElementAnimations;
 	stickerAnims?: StickerAnimAssignment;
 };
 

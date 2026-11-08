@@ -31,6 +31,7 @@ import { mediaTimeFromSeconds, mediaTimeToSeconds, addMediaTime } from "@/wasm";
 import { cn } from "@/utils/ui";
 import { formatNumberForDisplay, snapToStep } from "@/utils/math";
 import { usePropertyDraft } from "@/components/editor/panels/properties/hooks/use-property-draft";
+import { useImeSafeText } from "@/components/editor/panels/properties/hooks/use-ime-safe-text";
 import type { TextElement } from "@/timeline";
 import type { ParamValues } from "@/params";
 import {
@@ -359,15 +360,24 @@ function BasicTab({ element, trackId }: { element: TextElement; trackId: string 
 		commitParams({ color: next });
 	};
 
+	const contentField = useImeSafeText({
+		value: content,
+		onChange: (next) => patchParams({ content: next }),
+		onBlurCommit: commit,
+	});
+
 	return (
 		<div className="flex flex-col pb-4">
 			<div className="space-y-3 px-3.5 pt-3">
 				<Textarea
-					value={content}
+					value={contentField.value}
 					placeholder="Default text"
 					className="min-h-[72px] resize-none"
-					onChange={(event) => patchParams({ content: event.currentTarget.value })}
-					onBlur={commit}
+					onFocus={contentField.onFocus}
+					onCompositionStart={contentField.onCompositionStart}
+					onCompositionEnd={contentField.onCompositionEnd}
+					onChange={contentField.onChange}
+					onBlur={contentField.onBlur}
 				/>
 				<StylePresetsRow
 					activeColor={color}
