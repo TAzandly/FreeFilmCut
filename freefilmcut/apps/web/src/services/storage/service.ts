@@ -1,6 +1,13 @@
 import type { TProject, TProjectMetadata } from "@/project/types";
 import { getProjectDurationFromScenes } from "@/timeline/scenes";
 import type { MediaAsset } from "@/media/types";
+import {
+	buildProjectPackageZip,
+	parseProjectPackageZip,
+	serializeProjectForPackage,
+	type BuiltProjectPackage,
+} from "@/project/package";
+import { generateUUID } from "@/utils/id";
 import { IndexedDBAdapter } from "./indexeddb-adapter";
 import { OPFSAdapter } from "./opfs-adapter";
 import {
@@ -14,14 +21,13 @@ import type {
 	MediaAssetData,
 	StorageConfig,
 	SerializedProject,
-	SerializedScene,
 } from "./types";
 import type { SavedSoundsData, SavedSound, SoundEffect } from "@/sounds/types";
 import {
 	migrations,
 	runStorageMigrations,
 } from "@/services/storage/migrations";
-import type { Bookmark, SceneTracks, TScene } from "@/timeline";
+import type { Bookmark, TScene } from "@/timeline";
 import { roundMediaTime } from "@/wasm";
 
 function normalizeBookmarks({ raw }: { raw: unknown }): Bookmark[] {
@@ -118,48 +124,8 @@ class StorageService {
 		return isStorageQuotaExceededError({ error });
 	}
 
-	private stripAudioBuffers({ tracks }: { tracks: SceneTracks }): SceneTracks {
-		return {
-			...tracks,
-			audio: tracks.audio.map((track) => ({
-				...track,
-				elements: track.elements.map((element) => {
-					const { buffer: _buffer, ...rest } = element;
-					return rest;
-				}),
-			})),
-		};
-	}
-
 	async saveProject({ project }: { project: TProject }): Promise<void> {
-		const duration =
-			project.metadata.duration ??
-			getProjectDurationFromScenes({ scenes: project.scenes });
-		const serializedScenes: SerializedScene[] = project.scenes.map((scene) => ({
-			id: scene.id,
-			name: scene.name,
-			isMain: scene.isMain,
-			tracks: this.stripAudioBuffers({ tracks: scene.tracks }),
-			bookmarks: scene.bookmarks,
-			createdAt: scene.createdAt.toISOString(),
-			updatedAt: scene.updatedAt.toISOString(),
-		}));
-
-		const serializedProject: SerializedProject = {
-			metadata: {
-				id: project.metadata.id,
-				name: project.metadata.name,
-				thumbnail: project.metadata.thumbnail,
-				duration,
-				createdAt: project.metadata.createdAt.toISOString(),
-				updatedAt: project.metadata.updatedAt.toISOString(),
-			},
-			scenes: serializedScenes,
-			currentSceneId: project.currentSceneId,
-			settings: project.settings,
-			version: project.version,
-			timelineViewState: project.timelineViewState,
-		};
+		const serializedProject = serializeProjectForPackage({ project });
 
 		await this.projectsAdapter.set({
 			key: project.metadata.id,
@@ -431,6 +397,116 @@ class StorageService {
 			mediaMetadataAdapter.clear(),
 			mediaAssetsAdapter.clear(),
 		]);
+	}
+
+	/**
+	 * Load media files for packaging without creating object URLs.
+	 * Ephemeral assets are omitted.
+	 */
+	async loadMediaAssetsForPackage({
+		projectId,
+	}: {
+		projectId: string;
+	}): Promise<Array<{ metadata: MediaAssetData; file: File }>> {
+		const { mediaMetadataAdapter, mediaAssetsAdapter } =
+			this.getProjectMediaAdapters({ projectId });
+
+		const mediaIds = await mediaMetadataAdapter.list();
+		const items: Array<{ metadata: MediaAssetData; file: File }> = [];
+
+		for (const id of mediaIds) {
+			const [file, metadata] = await Promise.all([
+				mediaAssetsAdapter.get(id),
+				mediaMetadataAdapter.get(id),
+			]);
+			if (!file || !metadata || metadata.ephemeral) continue;
+			items.push({ metadata, file });
+		}
+
+		return items;
+	}
+
+	async exportProjectPackage({
+		projectId,
+	}: {
+		projectId: string;
+	}): Promise<BuiltProjectPackage> {
+		await this.ensureMigrations();
+		const result = await this.loadProject({ id: projectId });
+		if (!result) {
+			throw new Error(`Project with id ${projectId} not found`);
+		}
+
+		const serializedProject = serializeProjectForPackage({
+			project: result.project,
+		});
+		const assets = await this.loadMediaAssetsForPackage({ projectId });
+		return buildProjectPackageZip({
+			project: serializedProject,
+			assets,
+		});
+	}
+
+	async importProjectPackage({
+		bytes,
+	}: {
+		bytes: Uint8Array;
+	}): Promise<{ projectId: string; name: string }> {
+		await this.ensureMigrations();
+		const parsed = await parseProjectPackageZip({ bytes });
+		const newProjectId = generateUUID();
+		const now = new Date().toISOString();
+
+		const importedProject: SerializedProject = {
+			...parsed.project,
+			metadata: {
+				...parsed.project.metadata,
+				id: newProjectId,
+				name:
+					parsed.project.metadata.name ||
+					parsed.meta.name ||
+					"Imported project",
+				createdAt: now,
+				updatedAt: now,
+			},
+		};
+
+		await this.projectsAdapter.set({
+			key: newProjectId,
+			value: importedProject,
+		});
+
+		try {
+			for (const asset of parsed.assets) {
+				await this.saveMediaAsset({
+					projectId: newProjectId,
+					mediaAsset: {
+						id: asset.metadata.id,
+						name: asset.metadata.name,
+						type: asset.metadata.type,
+						file: asset.file,
+						width: asset.metadata.width,
+						height: asset.metadata.height,
+						duration: asset.metadata.duration,
+						thumbnailUrl: asset.metadata.thumbnailUrl,
+						ephemeral: asset.metadata.ephemeral,
+						fps: asset.metadata.fps,
+						hasAudio: asset.metadata.hasAudio,
+					},
+				});
+			}
+		} catch (error) {
+			await Promise.all([
+				this.deleteProjectMedia({ projectId: newProjectId }),
+				this.deleteProject({ id: newProjectId }),
+			]);
+			throw error;
+		}
+
+		return {
+			projectId: newProjectId,
+			name: importedProject.metadata.name,
+		};
 	}
 
 	async clearAllData(): Promise<void> {

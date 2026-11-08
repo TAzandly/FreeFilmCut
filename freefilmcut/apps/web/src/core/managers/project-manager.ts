@@ -35,6 +35,7 @@ import { DEFAULTS } from "@/timeline/defaults";
 import { getElementFontFamilies } from "@/timeline/element-utils";
 import { getRaisedProjectFpsForImportedMedia } from "@/fps/utils";
 import type { MediaAsset } from "@/media/types";
+import { downloadBlob } from "@/utils/browser";
 
 export interface MigrationState {
 	isMigrating: boolean;
@@ -368,6 +369,51 @@ export class ProjectManager {
 				description:
 					error instanceof Error ? error.message : "Please try again",
 			});
+		}
+	}
+
+	async exportProjectPackage({ id }: { id: string }): Promise<void> {
+		try {
+			if (this.active?.metadata.id === id && this.editor.save.getIsDirty()) {
+				await this.editor.save.flush();
+			}
+
+			const { blob, filename } = await storageService.exportProjectPackage({
+				projectId: id,
+			});
+			downloadBlob({ blob, filename });
+		} catch (error) {
+			console.error("Failed to export project package:", error);
+			toast.error("Failed to export project", {
+				description:
+					error instanceof Error ? error.message : "Please try again",
+			});
+			throw error;
+		}
+	}
+
+	async importProjectPackage({
+		file,
+	}: {
+		file: File;
+	}): Promise<{ projectId: string; name: string }> {
+		try {
+			const bytes = new Uint8Array(await file.arrayBuffer());
+			const imported = await storageService.importProjectPackage({ bytes });
+			const result = await storageService.loadProject({
+				id: imported.projectId,
+			});
+			if (result?.project) {
+				this.updateMetadata(result.project);
+			}
+			return imported;
+		} catch (error) {
+			console.error("Failed to import project package:", error);
+			toast.error("Failed to import project", {
+				description:
+					error instanceof Error ? error.message : "Please try again",
+			});
+			throw error;
 		}
 	}
 

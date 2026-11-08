@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { KeyboardEvent, MouseEvent } from "react";
-import { useEffect, useState } from "react";
+import type { ChangeEvent, KeyboardEvent, MouseEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { EditorCore } from "@/core";
 import { MigrationDialog } from "@/project/components/migration-dialog";
@@ -37,6 +37,8 @@ import {
 	Edit03Icon,
 	ArrowDown02Icon,
 	InformationCircleIcon,
+	FileExportIcon,
+	FolderImportIcon,
 } from "@hugeicons/core-free-icons";
 import { OcVideoIcon } from "@/components/icons";
 import { Label } from "@/components/ui/label";
@@ -145,6 +147,7 @@ export default function ProjectsPage() {
 									Local drafts
 								</h2>
 								<div className="flex items-center gap-2">
+									<ImportProjectButton />
 									<SearchBar className="w-48 md:w-56" />
 									<ViewModeToggle />
 								</div>
@@ -399,6 +402,65 @@ async function renameProject({
 	await editor.project.renameProject({ id, name });
 }
 
+async function exportProjectPackage({
+	editor,
+	id,
+}: {
+	editor: EditorCore;
+	id: string;
+}) {
+	await editor.project.exportProjectPackage({ id });
+	toast.success("Project exported");
+}
+
+function ImportProjectButton() {
+	const editor = useEditor();
+	const inputRef = useRef<HTMLInputElement>(null);
+	const [isImporting, setIsImporting] = useState(false);
+
+	const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		event.target.value = "";
+		if (!file) return;
+
+		setIsImporting(true);
+		try {
+			const imported = await editor.project.importProjectPackage({ file });
+			toast.success("Project imported", {
+				description: imported.name,
+			});
+		} catch {
+			// Toast already shown by project manager.
+		} finally {
+			setIsImporting(false);
+		}
+	};
+
+	return (
+		<>
+			<input
+				ref={inputRef}
+				type="file"
+				accept=".zip,application/zip"
+				className="hidden"
+				onChange={handleFileChange}
+			/>
+			<Button
+				variant="outline"
+				size="sm"
+				className="h-10 gap-1.5"
+				disabled={isImporting}
+				onClick={() => inputRef.current?.click()}
+			>
+				<HugeiconsIcon icon={FolderImportIcon} className="size-4" />
+				<span className="hidden sm:inline">
+					{isImporting ? "Importing…" : "Import project"}
+				</span>
+			</Button>
+		</>
+	);
+}
+
 function ProjectActions() {
 	const editor = useEditor();
 	const { selectedProjectIds, clearSelectedProjects } = useProjectsStore();
@@ -542,6 +604,13 @@ function ProjectItem({
 	const handleDuplicate = async () => {
 		await duplicateProjects({ editor, ids: [project.id] });
 	};
+	const handleExport = async () => {
+		try {
+			await exportProjectPackage({ editor, id: project.id });
+		} catch {
+			// Toast already shown by project manager.
+		}
+	};
 	const handleDeleteClick = () => setIsDeleteDialogOpen(true);
 	const handleInfoClick = () => setIsInfoDialogOpen(true);
 	const handleDeleteConfirm = async () => {
@@ -661,6 +730,7 @@ function ProjectItem({
 					variant="list"
 					onRenameClick={handleRename}
 					onDuplicateClick={handleDuplicate}
+					onExportClick={handleExport}
 					onDeleteClick={handleDeleteClick}
 					onInfoClick={handleInfoClick}
 				/>
@@ -702,6 +772,7 @@ function ProjectItem({
 										onOpenChange={setIsDropdownOpen}
 										onRenameClick={handleRename}
 										onDuplicateClick={handleDuplicate}
+										onExportClick={handleExport}
 										onDeleteClick={handleDeleteClick}
 										onInfoClick={handleInfoClick}
 									/>
@@ -715,6 +786,7 @@ function ProjectItem({
 				<ProjectContextMenuContent
 					onRenameClick={handleRename}
 					onDuplicateClick={handleDuplicate}
+					onExportClick={handleExport}
 					onDeleteClick={handleDeleteClick}
 					onInfoClick={handleInfoClick}
 				/>
@@ -749,11 +821,13 @@ function ProjectItem({
 function ProjectContextMenuContent({
 	onRenameClick,
 	onDuplicateClick,
+	onExportClick,
 	onDeleteClick,
 	onInfoClick,
 }: {
 	onRenameClick: () => void;
 	onDuplicateClick: () => void;
+	onExportClick: () => void;
 	onDeleteClick: () => void;
 	onInfoClick: () => void;
 }) {
@@ -770,6 +844,12 @@ function ProjectContextMenuContent({
 				onClick={onDuplicateClick}
 			>
 				Duplicate
+			</ContextMenuItem>
+			<ContextMenuItem
+				icon={<HugeiconsIcon icon={FileExportIcon} />}
+				onClick={onExportClick}
+			>
+				Export project
 			</ContextMenuItem>
 			<ContextMenuItem
 				icon={<HugeiconsIcon icon={InformationCircleIcon} />}
@@ -795,6 +875,7 @@ function ProjectMenu({
 	variant = "grid",
 	onRenameClick,
 	onDuplicateClick,
+	onExportClick,
 	onDeleteClick,
 	onInfoClick,
 }: {
@@ -803,6 +884,7 @@ function ProjectMenu({
 	variant?: "grid" | "list";
 	onRenameClick: () => void;
 	onDuplicateClick: () => void;
+	onExportClick: () => void;
 	onDeleteClick: () => void;
 	onInfoClick: () => void;
 }) {
@@ -834,6 +916,11 @@ function ProjectMenu({
 
 	const handleDuplicate = () => {
 		onDuplicateClick();
+		onOpenChange(false);
+	};
+
+	const handleExport = () => {
+		onExportClick();
 		onOpenChange(false);
 	};
 
@@ -888,6 +975,10 @@ function ProjectMenu({
 				<DropdownMenuItem onClick={handleDuplicate}>
 					<HugeiconsIcon icon={Copy01Icon} />
 					Duplicate
+				</DropdownMenuItem>
+				<DropdownMenuItem onClick={handleExport}>
+					<HugeiconsIcon icon={FileExportIcon} />
+					Export project
 				</DropdownMenuItem>
 				<DropdownMenuItem onClick={handleInfoClick}>
 					<HugeiconsIcon icon={InformationCircleIcon} />
