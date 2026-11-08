@@ -7,16 +7,6 @@
 > Free to use. Questions / feedback? Join the QQ group:  
 > [FreeFilmCut 交流群](https://qm.qq.com/q/MywTcYMNci)
 
-### NLE demo
-
-Short walkthrough of the **timeline editor** (preview, tracks, packs):
-
-https://github.com/TAzandly/FreeFilmCut/releases/download/nle-demo-2026-11-08/nle-demo.mp4
-
-<video src="https://github.com/TAzandly/FreeFilmCut/releases/download/nle-demo-2026-11-08/nle-demo.mp4" controls width="720" title="FreeFilmCut NLE demo">
-  <a href="https://github.com/TAzandly/FreeFilmCut/releases/download/nle-demo-2026-11-08/nle-demo.mp4">Download / open NLE demo (mp4)</a>
-</video>
-
 ---
 
 ## What’s in this repo

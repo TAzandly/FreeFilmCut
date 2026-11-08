@@ -7,16 +7,6 @@
 > 免费使用。有问题欢迎加 QQ 群：  
 > [点击链接加入群聊【FreeFilmCut交流群】](https://qm.qq.com/q/MywTcYMNci)
 
-### 剪辑端 Demo
-
-剪辑端（时间线 / 预览 / 资源包）演示：
-
-https://github.com/TAzandly/FreeFilmCut/releases/download/nle-demo-2026-11-08/nle-demo.mp4
-
-<video src="https://github.com/TAzandly/FreeFilmCut/releases/download/nle-demo-2026-11-08/nle-demo.mp4" controls width="720" title="FreeFilmCut 剪辑端 Demo">
-  <a href="https://github.com/TAzandly/FreeFilmCut/releases/download/nle-demo-2026-11-08/nle-demo.mp4">下载 / 打开剪辑端 Demo（mp4）</a>
-</video>
-
 ---
 
 ## 仓库里有什么
