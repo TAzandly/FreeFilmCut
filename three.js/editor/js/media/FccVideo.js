@@ -878,6 +878,45 @@ function blitTextureToRT( renderer, texture, rt, opts ) {
 
 }
 
+/**
+ * Clear an RT to empty (transparent for gif/seq, opaque black for video).
+ * Same renderer contract as blitTextureToRT: leaves the RT bound; caller restores.
+ * Used when Timeline is outside the MediaFramePlayer's clip range so the last
+ * frame does not linger on materials that sample the RT.
+ */
+function clearRenderTargetEmpty( renderer, rt, opts ) {
+
+	if ( ! renderer || ! rt ) return;
+	opts = opts || {};
+	const hasAlpha = opts.hasAlpha !== false;
+	renderer.toneMapping = THREE.NoToneMapping;
+	renderer.autoClear = false;
+	renderer.setRenderTarget( rt );
+	renderer.setViewport( 0, 0, rt.width, rt.height );
+	renderer.setScissorTest( false );
+	renderer.getClearColor( _clearColor );
+	const prevAlpha = renderer.getClearAlpha();
+	if ( hasAlpha ) {
+
+		renderer.setClearColor( 0x000000, 0 );
+
+	} else {
+
+		renderer.setClearColor( 0x000000, 1 );
+
+	}
+	renderer.clear( true, true, true );
+	renderer.setClearColor( _clearColor, prevAlpha );
+	if ( rt.texture ) {
+
+		rt.texture.userData = rt.texture.userData || {};
+		rt.texture.userData.fccHasAlpha = hasAlpha;
+		rt.texture.premultipliedAlpha = false;
+
+	}
+
+}
+
 function updateFccVideos( renderer, scene ) {
 
 	if ( ! renderer || ! scene ) return;
@@ -913,6 +952,25 @@ function updateFccVideos( renderer, scene ) {
 		const rt = ensureRenderTarget( target );
 		if ( ! rt ) continue;
 
+		/**
+		 * Timeline parked this player outside its clip (`seekVideoPlayer(null)`).
+		 * Clear the RT once so the last frame does not linger; skip further blit.
+		 */
+		if ( timelineOwns && object.__fccMediaActive === false ) {
+
+			if ( ! object.__fccRtClearedForInactive ) {
+
+				clearRenderTargetEmpty( renderer, rt, {
+					hasAlpha: kind !== 'video',
+				} );
+				ensureMaterialsShowRtAlpha( scene, rt.texture );
+				object.__fccRtClearedForInactive = true;
+
+			}
+			continue;
+
+		}
+
 		if ( kind === 'video' ) {
 
 			syncVideoElement( object );
@@ -923,6 +981,7 @@ function updateFccVideos( renderer, scene ) {
 			texture.needsUpdate = true;
 			blitTextureToRT( renderer, texture, rt, { hasAlpha: false } );
 			ensureMaterialsShowRtAlpha( scene, rt.texture );
+			object.__fccRtClearedForInactive = false;
 			continue;
 
 		}
@@ -961,6 +1020,7 @@ function updateFccVideos( renderer, scene ) {
 		if ( ! tex ) continue;
 		blitTextureToRT( renderer, tex, rt, { hasAlpha: true } );
 		ensureMaterialsShowRtAlpha( scene, rt.texture );
+		object.__fccRtClearedForInactive = false;
 
 	}
 
@@ -1208,10 +1268,15 @@ function seekVideoPlayer( object, mediaTimeSec, opts ) {
 	if ( mediaTimeSec == null || ! Number.isFinite( Number( mediaTimeSec ) ) ) {
 
 		object.__fccTlVideoClipKey = '';
+		object.__fccMediaActive = false;
+		object.__fccMediaTime = null;
 		if ( ! video.paused ) video.pause();
 		return;
 
 	}
+
+	object.__fccMediaActive = true;
+	object.__fccMediaTime = Number( mediaTimeSec ) || 0;
 
 	let t = ( Number( mediaTimeSec ) || 0 ) * getPlaybackRate( object );
 	const d = Number( video.duration );
