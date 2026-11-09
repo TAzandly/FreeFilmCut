@@ -9,6 +9,9 @@ node_modules/
 **/.turbo/
 dist/
 build/
+# Asset editor needs prebuilt three.js modules on Vercel (static /build/*).
+!three.js/build/
+!three.js/build/**
 .content-collections/
 .open-next/
 target/
