@@ -14,10 +14,16 @@
 			]
 		}
 	],
-	"rewrites": [
+	"redirects": [
 		{
 			"source": "/",
-			"destination": "/editor/"
+			"destination": "/editor/",
+			"permanent": false
+		},
+		{
+			"source": "/editor",
+			"destination": "/editor/",
+			"permanent": false
 		}
 	]
 }
