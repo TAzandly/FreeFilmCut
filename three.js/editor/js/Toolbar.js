@@ -1,5 +1,5 @@
 import { UIPanel, UIButton } from './libs/ui.js';
-import { exportVfxPack, formatVfxPackExportMessage, promptExportOptions, normalizePackType } from './VfxPackExporter.js?v=fcc-ui-221';
+import { exportVfxPack, formatVfxPackExportMessage, promptExportOptions, normalizePackType } from './VfxPackExporter.js?v=fcc-ui-237';
 import {
 	exportTextTemplatePack,
 	formatTextTemplatePackExportMessage,

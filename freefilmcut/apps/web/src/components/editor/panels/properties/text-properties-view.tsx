@@ -24,6 +24,7 @@ import { useEditor } from "@/editor/use-editor";
 import { usePackRegistry } from "@/vfxpack/pack-registry";
 import { normalizeVfxPackType } from "@/vfxpack/pack-placement";
 import { packLibraryThumb } from "@/vfxpack/preview-assets";
+import { VfxPackImportButton } from "@/vfxpack/components/vfxpack-import-button";
 import type { LoadedVfxPack } from "@/vfxpack/types";
 import { textAnimPackDuration } from "@/vfxpack/text-anim-motion";
 import { isEmbeddedTextAnimPackId } from "@/vfxpack/text-template-textanim";
@@ -1174,7 +1175,8 @@ function TextAnimationPage({
 				<TabsContent value={phase} className="flex min-h-0 flex-1 flex-col px-0 py-0">
 					<div className="flex items-center gap-2 px-3 pt-3">
 						<span className="text-muted-foreground text-xs">Text animation library</span>
-						<div className="ml-auto">
+						<div className="ml-auto flex items-center gap-1.5">
+							<VfxPackImportButton expectTypes={["text-anim"]} />
 							<button
 								type="button"
 								className="text-muted-foreground hover:text-foreground rounded-md p-1.5"
@@ -1217,9 +1219,9 @@ function TextAnimationPage({
 						</div>
 						{visible.length === 0 && (
 							<p className="text-muted-foreground py-6 text-center text-sm">
-								No text animation packs yet. Export from the editor (pack type Text
-								animation), place under vfxpacks/text-anims/in|out|loop/, and list the
-								.vfxpack filename in that folder&apos;s index.json.
+								No text animation packs yet. Export from the Asset Editor (pack type
+								Text animation), then use Import VfxPack here. Same file/id replaces
+								the previous import — no index.json needed.
 							</p>
 						)}
 					</div>

@@ -92,6 +92,10 @@ class TextureParametersDialog {
 		this.wrapT = new UISelect().setOptions( wrapOptions ).setValue( texture.wrapT ).onChange( updatePreview );
 		form.add( createRow( this.strings.getKey( 'dialog/texture/wrapT' ), this.wrapT ) );
 
+		// glTF / Blender textures use flipY=false; editor image drops default to true.
+		this.flipY = new UICheckbox( texture.flipY !== false ).onChange( updatePreview );
+		form.add( createRow( this.strings.getKey( 'dialog/texture/flipY' ) || 'Flip Y', this.flipY ) );
+
 		// Filtering group
 
 		form.add( createGroupHeading( this.strings.getKey( 'dialog/texture/group/filtering' ) ) );
@@ -200,6 +204,7 @@ class TextureParametersDialog {
 			repeat: { x: this.repeatX.getValue(), y: this.repeatY.getValue() },
 			center: { x: this.centerX.getValue(), y: this.centerY.getValue() },
 			rotation: this.rotation.getValue() * THREE.MathUtils.DEG2RAD,
+			flipY: this.flipY.getValue(),
 			premultiplyAlpha: this.premultiplyAlpha.getValue(),
 			colorSpace: this.colorSpace.getValue()
 		};
@@ -283,6 +288,7 @@ function applyParameters( texture, p ) {
 	texture.repeat.set( p.repeat.x, p.repeat.y );
 	texture.center.set( p.center.x, p.center.y );
 	texture.rotation = p.rotation;
+	if ( p.flipY !== undefined ) texture.flipY = !! p.flipY;
 	texture.premultiplyAlpha = p.premultiplyAlpha;
 	texture.colorSpace = p.colorSpace;
 	texture.needsUpdate = true;

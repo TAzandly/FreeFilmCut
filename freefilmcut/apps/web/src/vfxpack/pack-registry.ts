@@ -20,12 +20,21 @@ export const usePackRegistry = create<PackRegistryState>((set, get) => ({
 	packs: [],
 	activeOverlayIds: [],
 	registerPack: (pack) => {
-		const existing = get().packs.find((p) => p.id === pack.id);
-		if (existing) {
+		const fileKey = String(pack.sourceFileName || "")
+			.trim()
+			.toLowerCase();
+		const toReplace = get().packs.filter((p) => {
+			if (p.id === pack.id) return true;
+			if (!fileKey) return false;
+			return String(p.sourceFileName || "").trim().toLowerCase() === fileKey;
+		});
+		for (const existing of toReplace) {
 			revokePackObjectUrls({ pack: existing });
 		}
+		const dropIds = new Set(toReplace.map((p) => p.id));
+		dropIds.add(pack.id);
 		set((state) => ({
-			packs: [...state.packs.filter((p) => p.id !== pack.id), pack],
+			packs: [...state.packs.filter((p) => !dropIds.has(p.id)), pack],
 		}));
 		runAfterRegister(pack);
 	},
@@ -35,6 +44,9 @@ export const usePackRegistry = create<PackRegistryState>((set, get) => ({
 		const embeddedId = `${packId}::embedded-textanim`;
 		const embedded = get().packs.find((p) => p.id === embeddedId);
 		if (embedded) revokePackObjectUrls({ pack: embedded });
+		void import("@/vfxpack/persisted-user-packs").then((mod) =>
+			mod.removePersistedUserVfxPack({ packId }),
+		);
 		set((state) => ({
 			packs: state.packs.filter((p) => p.id !== packId && p.id !== embeddedId),
 			activeOverlayIds: state.activeOverlayIds.filter(

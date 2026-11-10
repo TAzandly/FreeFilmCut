@@ -17,6 +17,7 @@ import {
 	isGpuAvailable,
 } from "@/services/renderer/gpu-renderer";
 import { loadBuiltinVfxPacks } from "@/vfxpack/load-builtin-packs";
+import { loadPersistedUserVfxPacks } from "@/vfxpack/persisted-user-packs";
 
 interface EditorProviderProps {
 	projectId: string;
@@ -146,6 +147,7 @@ function EditorRuntimeBindings() {
 			void initDefaultTroikaFont();
 			void tryInitLocalFonts();
 			loadBuiltinVfxPacks();
+			loadPersistedUserVfxPacks();
 		}, []);
 
 	useEffect(() => {

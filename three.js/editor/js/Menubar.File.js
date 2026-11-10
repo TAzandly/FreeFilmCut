@@ -1,6 +1,6 @@
 import { UIPanel, UIRow, UIHorizontalRule } from './libs/ui.js';
 import { FileLoader, PropertyBinding } from 'three';
-import { exportVfxPack, formatVfxPackExportMessage, promptExportOptions } from './VfxPackExporter.js?v=fcc-ui-221';
+import { exportVfxPack, formatVfxPackExportMessage, promptExportOptions } from './VfxPackExporter.js?v=fcc-ui-237';
 import { exportFlowerPack, formatFlowerPackExportMessage, promptFlowerPackOptions } from './FlowerPackExporter.js?v=fcc-ui-106';
 import { exportTextAnimPack, formatTextAnimPackExportMessage, promptTextAnimPackOptions } from './TextAnimPackExporter.js?v=fcc-ui-164';
 import { exportTextTemplatePack, formatTextTemplatePackExportMessage, promptTextTemplatePackOptions } from './TextTemplatePackExporter.js?v=fcc-ui-217';

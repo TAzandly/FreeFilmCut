@@ -19,7 +19,7 @@ import type { EffectDefinition } from "@/effects/types";
 import { Button } from "@/components/ui/button";
 import { useFileUpload } from "@/media/use-file-upload";
 import {
-	loadVfxPackFromFile,
+	importVfxPackFiles,
 	usePackRegistry,
 	toVfxPackEffectType,
 	getVfxPackPlacement,
@@ -30,7 +30,6 @@ import {
 } from "@/vfxpack";
 import type { LoadedVfxPack, PrimaryVfxPackType } from "@/vfxpack";
 import { packLibraryThumb } from "@/vfxpack/preview-assets";
-import { toast } from "sonner";
 import { cn } from "@/utils/ui";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CloudUploadIcon, MagicWand05Icon } from "@hugeicons/core-free-icons";
@@ -40,8 +39,8 @@ export function EffectsView() {
 		<VfxPackPanel
 			title="Effects"
 			filterTypes={["effect"]}
-			showBuiltInEffects
-			emptyHint="Import a .vfxpack with Pack type = Effect (set in the Asset Editor)."
+			showBuiltInEffects={false}
+			emptyHint="Import a .vfxpack (Pack type = Effect). Same file/id replaces the previous import — no index.json needed."
 		/>
 	);
 }
@@ -84,7 +83,7 @@ export function AdjustmentsVfxView() {
 			headerTabs={viewTabs}
 			filterTypes={["filter"]}
 			showBuiltInEffects={false}
-			emptyHint="Import a .vfxpack with Pack type = Filter (set in the Asset Editor), or add files under public/vfxpacks/adjustments/filters/."
+			emptyHint="Import a .vfxpack (Pack type = Filter). Same file/id replaces the previous import. Optional: also ship under public/vfxpacks/adjustments/filters/."
 		/>
 	);
 }
@@ -96,7 +95,7 @@ export function TransitionsVfxView() {
 			title="Transitions"
 			filterTypes={["transition"]}
 			showBuiltInEffects={false}
-			emptyHint="Import a .vfxpack with Pack type = Transition (set in the Asset Editor)."
+			emptyHint="Import a .vfxpack (Pack type = Transition). Same file/id replaces the previous import."
 		/>
 	);
 }
@@ -108,7 +107,6 @@ export function StickerVfxPackSection({
 	searchQuery?: string;
 }) {
 	const packs = usePackRegistry((s) => s.packs);
-	const registerPack = usePackRegistry((s) => s.registerPack);
 	const query = searchQuery.trim().toLowerCase();
 	const stickerPacks = packs.filter((p) => {
 		if (normalizeVfxPackType(p.type) !== "sticker") return false;
@@ -117,39 +115,9 @@ export function StickerVfxPackSection({
 		return name.includes(query) || String(p.id).toLowerCase().includes(query);
 	});
 
-	const processVfxPacks = useCallback(
-		async ({ files }: { files: File[] }) => {
-			const packFiles = files.filter(
-				(f) =>
-					f.name.toLowerCase().endsWith(".vfxpack") ||
-					f.name.toLowerCase().endsWith(".zip") ||
-					f.type === "application/zip" ||
-					f.type === "application/x-zip-compressed",
-			);
-			if (packFiles.length === 0) {
-				toast.error("Please choose a .vfxpack file");
-				return;
-			}
-
-			for (const file of packFiles) {
-				try {
-					const pack = await loadVfxPackFromFile({ file });
-					registerPack(pack);
-					const placement = getVfxPackPlacement({ type: pack.type });
-					toast.success(`Imported ${pack.displayName}`, {
-						description: `${placement.label} · ${placement.dragHint}`,
-					});
-				} catch (error) {
-					console.error(error);
-					toast.error(`Failed to import ${file.name}`, {
-						description:
-							error instanceof Error ? error.message : String(error),
-					});
-				}
-			}
-		},
-		[registerPack],
-	);
+	const processVfxPacks = useCallback(async ({ files }: { files: File[] }) => {
+		await importVfxPackFiles({ files, expectTypes: ["sticker"] });
+	}, []);
 
 	const { openFilePicker, fileInputProps, isDragOver, dragProps } =
 		useFileUpload({
@@ -182,7 +150,7 @@ export function StickerVfxPackSection({
 				<p className="text-muted-foreground px-1 text-xs">
 					{query
 						? `No stickers match "${searchQuery}".`
-						: "Import a .vfxpack with Pack type = Sticker, or add files under public/vfxpacks/stickers/."}
+						: "Import a .vfxpack (Pack type = Sticker). Same file/id replaces the previous import."}
 				</p>
 			) : (
 				<div
@@ -192,11 +160,7 @@ export function StickerVfxPackSection({
 					}}
 				>
 					{stickerPacks.map((pack) => (
-						<VfxPackItem
-							key={pack.id}
-							pack={pack}
-							onRemove={() => usePackRegistry.getState().removePack(pack.id)}
-						/>
+						<VfxPackItem key={pack.id} pack={pack} />
 					))}
 				</div>
 			)}
@@ -221,41 +185,15 @@ function VfxPackPanel({
 }) {
 	const effects = effectsRegistry.getAll();
 	const packs = usePackRegistry((s) => s.packs);
-	const registerPack = usePackRegistry((s) => s.registerPack);
-	const removePack = usePackRegistry((s) => s.removePack);
 
 	const processVfxPacks = useCallback(
 		async ({ files }: { files: File[] }) => {
-			const packFiles = files.filter(
-				(f) =>
-					f.name.toLowerCase().endsWith(".vfxpack") ||
-					f.name.toLowerCase().endsWith(".zip") ||
-					f.type === "application/zip" ||
-					f.type === "application/x-zip-compressed",
-			);
-			if (packFiles.length === 0) {
-				toast.error("Please choose a .vfxpack file");
-				return;
-			}
-
-			for (const file of packFiles) {
-				try {
-					const pack = await loadVfxPackFromFile({ file });
-					registerPack(pack);
-					const placement = getVfxPackPlacement({ type: pack.type });
-					toast.success(`Imported ${pack.displayName}`, {
-						description: `${placement.label} · ${placement.dragHint}`,
-					});
-				} catch (error) {
-					console.error(error);
-					toast.error(`Failed to import ${file.name}`, {
-						description:
-							error instanceof Error ? error.message : String(error),
-					});
-				}
-			}
+			await importVfxPackFiles({
+				files,
+				expectTypes: filterTypes,
+			});
 		},
-		[registerPack],
+		[filterTypes],
 	);
 
 	const { openFilePicker, fileInputProps, isDragOver, dragProps } =
@@ -326,11 +264,7 @@ function VfxPackPanel({
 						}}
 					>
 						{group.packs.map((pack) => (
-							<VfxPackItem
-								key={pack.id}
-								pack={pack}
-								onRemove={() => removePack(pack.id)}
-							/>
+							<VfxPackItem key={pack.id} pack={pack} />
 						))}
 					</div>
 				</div>
@@ -348,13 +282,7 @@ function VfxPackPanel({
 	);
 }
 
-function VfxPackItem({
-	pack,
-	onRemove,
-}: {
-	pack: LoadedVfxPack;
-	onRemove: () => void;
-}) {
+function VfxPackItem({ pack }: { pack: LoadedVfxPack }) {
 	const editor = useEditor();
 	const effectType = toVfxPackEffectType({ packId: pack.id });
 	const placement = getVfxPackPlacement({ type: pack.type });
@@ -399,14 +327,6 @@ function VfxPackItem({
 			<div className="text-muted-foreground truncate px-0.5 text-[10px] leading-tight">
 				{placement.label}
 			</div>
-			<Button
-				variant="ghost"
-				size="sm"
-				className="h-6 px-1 text-[10px]"
-				onClick={onRemove}
-			>
-				Remove
-			</Button>
 		</div>
 	);
 }

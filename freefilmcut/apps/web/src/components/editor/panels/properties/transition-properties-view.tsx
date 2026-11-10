@@ -15,11 +15,7 @@ import {
 } from "@/components/section";
 import { NumberField } from "@/components/ui/number-field";
 import { usePropertyDraft } from "./hooks/use-property-draft";
-import {
-	formatNumberForDisplay,
-	getFractionDigitsForStep,
-	snapToStep,
-} from "@/utils/math";
+import { formatNumberForDisplay, snapToStep } from "@/utils/math";
 import { usePackRegistry } from "@/vfxpack/pack-registry";
 import {
 	mediaTimeFromSeconds,
@@ -29,22 +25,14 @@ import {
 } from "@/wasm";
 import type { FrameRate } from "opencut-wasm";
 
-function fpsToStep({ fps }: { fps: FrameRate }): number {
-	const fpsFloat = fps.numerator / fps.denominator;
-	return 1 / fpsFloat;
-}
+/** Property panel display / scrub step (seconds). */
+const DURATION_DISPLAY_STEP = 0.01;
 
-function durationToDisplay({
-	duration,
-	step,
-}: {
-	duration: MediaTime;
-	step: number;
-}): string {
+function durationToDisplay({ duration }: { duration: MediaTime }): string {
 	const seconds = mediaTimeToSeconds({ time: duration });
 	return formatNumberForDisplay({
-		value: seconds,
-		fractionDigits: getFractionDigitsForStep({ step }),
+		value: snapToStep({ value: seconds, step: DURATION_DISPLAY_STEP }),
+		maxFractionDigits: 2,
 	});
 }
 
@@ -71,7 +59,6 @@ function TransitionDurationField({
 	fps: FrameRate;
 }) {
 	const editor = useEditor();
-	const step = fpsToStep({ fps });
 	const [previewSeconds, setPreviewSeconds] = useState<number | null>(null);
 	const pendingSecondsRef = useRef(0);
 
@@ -95,14 +82,13 @@ function TransitionDurationField({
 	const durationDraft = usePropertyDraft({
 		displayValue: durationToDisplay({
 			duration: mediaTimeFromSeconds({ seconds: displaySeconds }),
-			step,
 		}),
 		parse: (input) => {
 			const parsed = parseFloat(input);
 			if (Number.isNaN(parsed)) {
 				return null;
 			}
-			return snapToStep({ value: parsed, step });
+			return snapToStep({ value: parsed, step: DURATION_DISPLAY_STEP });
 		},
 		onPreview: (seconds) => {
 			pendingSecondsRef.current = seconds;
@@ -119,7 +105,7 @@ function TransitionDurationField({
 				value={durationDraft.displayValue}
 				suffix="s"
 				scrubRanges={[{ from: 0, to: 5, pixelsPerUnit: 80 }]}
-				scrubClamp={{ min: step, max: 5 }}
+				scrubClamp={{ min: DURATION_DISPLAY_STEP, max: 5 }}
 				onFocus={() => {
 					pendingSecondsRef.current = displaySeconds;
 					durationDraft.onFocus();

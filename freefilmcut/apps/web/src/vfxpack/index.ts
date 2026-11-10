@@ -8,6 +8,12 @@ export type {
 	PrimaryVfxPackType,
 } from "@/vfxpack/types";
 export { loadVfxPackFromFile, revokePackObjectUrls } from "@/vfxpack/load-pack";
+export { importVfxPackFiles } from "@/vfxpack/import-vfxpack-files";
+export {
+	persistUserVfxPackFile,
+	loadPersistedUserVfxPacks,
+	removePersistedUserVfxPack,
+} from "@/vfxpack/persisted-user-packs";
 export {
 	usePackRegistry,
 	getPackRegistrySnapshot,
@@ -55,7 +61,14 @@ export {
 	listTransitionFromUniforms,
 	listTransitionToUniforms,
 	bindTransitionInputTextures,
+	materialWantsSamplerUvFlip,
 } from "@/vfxpack/transition-input";
+
+export {
+	normalizeTransitionFitMode,
+	authoredAspectFromResolution,
+	type TransitionFitMode,
+} from "@/vfxpack/transition-fit-mode";
 
 export {
 	normalizeExposedParams,

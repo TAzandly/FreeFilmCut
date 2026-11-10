@@ -16,7 +16,8 @@ import {
 	EDITOR_PREVIEW_INPUT_KEY,
 	EDITOR_PREVIEW_FROM_KEY,
 	EDITOR_PREVIEW_TO_KEY,
-} from './FreeCapCutShaders.js?v=fcc-ui-198';
+	setEditorSamplerFlipY,
+} from './FreeCapCutShaders.js?v=fcc-ui-200';
 import {
 	isUniformExposed,
 	setUniformExposed,
@@ -107,6 +108,18 @@ function SidebarMaterialShaderUniforms( editor ) {
 	previewRow.add( clearBtn );
 	previewPanel.add( previewRow );
 
+	const previewFlipRow = new UIRow().setMarginTop( '2px' );
+	const previewFlipY = new UICheckbox( true ).onChange( () => {
+
+		const flip = previewFlipY.getValue();
+		if ( material ) setEditorSamplerFlipY( material, EDITOR_PREVIEW_INPUT_KEY, flip );
+		applyPreviewFlipY( BELOW_INPUT_UNIFORM_NAMES, EDITOR_PREVIEW_INPUT_KEY, applyEditorBelowPreview, flip );
+
+	} );
+	previewFlipRow.add( new UIText( isZh ? '翻转 Y' : 'Flip Y' ).setClass( 'Label' ).setWidth( '70px' ) );
+	previewFlipRow.add( previewFlipY );
+	previewPanel.add( previewFlipRow );
+
 	const previewStatus = new UIRow();
 	const previewStatusText = new UIText( isZh ? '（空）' : '(empty)' ).setFontSize( '10px' ).setColor( '#888' );
 	previewStatus.add( previewStatusText );
@@ -154,6 +167,17 @@ function SidebarMaterialShaderUniforms( editor ) {
 		const statusText = new UIText( emptyText ).setFontSize( '10px' ).setColor( '#888' );
 		const aliasLabel = new UIText( '' ).setFontSize( '10px' ).setColor( '#8af' );
 
+		const flipRow = new UIRow().setMarginTop( '2px' );
+		const flipYBox = new UICheckbox( true ).onChange( () => {
+
+			const flip = flipYBox.getValue();
+			if ( material ) setEditorSamplerFlipY( material, storeKey, flip );
+			applyPreviewFlipY( nameList, storeKey, apply, flip );
+
+		} );
+		flipRow.add( new UIText( isZh ? '翻转 Y' : 'Flip Y' ).setClass( 'Label' ).setWidth( '70px' ) );
+		flipRow.add( flipYBox );
+
 		function draw( texture ) {
 
 			const ctx = canvas.getContext( '2d' );
@@ -200,12 +224,14 @@ function SidebarMaterialShaderUniforms( editor ) {
 				const label = ( meta && meta.fileName ) || tex.sourceFile || ( isZh ? '已设置' : 'set' );
 				statusText.setValue( ( isZh ? '预览: ' : 'Preview: ' ) + label );
 				statusText.setColor( '#aea' );
+				flipYBox.setValue( !! tex.flipY );
 
 			} else {
 
 				draw( null );
 				statusText.setValue( emptyText );
 				statusText.setColor( '#888' );
+				flipYBox.setValue( meta && meta.flipY !== undefined ? !! meta.flipY : true );
 
 			}
 
@@ -223,12 +249,16 @@ function SidebarMaterialShaderUniforms( editor ) {
 				new THREE.TextureLoader().load( dataUrl, function ( texture ) {
 
 					texture.colorSpace = THREE.SRGBColorSpace;
-					texture.flipY = true;
+					texture.flipY = flipYBox.getValue();
 					texture.needsUpdate = true;
 					texture.sourceFile = file.name;
 					texture.userData = texture.userData || {};
 					texture.userData.editorBelowPreview = true;
-					apply( material, texture, { fileName: file.name, dataUrl } );
+					apply( material, texture, {
+						fileName: file.name,
+						dataUrl,
+						flipY: texture.flipY,
+					} );
 					editor.signals.materialChanged.dispatch( object, materialSlot );
 					if ( editor.signals.sceneGraphChanged ) editor.signals.sceneGraphChanged.dispatch();
 					refresh();
@@ -274,6 +304,8 @@ function SidebarMaterialShaderUniforms( editor ) {
 
 		} ) );
 		panel.add( row );
+		panel.add( flipRow );
+
 		const statusRow = new UIRow();
 		statusRow.add( statusText );
 		panel.add( statusRow );
@@ -426,6 +458,47 @@ function SidebarMaterialShaderUniforms( editor ) {
 
 	}
 
+	function findSamplerTexture( nameList ) {
+
+		if ( ! material || ! material.uniforms ) return null;
+		for ( const n of nameList ) {
+
+			const v = material.uniforms[ n ] && material.uniforms[ n ].value;
+			if ( v && v.isTexture ) return v;
+
+		}
+
+		return null;
+
+	}
+
+	function applyPreviewFlipY( nameList, storeKey, apply, flipY ) {
+
+		if ( ! material ) return;
+		setEditorSamplerFlipY( material, storeKey, flipY );
+		const tex = findSamplerTexture( nameList );
+		if ( ! tex ) {
+
+			editor.signals.materialChanged.dispatch( object, materialSlot );
+			if ( editor.signals.sceneGraphChanged ) editor.signals.sceneGraphChanged.dispatch();
+			return;
+
+		}
+
+		tex.flipY = !! flipY;
+		tex.needsUpdate = true;
+		const store = material.userData && material.userData.editorPreviewInputs &&
+			material.userData.editorPreviewInputs[ storeKey ];
+		apply( material, tex, {
+			fileName: ( store && store.fileName ) || tex.sourceFile || 'preview',
+			dataUrl: store && store.dataUrl ? store.dataUrl : null,
+			flipY: tex.flipY,
+		} );
+		editor.signals.materialChanged.dispatch( object, materialSlot );
+		if ( editor.signals.sceneGraphChanged ) editor.signals.sceneGraphChanged.dispatch();
+
+	}
+
 	function refreshPreviewUI() {
 
 		if ( ! material ) return;
@@ -438,18 +511,7 @@ function SidebarMaterialShaderUniforms( editor ) {
 
 		const meta = material.userData && material.userData.editorPreviewInputs &&
 			material.userData.editorPreviewInputs[ EDITOR_PREVIEW_INPUT_KEY ];
-		let tex = null;
-		for ( const n of BELOW_INPUT_UNIFORM_NAMES ) {
-
-			const v = material.uniforms && material.uniforms[ n ] && material.uniforms[ n ].value;
-			if ( v && v.isTexture ) {
-
-				tex = v;
-				break;
-
-			}
-
-		}
+		const tex = findSamplerTexture( BELOW_INPUT_UNIFORM_NAMES );
 
 		if ( tex ) {
 
@@ -457,12 +519,14 @@ function SidebarMaterialShaderUniforms( editor ) {
 			const label = ( meta && meta.fileName ) || tex.sourceFile || ( isZh ? '已设置' : 'set' );
 			previewStatusText.setValue( ( isZh ? '预览: ' : 'Preview: ' ) + label );
 			previewStatusText.setColor( '#aea' );
+			previewFlipY.setValue( !! tex.flipY );
 
 		} else {
 
 			drawPreviewThumb( null );
 			previewStatusText.setValue( isZh ? '（空）— 选本地图以预览 bloom/着色器' : '(empty) — pick a local image to preview bloom/shaders' );
 			previewStatusText.setColor( '#888' );
+			previewFlipY.setValue( meta && meta.flipY !== undefined ? !! meta.flipY : true );
 
 		}
 
@@ -487,7 +551,7 @@ function SidebarMaterialShaderUniforms( editor ) {
 			loader.load( dataUrl, function ( texture ) {
 
 				texture.colorSpace = THREE.SRGBColorSpace;
-				texture.flipY = true;
+				texture.flipY = previewFlipY.getValue();
 				texture.needsUpdate = true;
 				texture.sourceFile = file.name;
 				texture.userData = texture.userData || {};
@@ -496,6 +560,7 @@ function SidebarMaterialShaderUniforms( editor ) {
 				applyEditorBelowPreview( material, texture, {
 					fileName: file.name,
 					dataUrl: dataUrl,
+					flipY: texture.flipY,
 				} );
 
 				editor.signals.materialChanged.dispatch( object, materialSlot );

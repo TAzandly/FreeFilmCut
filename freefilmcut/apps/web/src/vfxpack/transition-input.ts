@@ -147,6 +147,23 @@ function writeTextureSize(
 	return touched;
 }
 
+/** Editor exported `flipY: false` → NLE applies an extra V flip when binding. */
+export function materialWantsSamplerUvFlip(
+	mat: THREE.Material | null | undefined,
+	names: readonly string[],
+): boolean {
+	if (!mat?.userData) return false;
+	const flags = (mat.userData as { fccSamplerFlipY?: Record<string, boolean> })
+		.fccSamplerFlipY;
+	if (!flags) return false;
+	for (const n of names) {
+		if (Object.prototype.hasOwnProperty.call(flags, n)) {
+			return flags[n] === false;
+		}
+	}
+	return false;
+}
+
 function applyTransitionTexturesToMaterial(
 	mat: THREE.Material | null | undefined,
 	texFrom: THREE.Texture,
@@ -186,20 +203,30 @@ function applyTransitionTexturesToMaterial(
 /**
  * Bind cut A/B composites into every transition input sampler on pack materials.
  * Traverses mesh materials on `root` and every entry in `materialsByUuid`.
+ * `mapSlotTexture` can UV-flip per material when Editor exported flipY=false.
  */
 export function bindTransitionInputTextures({
 	root,
 	materialsByUuid,
 	texFrom,
 	texTo,
+	mapSlotTexture,
 }: {
 	root: THREE.Object3D;
 	materialsByUuid?: Map<string, THREE.Material> | null;
 	texFrom: THREE.Texture;
 	texTo: THREE.Texture;
+	mapSlotTexture?: (
+		mat: THREE.Material,
+		slot: "from" | "to",
+		tex: THREE.Texture,
+	) => THREE.Texture;
 }): void {
 	const visitMaterial = (mat: THREE.Material | null | undefined) => {
-		applyTransitionTexturesToMaterial(mat, texFrom, texTo);
+		if (!mat) return;
+		const from = mapSlotTexture ? mapSlotTexture(mat, "from", texFrom) : texFrom;
+		const to = mapSlotTexture ? mapSlotTexture(mat, "to", texTo) : texTo;
+		applyTransitionTexturesToMaterial(mat, from, to);
 	};
 
 	root.traverse((obj) => {

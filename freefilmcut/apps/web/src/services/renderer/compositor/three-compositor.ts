@@ -47,7 +47,12 @@ import {
 	type FreecapcutAnimClip,
 	PACK_SCENE_BUILD_REV,
 	bindTransitionInputTextures,
+	materialWantsSamplerUvFlip,
+	TRANSITION_FROM_UNIFORM_NAMES,
+	TRANSITION_TO_UNIFORM_NAMES,
 	normalizeVfxPackType,
+	normalizeTransitionFitMode,
+	authoredAspectFromResolution,
 	type BuiltPackScene,
 	type BuiltPostProcess,
 } from "@/vfxpack";
@@ -385,6 +390,10 @@ class ThreeCompositor {
 	/** Cut sides composited on the GPU; sampled by the pack as uFrom / uTo. */
 	private transitionFromRT: THREE.WebGLRenderTarget | null = null;
 	private transitionToRT: THREE.WebGLRenderTarget | null = null;
+	/** Optional V-flip copies when pack materials export flipY=false for samplers. */
+	private inputFlipFromRT: THREE.WebGLRenderTarget | null = null;
+	private inputFlipToRT: THREE.WebGLRenderTarget | null = null;
+	private inputFlipBelowRT: THREE.WebGLRenderTarget | null = null;
 	/** Sticker packs render here at their own resolution, then contain onto the canvas. */
 	private stickerRT: THREE.WebGLRenderTarget | null = null;
 	/** Stable uInput source: blit of full accum (all layers below). */
@@ -916,9 +925,15 @@ class ThreeCompositor {
 		this.mediaOnlyRT?.dispose();
 		this.transitionFromRT?.dispose();
 		this.transitionToRT?.dispose();
+		this.inputFlipFromRT?.dispose();
+		this.inputFlipToRT?.dispose();
+		this.inputFlipBelowRT?.dispose();
 		this.mediaOnlyRT = null;
 		this.transitionFromRT = null;
 		this.transitionToRT = null;
+		this.inputFlipFromRT = null;
+		this.inputFlipToRT = null;
+		this.inputFlipBelowRT = null;
 		this.stickerRT?.dispose();
 		this.stickerRT = null;
 		// Drop blit so HalfFloat/no-dither fragment is rebuilt after target type change.
@@ -1417,7 +1432,7 @@ class ThreeCompositor {
 		// silenced: was spamming console during playback
 	}
 
-		private bindBelowInputTexture({
+	private bindBelowInputTexture({
 		built,
 		texture,
 	}: {
@@ -1439,18 +1454,21 @@ class ThreeCompositor {
 		const applyToMaterial = (mat: THREE.Material | null | undefined) => {
 			const shader = mat as THREE.ShaderMaterial;
 			if (!shader?.isShaderMaterial || !shader.uniforms) return;
+			const bound = materialWantsSamplerUvFlip(mat, BELOW_INPUT_UNIFORM_NAMES)
+				? this.ensureFlippedInputTexture({ source: texture, slot: "below" })
+				: texture;
 			let touched = false;
 			for (const name of names) {
 				if (!shader.uniforms[name]) {
-					shader.uniforms[name] = { value: texture };
+					shader.uniforms[name] = { value: bound };
 				} else {
-					shader.uniforms[name].value = texture;
+					shader.uniforms[name].value = bound;
 				}
 				touched = true;
 			}
 			for (const name of BELOW_INPUT_UNIFORM_NAMES) {
 				if (shader.uniforms[name]) {
-					shader.uniforms[name].value = texture;
+					shader.uniforms[name].value = bound;
 					touched = true;
 				}
 			}
@@ -1458,7 +1476,7 @@ class ThreeCompositor {
 			for (const [k, u] of Object.entries(shader.uniforms)) {
 				if (!u || u.value) continue;
 				if (/map|input|channel|tex|sampler/i.test(k)) {
-					u.value = texture;
+					u.value = bound;
 					touched = true;
 				}
 			}
@@ -1469,7 +1487,7 @@ class ThreeCompositor {
 			const mapU = shader.uniforms.map;
 			const useMapOn = !!(useMapU && useMapU.value);
 			if (mapU && !useMapOn) {
-				mapU.value = texture;
+				mapU.value = bound;
 				touched = true;
 			}
 			if (touched) {
@@ -1504,21 +1522,119 @@ class ThreeCompositor {
 	}
 
 
-	/** Resolve pack type/scope from the registry for below-input decisions. */
-	private lookupPackMeta(
-		packId: string,
-	): { type: string; scope: string } | null {
+	/** Resolve pack type/scope/fit from the registry for below-input + transition aspect. */
+	private lookupPackMeta(packId: string): {
+		type: string;
+		scope: string;
+		fitMode: "crop" | "stretch";
+		resolution: { width?: number; height?: number } | null;
+	} | null {
 		const pack = getPackRegistrySnapshot().packs.find((p) => p.id === packId);
 		if (!pack) return null;
 		return {
 			type: String(pack.type || ""),
 			scope: String(pack.scope || ""),
+			fitMode: normalizeTransitionFitMode(pack.manifest?.fitMode),
+			resolution:
+				pack.manifest?.resolution || pack.scene?.resolution || null,
 		};
+	}
+
+	/**
+	 * Transition stretch keeps pack design aspect while drawing into project
+	 * pixels; crop (default) matches project W/H (current behavior).
+	 */
+	private resolvePackCameraAspect({
+		packId,
+		built,
+		renderW,
+		renderH,
+	}: {
+		packId: string;
+		built: BuiltPackScene;
+		renderW: number;
+		renderH: number;
+	}): number {
+		const projectAspect = renderW / Math.max(1, renderH);
+		const meta = this.lookupPackMeta(packId);
+		const packType = normalizeVfxPackType(meta?.type || built.packType);
+		if (
+			packType === "transition" &&
+			meta?.fitMode === "stretch"
+		) {
+			return authoredAspectFromResolution(
+				meta.resolution || built.resolution,
+				projectAspect,
+			);
+		}
+		return projectAspect;
+	}
+
+	/**
+	 * When Editor exported sampler flipY=false, blit a V-flipped copy.
+	 * RT.texture.flipY does not change sampling of on-GPU attachments.
+	 */
+	private ensureFlippedInputTexture({
+		source,
+		slot,
+	}: {
+		source: THREE.Texture;
+		slot: "from" | "to" | "below";
+	}): THREE.Texture {
+		const image = source.image as
+			| { width?: number; height?: number }
+			| undefined;
+		const w = Math.max(
+			1,
+			Math.floor(
+				Number(image?.width) ||
+					this.initializedSize?.width ||
+					this.accumRT?.width ||
+					1,
+			),
+		);
+		const h = Math.max(
+			1,
+			Math.floor(
+				Number(image?.height) ||
+					this.initializedSize?.height ||
+					this.accumRT?.height ||
+					1,
+			),
+		);
+		const key =
+			slot === "from"
+				? "inputFlipFromRT"
+				: slot === "to"
+					? "inputFlipToRT"
+					: "inputFlipBelowRT";
+		let rt = this[key];
+		if (!rt || rt.width !== w || rt.height !== h) {
+			rt?.dispose();
+			rt = new THREE.WebGLRenderTarget(w, h, {
+				type: THREE.UnsignedByteType,
+				depthBuffer: false,
+				stencilBuffer: false,
+			});
+			rt.texture.colorSpace = THREE.SRGBColorSpace;
+			rt.texture.flipY = false;
+			rt.texture.generateMipmaps = false;
+			this[key] = rt;
+		}
+		this.blitTextureToTarget({
+			source,
+			target: rt,
+			flipY: true,
+			clear: true,
+			blend: "replace",
+		});
+		return rt.texture;
 	}
 
 	/**
 	 * Bind outgoing/incoming cut sides (render-target textures). Their row
 	 * order already matches the flipY uploads pack materials expect.
+	 * Materials with exported flipY=false get a V-flipped copy.
 	 */
 	private bindCutTransitionInputs({
 		built,
@@ -1536,6 +1652,14 @@ class ThreeCompositor {
 			materialsByUuid: built.materialsByUuid,
 			texFrom: transitionInputs.texFrom,
 			texTo: transitionInputs.texTo,
+			mapSlotTexture: (mat, slot, tex) => {
+				const names =
+					slot === "from"
+						? TRANSITION_FROM_UNIFORM_NAMES
+						: TRANSITION_TO_UNIFORM_NAMES;
+				if (!materialWantsSamplerUvFlip(mat, names)) return tex;
+				return this.ensureFlippedInputTexture({ source: tex, slot });
+			},
 		});
 	}
 
@@ -1705,7 +1829,12 @@ class ThreeCompositor {
 		const renderW = packSize ? packSize.width : width;
 		const renderH = packSize ? packSize.height : height;
 		if (built.camera instanceof THREE.PerspectiveCamera) {
-			built.camera.aspect = renderW / Math.max(1, renderH);
+			built.camera.aspect = this.resolvePackCameraAspect({
+				packId,
+				built,
+				renderW,
+				renderH,
+			});
 			built.camera.updateProjectionMatrix();
 		}
 		const samplesBelow = built.belowInputUniformNames.length > 0;
@@ -3492,11 +3621,15 @@ class ThreeCompositor {
 	}
 
 	private updatePackCameraAspects(width: number, height: number) {
-		for (const built of this.packScenes.values()) {
-			if (built.camera instanceof THREE.PerspectiveCamera) {
-				built.camera.aspect = width / Math.max(1, height);
-				built.camera.updateProjectionMatrix();
-			}
+		for (const [packId, built] of this.packScenes.entries()) {
+			if (!(built.camera instanceof THREE.PerspectiveCamera)) continue;
+			built.camera.aspect = this.resolvePackCameraAspect({
+				packId,
+				built,
+				renderW: width,
+				renderH: height,
+			});
+			built.camera.updateProjectionMatrix();
 		}
 	}
 

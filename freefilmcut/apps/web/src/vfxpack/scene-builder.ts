@@ -185,7 +185,7 @@ export type BuiltPackScene = {
  * Honors node.parent so Editor hierarchy (e.g. moved GLB root) survives in OpenCut.
  */
 /** Bump when pack scene build / anim binding changes (forces compositor rebuild). */
-export const PACK_SCENE_BUILD_REV = 24;
+export const PACK_SCENE_BUILD_REV = 25;
 
 type StackEffectLike = {
 	id?: string;
@@ -292,18 +292,32 @@ export async function buildPackScene({
 	let postProcess: PostProcessStackData | null = null;
 	const needsBelow = packNeedsBelowInput({ type: pack.type, scope: pack.scope });
 
+	const textureAssetByPath = new Map<
+		string,
+		NonNullable<NonNullable<typeof sceneFile.assets>["textures"]>[number]
+	>();
+	for (const entry of sceneFile.assets?.textures || []) {
+		if (entry?.path) textureAssetByPath.set(entry.path, entry);
+	}
+
 	const loadTexture = async (relPath: string): Promise<THREE.Texture | null> => {
 		const url = pack.objectUrls.get(relPath);
 		if (!url) return null;
 		if (textureCache.has(relPath)) return textureCache.get(relPath)!;
 
+		const asset = textureAssetByPath.get(relPath);
 		const texture = await new Promise<THREE.Texture>((resolve, reject) => {
 			const loader = new THREE.TextureLoader();
 			loader.load(
 				url,
 				(tex) => {
 					tex.colorSpace = THREE.SRGBColorSpace;
-					tex.flipY = true;
+					// Match Editor/export: glTF-style maps often need flipY=false.
+					tex.flipY = asset?.flipY !== undefined ? !!asset.flipY : true;
+					if (asset?.wrapS !== undefined) tex.wrapS = asset.wrapS;
+					if (asset?.wrapT !== undefined) tex.wrapT = asset.wrapT;
+					if (asset?.magFilter !== undefined) tex.magFilter = asset.magFilter;
+					if (asset?.minFilter !== undefined) tex.minFilter = asset.minFilter;
 					tex.needsUpdate = true;
 					resolve(tex);
 				},
@@ -2662,6 +2676,13 @@ async function applySceneRenderSettings({
 				if (bg.type === "Equirectangular") {
 					tex.mapping = THREE.EquirectangularReflectionMapping;
 				}
+				if (
+					typeof (bg as { flipY?: boolean }).flipY === "boolean" &&
+					tex.flipY !== (bg as { flipY: boolean }).flipY
+				) {
+					tex.flipY = (bg as { flipY: boolean }).flipY;
+					tex.needsUpdate = true;
+				}
 				root.background = tex;
 			}
 		} else if (bg.type === "None") {
@@ -2891,14 +2912,22 @@ async function createMaterial(
 				useMap: { value: map !== null || mapIsRt },
 			};
 			const ud = (matDef as { uniforms?: Record<string, unknown> })?.uniforms;
+			/** Editor Flip Y for NLE-bound samplers (false → UV-flip when binding). */
+			const samplerFlipY: Record<string, boolean> = {};
 			if (ud) {
 				for (const [k, v] of Object.entries(ud)) {
 					if (v && typeof v === "object" && (v as { type?: string }).type === "t") {
-						// NLE binds below-composite each frame 閳?never treat as packed map.
+						// NLE binds below/transition each frame — never treat as packed map.
 						const binding = (v as { binding?: string }).binding;
+						const flipYField = (v as { flipY?: boolean }).flipY;
+						if (typeof flipYField === "boolean") {
+							samplerFlipY[k] = flipYField;
+						}
 						if (
 							isBelowInputUniformName(k) ||
-							binding === "accumBelow"
+							binding === "accumBelow" ||
+							binding === "transitionFrom" ||
+							binding === "transitionTo"
 						) {
 							uniforms[k] = { value: white1x1 };
 							continue;
@@ -2981,6 +3010,9 @@ async function createMaterial(
 			});
 			if (!matBuilt.userData) matBuilt.userData = {};
 			matBuilt.userData.freecapcutGlobalScreen = true;
+			if (Object.keys(samplerFlipY).length > 0) {
+				matBuilt.userData.fccSamplerFlipY = samplerFlipY;
+			}
 			ensureGlobalScreenUniforms(matBuilt, { forceAll: true });
 			stampRtSlots(matBuilt, matDef);
 			return matBuilt;

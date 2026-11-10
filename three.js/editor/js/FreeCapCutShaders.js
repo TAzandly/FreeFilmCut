@@ -544,6 +544,31 @@ function ensureEditorPreviewInputs( material ) {
 
 }
 
+/** Read Flip Y for an Editor preview slot (uInput / From / To). Default true. */
+function getEditorSamplerFlipY( material, storeKey, fallback = true ) {
+
+	const meta = material && material.userData && material.userData.editorPreviewInputs
+		? material.userData.editorPreviewInputs[ storeKey ]
+		: null;
+	if ( meta && typeof meta.flipY === 'boolean' ) return !! meta.flipY;
+	return fallback;
+
+}
+
+/** Persist Flip Y even when no preview texture is loaded yet. */
+function setEditorSamplerFlipY( material, storeKey, flipY ) {
+
+	if ( ! material ) return;
+	const store = ensureEditorPreviewInputs( material );
+	const prev = store[ storeKey ] && typeof store[ storeKey ] === 'object' ? store[ storeKey ] : {};
+	store[ storeKey ] = {
+		...prev,
+		flipY: !! flipY,
+		editorOnly: true,
+	};
+
+}
+
 function listPresentSamplerNames( material, nameList ) {
 
 	const names = [];
@@ -605,6 +630,7 @@ function applyEditorSamplerPreview( material, nameList, storeKey, texture, meta 
 		store[ storeKey ] = {
 			fileName: meta.fileName || ( texture.sourceFile || 'preview' ),
 			dataUrl: meta.dataUrl || null,
+			flipY: meta.flipY !== undefined ? !! meta.flipY : !! texture.flipY,
 			editorOnly: true,
 		};
 
@@ -695,7 +721,7 @@ function restoreEditorSamplerPreview( material, nameList, storeKey, apply ) {
 			( texture ) => {
 
 				texture.colorSpace = THREE.SRGBColorSpace;
-				texture.flipY = true;
+				texture.flipY = meta.flipY === undefined ? true : !! meta.flipY;
 				texture.needsUpdate = true;
 				texture.sourceFile = meta.fileName || 'preview';
 				texture.userData = texture.userData || {};
@@ -703,6 +729,7 @@ function restoreEditorSamplerPreview( material, nameList, storeKey, apply ) {
 				apply( material, texture, {
 					fileName: meta.fileName,
 					dataUrl: meta.dataUrl,
+					flipY: texture.flipY,
 				} );
 				resolve( true );
 
@@ -775,5 +802,7 @@ export {
 	listPresentTransitionToNames,
 	EDITOR_PREVIEW_INPUT_KEY,
 	EDITOR_PREVIEW_FROM_KEY,
-	EDITOR_PREVIEW_TO_KEY
+	EDITOR_PREVIEW_TO_KEY,
+	getEditorSamplerFlipY,
+	setEditorSamplerFlipY
 };

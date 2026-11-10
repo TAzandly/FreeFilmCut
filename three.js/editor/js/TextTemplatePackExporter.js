@@ -14,7 +14,7 @@
  */
 import JSZip from 'jszip';
 import { serializeTextStickersForExport } from './ui/TextStickers.js?v=fcc-ui-211';
-import { buildVfxPack } from './VfxPackExporter.js?v=fcc-ui-221';
+import { buildVfxPack } from './VfxPackExporter.js?v=fcc-ui-237';
 import { getTextAnimDescriptor } from './textanim/TextAnimRegistry.js';
 import { normalizeTextAnim } from './textanim/TextAnimTypes.js?v=fcc-tanim-24';
 import { serializeAnimClip } from './anim/FreeCapCutAnimCore.js?v=fcc-anim-20';

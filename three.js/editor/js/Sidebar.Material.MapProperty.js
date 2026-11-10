@@ -7,7 +7,7 @@ import { SetMaterialValueCommand } from './commands/SetMaterialValueCommand.js';
 import { SetMaterialRangeCommand } from './commands/SetMaterialRangeCommand.js';
 import { SetMaterialVectorCommand } from './commands/SetMaterialVectorCommand.js';
 import { SetTextureParametersCommand } from './commands/SetTextureParametersCommand.js';
-import { TextureParametersDialog } from './TextureParametersDialog.js';
+import { TextureParametersDialog } from './TextureParametersDialog.js?v=fcc-ui-234';
 
 function SidebarMaterialMapProperty( editor, property, name ) {
 

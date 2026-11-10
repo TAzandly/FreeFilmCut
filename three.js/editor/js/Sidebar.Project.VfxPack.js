@@ -4,7 +4,7 @@ import {
 	exportVfxPack,
 	formatVfxPackExportMessage,
 	promptExportOptions,
-} from './VfxPackExporter.js?v=fcc-ui-221';
+} from './VfxPackExporter.js?v=fcc-ui-237';
 import {
 	exportTextAnimPack,
 	formatTextAnimPackExportMessage,
@@ -33,6 +33,12 @@ const VALID_TYPES = Object.keys( PACK_TYPES );
 function normalizePackType( value ) {
 
 	return VALID_TYPES.includes( value ) ? value : 'effect';
+
+}
+
+function normalizeFitMode( value ) {
+
+	return value === 'stretch' ? 'stretch' : 'crop';
 
 }
 
@@ -145,16 +151,51 @@ function SidebarProjectVfxPack( editor ) {
 
 	}
 
+	const fitModeRow = new UIRow();
+	const fitModeSelect = new UISelect()
+		.setOptions( {
+			crop: strings.getKey( 'sidebar/project/vfxpack/fitMode/crop' ) || 'Crop',
+			stretch: strings.getKey( 'sidebar/project/vfxpack/fitMode/stretch' ) || 'Stretch',
+		} )
+		.setWidth( '170px' )
+		.setValue( normalizeFitMode( config.getKey( 'project/vfxpack/fitMode' ) ) )
+		.onChange( function () {
+
+			const value = normalizeFitMode( this.getValue() );
+			config.setKey( 'project/vfxpack/fitMode', value );
+			fitModeSelect.setValue( value );
+
+		} );
+	fitModeRow.add( new UIText( strings.getKey( 'sidebar/project/vfxpack/fitMode' ) || 'Fit mode' ).setClass( 'Label' ) );
+	fitModeRow.add( fitModeSelect );
+	container.add( fitModeRow );
+
+	const fitModeHintRow = new UIRow();
+	fitModeHintRow.add( new UIText( strings.getKey( 'sidebar/project/vfxpack/fitMode/hint' ) || 'Transition only. Stretch fills the NLE canvas (may distort).' )
+		.setFontSize( '11px' )
+		.setColor( '#888' ) );
+	container.add( fitModeHintRow );
+
+	function syncFitModeRow() {
+
+		const show = typeSelect.getValue() === 'transition';
+		fitModeRow.setDisplay( show ? '' : 'none' );
+		fitModeHintRow.setDisplay( show ? '' : 'none' );
+
+	}
+
 	typeSelect.onChange( function () {
 
 		const value = normalizePackType( this.getValue() );
 		config.setKey( 'project/vfxpack/type', value );
 		typeSelect.setValue( value );
 		syncPhaseRow();
+		syncFitModeRow();
 		if ( editor.signals.sceneGraphChanged ) editor.signals.sceneGraphChanged.dispatch();
 
 	} );
 	syncPhaseRow();
+	syncFitModeRow();
 
 	const hintRow = new UIRow();
 	hintRow.add( new UIText( strings.getKey( 'sidebar/project/vfxpack/hint' ) || 'Used when exporting .vfxpack (manifest.type).' )

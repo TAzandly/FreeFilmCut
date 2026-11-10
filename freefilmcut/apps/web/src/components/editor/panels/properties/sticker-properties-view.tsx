@@ -21,6 +21,7 @@ import { useEditor } from "@/editor/use-editor";
 import { usePackRegistry } from "@/vfxpack/pack-registry";
 import { normalizeVfxPackType } from "@/vfxpack/pack-placement";
 import { packLibraryThumb } from "@/vfxpack/preview-assets";
+import { VfxPackImportButton } from "@/vfxpack/components/vfxpack-import-button";
 import type { LoadedVfxPack } from "@/vfxpack/types";
 import { addMediaTime, mediaTimeFromSeconds, mediaTimeToSeconds } from "@/wasm";
 import { cn } from "@/utils/ui";
@@ -522,6 +523,12 @@ function StickerAnimationPage({
 					<TabsTrigger value="loop">Loop</TabsTrigger>
 				</TabsList>
 				<TabsContent value={phase} className="min-h-0 flex-1 overflow-auto px-3 py-3">
+					<div className="mb-3 flex items-center justify-between gap-2">
+						<span className="text-muted-foreground text-xs">
+							Sticker animation library
+						</span>
+						<VfxPackImportButton expectTypes={["sticker-anim"]} />
+					</div>
 					<div className="flex flex-wrap content-start gap-x-2.5 gap-y-3">
 						<StickerAnimChoice
 							label="None"
@@ -541,6 +548,13 @@ function StickerAnimationPage({
 							</StickerAnimChoice>
 						))}
 					</div>
+					{visible.length === 0 && (
+						<p className="text-muted-foreground py-6 text-center text-sm">
+							No sticker-anim packs yet. Export from the Asset Editor (pack type
+							Sticker animation), then use Import VfxPack here. Same file/id
+							replaces the previous import — no index.json needed.
+						</p>
+					)}
 				</TabsContent>
 			</Tabs>
 		</div>

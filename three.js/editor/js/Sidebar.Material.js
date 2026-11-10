@@ -12,7 +12,7 @@ import { SidebarMaterialMapProperty } from './Sidebar.Material.MapProperty.js?v=
 import { SidebarMaterialNumberProperty } from './Sidebar.Material.NumberProperty.js';
 import { SidebarMaterialRangeValueProperty } from './Sidebar.Material.RangeValueProperty.js';
 import { SidebarMaterialProgram } from './Sidebar.Material.Program.js';
-import { SidebarMaterialShaderUniforms } from './Sidebar.Material.ShaderUniforms.js?v=fcc-ui-106';
+import { SidebarMaterialShaderUniforms } from './Sidebar.Material.ShaderUniforms.js?v=fcc-ui-236';
 import { createFreeFilmCutShaderMaterial, syncShaderMaterialBridge } from './FreeCapCutShaders.js?v=fcc-ui-198';
 import { resolveSidebarMeshObject } from './ui/UIConstants.js?v=fcc-ui-159';
 

@@ -207,6 +207,11 @@ export interface VfxManifest {
 	}>;
 	meta?: Record<string, unknown>;
 	resolution?: { width: number; height: number };
+	/**
+	 * Transition only: how design aspect maps onto the NLE canvas.
+	 * Omit / unknown → crop (rewrite camera to project aspect).
+	 */
+	fitMode?: "crop" | "stretch";
 	render?: VfxPackRenderSettings;
 	/** Library card. Poster is the still; hover plays while the pointer is over the card. */
 	preview?: {
@@ -417,7 +422,19 @@ export interface VfxSceneFile {
 	activeCamera?: string | null;
 	nodes: VfxSceneNode[];
 	assets?: {
-		textures?: Array<{ uuid: string; path: string; name?: string }>;
+		textures?: Array<{
+			uuid: string;
+			path: string;
+			name?: string;
+			exported?: boolean;
+			wrapS?: number;
+			wrapT?: number;
+			magFilter?: number;
+			minFilter?: number;
+			/** Three.js Texture.flipY; omit → true (legacy packs / editor image default). */
+			flipY?: boolean;
+			colorSpace?: string;
+		}>;
 		shaders?: Array<{
 			name?: string;
 			vertex?: string;

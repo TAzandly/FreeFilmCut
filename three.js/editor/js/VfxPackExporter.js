@@ -3,7 +3,19 @@
  * Builds zip: pack/manifest.json + scene.json + textures/ + shaders/placeholder.
  */
 import JSZip from 'jszip';
-import { isBelowInputUniformName, isTransitionInputUniformName } from './FreeCapCutShaders.js?v=fcc-ui-198';
+import {
+	isBelowInputUniformName,
+	isTransitionInputUniformName,
+	isTransitionFromUniformName,
+	isTransitionToUniformName,
+	BELOW_INPUT_UNIFORM_NAMES,
+	TRANSITION_FROM_UNIFORM_NAMES,
+	TRANSITION_TO_UNIFORM_NAMES,
+	EDITOR_PREVIEW_INPUT_KEY,
+	EDITOR_PREVIEW_FROM_KEY,
+	EDITOR_PREVIEW_TO_KEY,
+	getEditorSamplerFlipY,
+} from './FreeCapCutShaders.js?v=fcc-ui-200';
 import {
 	collectExposedParamsFromScene,
 	exposedParamsToManifestParams,
@@ -454,10 +466,39 @@ function serializeMaterial( material, textureRefs, shaderRefs ) {
 				for ( const [ ukey, u ] of Object.entries( mat.uniforms ) ) {
 
 					if ( ! u || u.value === undefined ) continue;
-					// Below-input is NLE-bound at runtime; Editor preview must not become a packed map
+					// NLE-bound samplers: pack flipY preference, never the Editor preview image.
 					if ( isBelowInputUniformName( ukey ) ) {
 
-						out.uniforms[ ukey ] = { type: 't', value: null, binding: 'accumBelow' };
+						out.uniforms[ ukey ] = {
+							type: 't',
+							value: null,
+							binding: 'accumBelow',
+							flipY: getEditorSamplerFlipY( mat, EDITOR_PREVIEW_INPUT_KEY, true ),
+						};
+						continue;
+
+					}
+
+					if ( isTransitionFromUniformName( ukey ) ) {
+
+						out.uniforms[ ukey ] = {
+							type: 't',
+							value: null,
+							binding: 'transitionFrom',
+							flipY: getEditorSamplerFlipY( mat, EDITOR_PREVIEW_FROM_KEY, true ),
+						};
+						continue;
+
+					}
+
+					if ( isTransitionToUniformName( ukey ) ) {
+
+						out.uniforms[ ukey ] = {
+							type: 't',
+							value: null,
+							binding: 'transitionTo',
+							flipY: getEditorSamplerFlipY( mat, EDITOR_PREVIEW_TO_KEY, true ),
+						};
 						continue;
 
 					}
@@ -481,6 +522,29 @@ function serializeMaterial( material, textureRefs, shaderRefs ) {
 					}
 
 				}
+
+				// GLSL may declare samplers the Editor never put on uniforms — still export flipY.
+				const glslSrc = `${ mat.vertexShader || '' }\n${ mat.fragmentShader || '' }`;
+				const ensureSamplerExport = ( names, storeKey, binding ) => {
+
+					for ( const n of names ) {
+
+						if ( out.uniforms[ n ] ) continue;
+						if ( ! new RegExp( `\\buniform\\s+sampler2D\\s+${ n }\\b` ).test( glslSrc ) ) continue;
+						out.uniforms[ n ] = {
+							type: 't',
+							value: null,
+							binding,
+							flipY: getEditorSamplerFlipY( mat, storeKey, true ),
+						};
+
+					}
+
+				};
+
+				ensureSamplerExport( BELOW_INPUT_UNIFORM_NAMES, EDITOR_PREVIEW_INPUT_KEY, 'accumBelow' );
+				ensureSamplerExport( TRANSITION_FROM_UNIFORM_NAMES, EDITOR_PREVIEW_FROM_KEY, 'transitionFrom' );
+				ensureSamplerExport( TRANSITION_TO_UNIFORM_NAMES, EDITOR_PREVIEW_TO_KEY, 'transitionTo' );
 
 			}
 
@@ -2325,6 +2389,12 @@ void main() {
 	if ( packType === 'clip-anim' ) {
 
 		manifest.phase = clipAnimPhaseFromConfig( editor );
+
+	}
+	if ( packType === 'transition' ) {
+
+		const fitRaw = editor.config && editor.config.getKey( 'project/vfxpack/fitMode' );
+		manifest.fitMode = fitRaw === 'stretch' ? 'stretch' : 'crop';
 
 	}
 	if ( customEffectsList.length > 0 ) {
