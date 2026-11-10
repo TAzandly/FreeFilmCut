@@ -29,6 +29,8 @@ export interface DraggableItemProps {
 	isRounded?: boolean;
 	variant?: "card" | "compact";
 	isDraggable?: boolean;
+	/** Opacity of the floating drag preview (0–1). Use ~0.5 so drop targets stay visible. */
+	dragPreviewOpacity?: number;
 }
 
 export function DraggableItem({
@@ -45,6 +47,7 @@ export function DraggableItem({
 	isRounded = true,
 	variant = "card",
 	isDraggable = true,
+	dragPreviewOpacity = 1,
 }: DraggableItemProps) {
 	const [isDragging, setIsDragging] = useState(false);
 	const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
@@ -169,6 +172,7 @@ export function DraggableItem({
 						style={{
 							left: dragPosition.x - 40,
 							top: dragPosition.y - 40,
+							opacity: dragPreviewOpacity,
 						}}
 					>
 						<div className="w-[80px]">

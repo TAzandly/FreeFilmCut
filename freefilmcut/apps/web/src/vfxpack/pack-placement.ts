@@ -3,7 +3,7 @@
  * Canonical types match the Asset Editor: sticker | transition | effect | filter | art-text
  */
 
-import { VISUAL_ELEMENT_TYPES, type VisualElement } from "@/timeline";
+import type { VisualElement } from "@/timeline";
 import type { PrimaryVfxPackType } from "@/vfxpack/types";
 
 export const PRIMARY_VFX_PACK_TYPES = [
@@ -80,52 +80,50 @@ export function normalizeVfxPackType(
 export type VfxPackPlacement = {
 	type: PrimaryVfxPackType;
 	label: string;
-	/**
-	 * Timeline drag payload targetElementTypes:
-	 * - non-empty => may attach onto matching clips
-	 * - empty => create/use an effect track when insertTrackType is "effect"
-	 */
-	targetElementTypes: readonly VisualElement["type"][];
-	/** Null skips effect-track insert (transitions land on a cut, not a track). */
-	insertTrackType: "effect" | null;
-	dragHint: string;
-};
+		/**
+		 * Timeline drag payload targetElementTypes:
+		 * - non-empty => may attach onto matching clips
+		 * - empty => create/use an effect track when insertTrackType is "effect"
+		 */
+		targetElementTypes: readonly VisualElement["type"][];
+		/** Null skips effect-track insert (transitions land on a cut, not a track). */
+		insertTrackType: "effect" | null;
+		dragHint: string;
+	};
 
-export function getVfxPackPlacement({
-	type,
-}: {
-	type: string | undefined | null;
-}): VfxPackPlacement {
-	const normalized = normalizeVfxPackType(type);
-	const label = VFX_PACK_TYPE_LABELS[normalized];
+	export function getVfxPackPlacement({
+		type,
+	}: {
+		type: string | undefined | null;
+	}): VfxPackPlacement {
+		const normalized = normalizeVfxPackType(type);
+		const label = VFX_PACK_TYPE_LABELS[normalized];
 
-	switch (normalized) {
-		case "filter":
-			return {
-				type: normalized,
-				label,
-				targetElementTypes: VISUAL_ELEMENT_TYPES,
-				insertTrackType: "effect",
-				dragHint:
-					"Drop on a clip to attach, or on the timeline for an effect track",
-			};
-		case "effect":
-			return {
-				type: normalized,
-				label,
-				targetElementTypes: VISUAL_ELEMENT_TYPES,
-				insertTrackType: "effect",
-				dragHint:
-					"Drop on a clip to attach, or on the timeline for an effect track",
-			};
-		case "sticker":
-			return {
-				type: normalized,
-				label,
-				targetElementTypes: [],
-				insertTrackType: "effect",
-				dragHint: "Drag onto the timeline (overlay / effect track)",
-			};
+		switch (normalized) {
+			case "filter":
+				return {
+					type: normalized,
+					label,
+					targetElementTypes: [],
+					insertTrackType: "effect",
+					dragHint: "Drag onto the timeline (effect track)",
+				};
+			case "effect":
+				return {
+					type: normalized,
+					label,
+					targetElementTypes: [],
+					insertTrackType: "effect",
+					dragHint: "Drag onto the timeline (effect track)",
+				};
+			case "sticker":
+				return {
+					type: normalized,
+					label,
+					targetElementTypes: [],
+					insertTrackType: "effect",
+					dragHint: "Drag onto the timeline (overlay / effect track)",
+				};
 		case "art-text":
 			return {
 				type: normalized,

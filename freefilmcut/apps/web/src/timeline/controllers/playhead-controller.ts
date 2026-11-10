@@ -30,12 +30,17 @@ import type { Bookmark, SceneTracks } from "@/timeline";
 
 // --- Session ---
 
+/** Ignore sub-threshold jitter so a click does not count as a drag. */
+const SCRUB_DRAG_THRESHOLD_PX = 5;
+
 interface ScrubSession {
 	kind: "scrubbing";
 	/** True when scrub started from a ruler click (not the playhead handle). */
 	didStartFromRuler: boolean;
-	/** True once the mouse has moved during a ruler drag. */
+	/** True once the pointer moved past {@link SCRUB_DRAG_THRESHOLD_PX}. */
 	hasMoved: boolean;
+	/** Pointer X at mousedown — used to detect real drag vs click. */
+	downClientX: number;
 	/** Most recent frame-snapped time set by scrub(). */
 	currentTime: MediaTime | null;
 }
@@ -148,13 +153,16 @@ export class PlayheadController {
 	onPlayheadMouseDown(event: ReactMouseEvent): void {
 		event.preventDefault();
 		event.stopPropagation();
+		// Do not setScrubbing yet — that drives edge auto-scroll. Clicks must
+		// only seek; scrubbing (and edge scroll) start after a real drag.
 		this.session = {
 			kind: "scrubbing",
 			didStartFromRuler: false,
 			hasMoved: false,
+			downClientX: event.clientX,
 			currentTime: null,
 		};
-		this.config.setScrubbing(true);
+		this.lastMouseClientX = event.clientX;
 		this.scrub({ event, isElementSnappingEnabled: true });
 		this.activate();
 	}
@@ -168,9 +176,10 @@ export class PlayheadController {
 			kind: "scrubbing",
 			didStartFromRuler: true,
 			hasMoved: false,
+			downClientX: event.clientX,
 			currentTime: null,
 		};
-		this.config.setScrubbing(true);
+		this.lastMouseClientX = event.clientX;
 		// No element-edge snapping on initial ruler click — avoids a jarring jump.
 		this.scrub({ event, isElementSnappingEnabled: false });
 		this.activate();
@@ -332,15 +341,22 @@ export class PlayheadController {
 		recordInteractionWork({ name: "timeline.playhead" });
 
 		if (this.session.kind !== "scrubbing") return;
+
+		if (!this.session.hasMoved) {
+			if (Math.abs(clientX - this.session.downClientX) < SCRUB_DRAG_THRESHOLD_PX) {
+				return;
+			}
+			this.session.hasMoved = true;
+			// Edge auto-scroll is gated on isScrubbing — enable only after drag.
+			this.config.setScrubbing(true);
+		}
+
 		measureInteraction({
 			name: "timeline.playhead",
 			fn: () => {
 				this.scrub({ event: { clientX }, isElementSnappingEnabled: true });
 			},
 		});
-		if (this.session.didStartFromRuler) {
-			this.session.hasMoved = true;
-		}
 	};
 
 	private rafPointerMove = createRafPointerMove({
@@ -354,7 +370,9 @@ export class PlayheadController {
 		if (this.session.kind !== "scrubbing") return;
 
 		const session = this.session;
-		this.config.setScrubbing(false);
+		if (session.hasMoved) {
+			this.config.setScrubbing(false);
+		}
 
 		if (session.currentTime !== null) {
 			this.config.seek(session.currentTime);

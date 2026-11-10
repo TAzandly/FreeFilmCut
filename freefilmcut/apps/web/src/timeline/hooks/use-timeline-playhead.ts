@@ -27,9 +27,9 @@ export function useTimelinePlayhead({
 }: UseTimelinePlayheadProps) {
 	const editor = useEditor();
 	const isShiftHeldRef = useShiftKey();
-	// isScrubbing drives useEdgeAutoScroll — the controller sets it on the editor,
-	// so this reactive read naturally reflects whether scrubbing is active.
-	const isScrubbing = useEditor((e) => e.playback.getIsScrubbing());
+		// isScrubbing drives useEdgeAutoScroll. PlayheadController only sets it after
+		// a real drag (not on click), so edge scroll stays off for seek clicks.
+		const isScrubbing = useEditor((e) => e.playback.getIsScrubbing());
 
 	const config: PlayheadConfig = {
 		zoomLevel,

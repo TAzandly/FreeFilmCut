@@ -1097,15 +1097,18 @@ function EffectsButton({
 		setActiveTab({ elementType: element.type, tabId: "effects" });
 	};
 
+	// Must not be a <button>: ElementInner already wraps the clip in a button,
+	// and nested buttons cause hydration errors (legacy clip-attached effects).
 	return (
-		<button
-			type="button"
+		<div
+			role="button"
+			tabIndex={-1}
 			className="flex shrink-0 justify-center text-white cursor-pointer"
 			onMouseDown={(event) => event.stopPropagation()}
 			onClick={handleClick}
 		>
 			<HugeiconsIcon icon={MagicWand05Icon} size={12} />
-		</button>
+		</div>
 	);
 }
 

@@ -306,6 +306,8 @@ function VfxPackItem({ pack }: { pack: LoadedVfxPack }) {
 
 	const preview = <PackLibraryThumb pack={pack} />;
 
+	const isTransition = normalizeVfxPackType(pack.type) === "transition";
+
 	return (
 		<div className="flex flex-col gap-1">
 			<DraggableItem
@@ -323,6 +325,9 @@ function VfxPackItem({ pack }: { pack: LoadedVfxPack }) {
 				isRounded
 				variant="card"
 				containerClassName="w-full"
+				// Keep cut highlight between clips visible while aiming the drop.
+				dragPreviewOpacity={isTransition ? 0.5 : 1}
+				shouldShowPlusOnDrag={!isTransition}
 			/>
 			<div className="text-muted-foreground truncate px-0.5 text-[10px] leading-tight">
 				{placement.label}
