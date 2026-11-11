@@ -6,9 +6,10 @@ served statically at `/models/beauty/<filename>`.
 
 | File | Used by | Required? | If missing |
 | --- | --- | --- | --- |
-| `face_landmarker.task` | `mediapipe-face.ts` | **Yes** | Face detection fails (warning logged); frame has no faces and is not cached |
-| `yolo-face.onnx` | `yolo-face.ts` | Optional | Detector fallback skipped, warns once, `detect` returns `[]` |
-| `selfie_multiclass_256x256.onnx` | `selfie-skin.ts` | Optional | Skin mask falls back to the landmark polygon mask (`source: "landmarks-only-mask"`) |
+| `face_landmarker.task` | `mediapipe-face.ts` | **Yes** (warp) | Face landmarks fail; warp skips, smooth/whiten can still use skin seg |
+| `dlmv.onnx` | `dlmv-skin.ts` | **Preferred** (smooth/whiten) | Falls back to selfie multiclass, then landmark/box mask |
+| `selfie_multiclass_256x256.onnx` | `selfie-skin.ts` | Optional fallback | Used only when DLMV is missing |
+| `yolo-face.onnx` | — | **Unused** | Kept on disk only; the beauty pipeline no longer runs YOLO |
 
 ## 1. `face_landmarker.task` (MediaPipe Face Landmarker, float16)
 
@@ -17,44 +18,37 @@ served statically at `/models/beauty/<filename>`.
   <https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task>
 - Docs: <https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker>
 
-The MediaPipe WASM runtime is loaded from jsDelivr pinned to the installed
-`@mediapipe/tasks-vision` version (`MEDIAPIPE_WASM_CDN_BASE`). To self-host,
-copy `node_modules/@mediapipe/tasks-vision/wasm/*` to
-`public/models/beauty/mediapipe-wasm/` and call
-`configureMediapipeFace({ wasmBaseUrl: "/models/beauty/mediapipe-wasm" })`.
+The MediaPipe JS/WASM runtime is self-hosted under `/vendor/mediapipe-tasks-vision/`
+(synced by `bun run sync:beauty-vendor`). Override with
+`configureMediapipeFace({ esmUrl, wasmBaseUrl })` if needed. CDN constants
+(`MEDIAPIPE_ESM_CDN_URL`) remain as a manual fallback only.
 
-## 2. `yolo-face.onnx` (YOLO-Face detector)
+## 2. `dlmv.onnx` (DeepLabV3 + MobileNetV3 skin segmentation)
 
-Used only when MediaPipe finds no faces (profile / small / occluded faces).
-The detector input is `1x3x640x640` RGB `[0,1]` (letterboxed). Output is decoded
-as `[1, 4+1(+extras), N]` (YOLOv8 / YOLO11 style) or `[1, N, 5+extras]`
-(YOLOv5-face style) with `cx, cy, w, h, score` in the first five channels.
+Primary model for **smooth / whiten**. Segments all skin (face + body); the
+mask is **not** clipped to face landmarks. Input `1x3x256x256` RGB `[0,1]`
+NCHW; output `1x1x256x256` soft skin probability (min-max normalized in code).
 
-Recommended (single class "face", dynamic-shape ONNX, ~80 MB), pinned to commit
-`9bf9b191dda00653b40085b3fb7649bd6225e786`:
+- Upstream: [samhaswon/skin_segmentation](https://github.com/samhaswon/skin_segmentation) `dlmv`
+  (**GPL-3.0** — review before shipping in a closed product)
+- Download (release `v0.0.2`, ~43 MB):
 
 ```bash
-curl -L -o yolo-face.onnx \
-  https://huggingface.co/astaileyyoung/yolov11m-face-onnx/resolve/9bf9b191dda00653b40085b3fb7649bd6225e786/yolov11m-face-dynamic.onnx
+curl -L -o dlmv.onnx \
+  https://github.com/samhaswon/skin_segmentation/releases/download/v0.0.2/dlmv.onnx
 ```
 
 ```powershell
-Invoke-WebRequest -OutFile yolo-face.onnx `
-  https://huggingface.co/astaileyyoung/yolov11m-face-onnx/resolve/9bf9b191dda00653b40085b3fb7649bd6225e786/yolov11m-face-dynamic.onnx
+Invoke-WebRequest -OutFile dlmv.onnx `
+  https://github.com/samhaswon/skin_segmentation/releases/download/v0.0.2/dlmv.onnx
 ```
-
-- Repo: <https://huggingface.co/astaileyyoung/yolov11m-face-onnx> (card says MIT)
-- **License caveat:** the weights derive from Ultralytics YOLO11, whose upstream
-  license is AGPL-3.0. Review this before shipping the model with a distributed
-  product. Any YOLOv8/YOLO11/YOLOv5-face ONNX with the output layout above can be
-  substituted (e.g. export your own with `yolo export format=onnx imgsz=640`).
 
 ## 3. `selfie_multiclass_256x256.onnx` (MediaPipe Selfie Multiclass)
 
-Classes: `0` background, `1` hair, `2` body-skin, `3` face-skin, `4` clothes,
-`5` others. Skin = classes 2 and 3. Input is `256x256` RGB `[0,1]` (NHWC or
-NCHW auto-detected from model metadata); output NHWC `[1,256,256,6]` or NCHW
-`[1,6,256,256]` is accepted.
+Fallback when `dlmv.onnx` is missing. Classes: `0` background, `1` hair,
+`2` body-skin, `3` face-skin, `4` clothes, `5` others. Current fallback uses
+**face-skin (3) only**. Input is `256x256` RGB `[0,1]` (NHWC or NCHW
+auto-detected); output NHWC `[1,256,256,6]` or NCHW `[1,6,256,256]` is accepted.
 
 - Original model: MediaPipe Selfie Multiclass Segmentation (Google),
   **Apache-2.0** — <https://github.com/google-ai-edge/mediapipe>
@@ -79,10 +73,10 @@ Invoke-WebRequest -OutFile selfie_multiclass_256x256.onnx `
 
 ## ONNX Runtime Web
 
-`onnxruntime-web` fetches its `.wasm` runtime from jsDelivr pinned to the
-installed version (`ORT_WASM_CDN_BASE` in `ort-runtime.ts`). To self-host, copy
-`node_modules/onnxruntime-web/dist/*.wasm` and `*.mjs` somewhere under
-`public/` and call `configureOrtWasmPaths("/path/")` before first use.
+`onnxruntime-web` is self-hosted under `/vendor/onnxruntime-web/` (synced by
+`bun run sync:beauty-vendor`). Override with
+`configureOrtRuntime({ esmUrl, wasmPaths })` if needed. CDN constants
+(`ORT_ESM_CDN_URL`) remain as a manual fallback only.
 
 ## Not used
 

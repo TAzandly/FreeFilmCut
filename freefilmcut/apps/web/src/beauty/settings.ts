@@ -16,10 +16,12 @@ export function normalizeBeautyParams(
 	partial: Partial<ClipBeautyParams>,
 ): ClipBeautyParams {
 	return {
+		enabled: partial.enabled ?? DEFAULT_BEAUTY_PARAMS.enabled,
 		smooth: clamp01(partial.smooth ?? DEFAULT_BEAUTY_PARAMS.smooth),
 		whiten: clamp01(partial.whiten ?? DEFAULT_BEAUTY_PARAMS.whiten),
 		eye: clamp01(partial.eye ?? DEFAULT_BEAUTY_PARAMS.eye),
 		faceSlim: clamp01(partial.faceSlim ?? DEFAULT_BEAUTY_PARAMS.faceSlim),
+		vFace: clamp01(partial.vFace ?? DEFAULT_BEAUTY_PARAMS.vFace),
 		noseSlim: clamp01(partial.noseSlim ?? DEFAULT_BEAUTY_PARAMS.noseSlim),
 	};
 }
@@ -37,6 +39,10 @@ function readNumber({
 	return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
+function readBoolean(value: unknown, fallback: boolean): boolean {
+	return typeof value === "boolean" ? value : fallback;
+}
+
 export function readBeautyFromParams({
 	params,
 }: {
@@ -44,6 +50,10 @@ export function readBeautyFromParams({
 }): ClipBeautyParams {
 	const safe = params ?? {};
 	return normalizeBeautyParams({
+		enabled: readBoolean(
+			safe[BEAUTY_PARAM_KEYS.enabled],
+			DEFAULT_BEAUTY_PARAMS.enabled,
+		),
 		smooth: readNumber({
 			params: safe,
 			key: BEAUTY_PARAM_KEYS.smooth,
@@ -64,6 +74,11 @@ export function readBeautyFromParams({
 			key: BEAUTY_PARAM_KEYS.faceSlim,
 			fallback: DEFAULT_BEAUTY_PARAMS.faceSlim,
 		}),
+		vFace: readNumber({
+			params: safe,
+			key: BEAUTY_PARAM_KEYS.vFace,
+			fallback: DEFAULT_BEAUTY_PARAMS.vFace,
+		}),
 		noseSlim: readNumber({
 			params: safe,
 			key: BEAUTY_PARAM_KEYS.noseSlim,
@@ -72,15 +87,20 @@ export function readBeautyFromParams({
 	});
 }
 
-/** True when any slider of already-resolved beauty params is above epsilon. */
-export function isBeautyParamsActive(beauty: ClipBeautyParams): boolean {
+function hasActiveSlider(beauty: ClipBeautyParams): boolean {
 	return (
 		beauty.smooth > BEAUTY_ACTIVE_EPSILON ||
 		beauty.whiten > BEAUTY_ACTIVE_EPSILON ||
 		beauty.eye > BEAUTY_ACTIVE_EPSILON ||
 		beauty.faceSlim > BEAUTY_ACTIVE_EPSILON ||
+		beauty.vFace > BEAUTY_ACTIVE_EPSILON ||
 		beauty.noseSlim > BEAUTY_ACTIVE_EPSILON
 	);
+}
+
+/** True when the master switch is on and at least one slider is above epsilon. */
+export function isBeautyParamsActive(beauty: ClipBeautyParams): boolean {
+	return beauty.enabled && hasActiveSlider(beauty);
 }
 
 export function isBeautyActive({
@@ -96,8 +116,9 @@ export function resolveBeautyFromParams({
 }: {
 	params: ParamValues | undefined;
 }): ClipBeautyParams | null {
-	if (!isBeautyActive({ params })) return null;
-	return readBeautyFromParams({ params });
+	const beauty = readBeautyFromParams({ params });
+	if (!isBeautyParamsActive(beauty)) return null;
+	return beauty;
 }
 
 export { BEAUTY_PARAM_KEYS, DEFAULT_BEAUTY_PARAMS };

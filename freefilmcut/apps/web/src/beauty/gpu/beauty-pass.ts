@@ -43,6 +43,7 @@ export function planBeautyPasses({
 			faceCount > 0 &&
 			(beauty.eye > MIN_STRENGTH ||
 				beauty.faceSlim > MIN_STRENGTH ||
+				beauty.vFace > MIN_STRENGTH ||
 				beauty.noseSlim > MIN_STRENGTH),
 		smooth: hasMask && beauty.smooth > MIN_STRENGTH,
 		whiten: hasMask && beauty.whiten > MIN_STRENGTH,
@@ -75,6 +76,9 @@ export type ApplyBeautyPassParams = {
 	/** Cap on the longer pass edge (default 4096). */
 	maxEdge?: number;
 };
+
+/** Preview beauty RT long-edge cap (preview also never exceeds compose size). */
+export const BEAUTY_PREVIEW_MAX_EDGE = 1920;
 
 type RtPair = {
 	a: THREE.WebGLRenderTarget;
@@ -154,6 +158,7 @@ class BeautyGpu {
 				m.uniforms.uFaceCount.value = warped.count;
 				m.uniforms.uEye.value = beauty.eye;
 				m.uniforms.uFaceSlim.value = beauty.faceSlim;
+				m.uniforms.uVFace.value = beauty.vFace;
 				m.uniforms.uNoseSlim.value = beauty.noseSlim;
 				m.uniforms.uWarp.value = warped.data;
 				run(m);
@@ -294,6 +299,7 @@ class BeautyGpu {
 			uFaceCount: { value: 0 },
 			uEye: { value: 0 },
 			uFaceSlim: { value: 0 },
+			uVFace: { value: 0 },
 			uNoseSlim: { value: 0 },
 			uWarp: { value: new Float32Array(MAX_BEAUTY_FACES * WARP_VEC4_PER_FACE * 4) },
 		});

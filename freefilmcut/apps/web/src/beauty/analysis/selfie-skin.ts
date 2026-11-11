@@ -17,9 +17,12 @@ export const SELFIE_SKIN_SIZE = 256;
 /**
  * MediaPipe Selfie Multiclass classes:
  * 0 background, 1 hair, 2 body-skin, 3 face-skin, 4 clothes, 5 others.
+ *
+ * Beauty only uses **face-skin** (3). Including body-skin (2) paints the neck
+ * and leaves a hard whitening/smoothing band under the chin.
  */
 export const SELFIE_CLASS_COUNT = 6;
-export const SELFIE_SKIN_CLASSES: readonly number[] = [2, 3];
+export const SELFIE_SKIN_CLASSES: readonly number[] = [3];
 
 export type SkinSegmentation = {
 	width: number;
@@ -65,6 +68,13 @@ function getSession(): Promise<OrtSession | null> {
 		})();
 	}
 	return sessionPromise;
+}
+
+/** Load the selfie session ahead of time; rejects when it is unavailable. */
+export async function preloadSelfieSkin(): Promise<void> {
+	if (!(await getSession())) {
+		throw new Error("selfie skin model unavailable");
+	}
 }
 
 /**

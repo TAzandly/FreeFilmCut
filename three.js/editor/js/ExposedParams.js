@@ -235,7 +235,7 @@ export function collectExposedParamsFromScene( { scene, getEffectDescriptor } ) 
 						effectId: entry.id,
 						effectType: entry.type,
 						key,
-						label: schema.labelZh || schema.label || key,
+						label: schema.label || schema.labelZh || key,
 						type: schemaTypeOf( schema ),
 						default: rawDefault !== undefined ? rawDefault : 0,
 						min: schema.min,

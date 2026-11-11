@@ -41,7 +41,9 @@ Asset editor needs Python 3 (script can install via winget).
 
 Web multi-track editor with Three.js compositing and pack-driven looks:
 
-Art text · text anim · effects · filters · color grade · chroma key · masks · transitions · stickers & more
+Art text · text anim · effects · filters · color grade · chroma key · masks · transitions · stickers · **face beauty** (smooth / whiten / eye enlarge / face slim / V-face / nose slim) & more
+
+Beauty runs in the browser (MediaPipe landmarks + DLMV skin segmentation, GPU warp/smooth/whiten). Models are downloaded separately — see [`freefilmcut/apps/web/public/models/beauty/README.md`](freefilmcut/apps/web/public/models/beauty/README.md).
 
 ---
 
@@ -55,7 +57,7 @@ Docs: [vfxpack-editor](docs/vfxpack-editor.md) · [postprocess](docs/postprocess
 
 ## Roadmap
 
-More `.vfxpack`s · beauty / body tools · auto captions · stronger particles · keep the make-pack → cut loop free and smooth
+More `.vfxpack`s · body reshape · auto captions · stronger particles · keep the make-pack → cut loop free and smooth
 
 ---
 

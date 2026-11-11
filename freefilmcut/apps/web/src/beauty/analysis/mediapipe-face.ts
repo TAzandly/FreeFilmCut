@@ -1,8 +1,13 @@
 import type { FaceLandmarker } from "@mediapipe/tasks-vision";
+import { resolveAssetUrl } from "./asset-url";
 import {
 	type BeautyImageSource,
 	getImageSourceSize,
 } from "./image-source";
+import {
+	withQuietNativeLogs,
+	withQuietNativeLogsAsync,
+} from "./native-log-quiet";
 import type { FaceBox, FaceLandmarks } from "./types";
 
 export const MEDIAPIPE_FACE_LANDMARK_COUNT = 478;
@@ -10,10 +15,20 @@ export const MEDIAPIPE_MAX_FACES = 4;
 
 /** Keep in sync with `@mediapipe/tasks-vision` in package.json. */
 export const MEDIAPIPE_TASKS_VISION_VERSION = "1.2.2";
+
+/** Same-origin files populated by `scripts/sync-beauty-vendor.mjs`. */
+export const MEDIAPIPE_ESM_URL =
+	"/vendor/mediapipe-tasks-vision/vision_bundle.mjs";
+export const MEDIAPIPE_WASM_BASE = "/vendor/mediapipe-tasks-vision/wasm";
+
+/** jsDelivr fallback (prefer local vendor). */
 export const MEDIAPIPE_WASM_CDN_BASE = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_TASKS_VISION_VERSION}/wasm`;
+export const MEDIAPIPE_ESM_CDN_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_TASKS_VISION_VERSION}/vision_bundle.mjs`;
 export const MEDIAPIPE_FACE_MODEL_URL = "/models/beauty/face_landmarker.task";
 
 export type MediapipeFaceConfig = {
+	/** Absolute URL or path to `vision_bundle.mjs`. */
+	esmUrl?: string;
 	wasmBaseUrl?: string;
 	modelUrl?: string;
 };
@@ -21,7 +36,7 @@ export type MediapipeFaceConfig = {
 let config: MediapipeFaceConfig = {};
 let landmarkerPromise: Promise<FaceLandmarker> | null = null;
 
-/** Override wasm / model locations (call before first `detectFacesMediapipe`). */
+/** Override ESM / wasm / model locations (call before first `detectFacesMediapipe`). */
 export function configureMediapipeFace(next: MediapipeFaceConfig): void {
 	config = { ...config, ...next };
 	landmarkerPromise = null;
@@ -31,20 +46,42 @@ async function createLandmarker(): Promise<FaceLandmarker> {
 	if (typeof window === "undefined" && typeof self === "undefined") {
 		throw new Error("MediaPipe FaceLandmarker requires a browser runtime");
 	}
-	const { FaceLandmarker, FilesetResolver } = await import(
-		"@mediapipe/tasks-vision"
-	);
-	const fileset = await FilesetResolver.forVisionTasks(
-		config.wasmBaseUrl ?? MEDIAPIPE_WASM_CDN_BASE,
-	);
-	return FaceLandmarker.createFromOptions(fileset, {
-		baseOptions: {
-			modelAssetPath: config.modelUrl ?? MEDIAPIPE_FACE_MODEL_URL,
-		},
-		runningMode: "IMAGE",
-		numFaces: MEDIAPIPE_MAX_FACES,
-		outputFaceBlendshapes: false,
-		outputFacialTransformationMatrixes: false,
+	return withQuietNativeLogsAsync(async () => {
+		const esmUrl = resolveAssetUrl(config.esmUrl ?? MEDIAPIPE_ESM_URL);
+		// Runtime URL import keeps tasks-vision out of the Turbopack graph.
+		const { FaceLandmarker, FilesetResolver } = (await import(
+			/* turbopackIgnore: true */ /* webpackIgnore: true */ esmUrl
+		)) as typeof import("@mediapipe/tasks-vision");
+		const create = async (useModuleLoader: boolean) => {
+			const fileset = await FilesetResolver.forVisionTasks(
+				resolveAssetUrl(config.wasmBaseUrl ?? MEDIAPIPE_WASM_BASE),
+				useModuleLoader,
+			);
+			return FaceLandmarker.createFromOptions(fileset, {
+				baseOptions: {
+					modelAssetPath: resolveAssetUrl(
+						config.modelUrl ?? MEDIAPIPE_FACE_MODEL_URL,
+					),
+				},
+				runningMode: "IMAGE",
+				numFaces: MEDIAPIPE_MAX_FACES,
+				// Defaults (0.5) miss many side / three-quarter faces; 0.35 is the
+				// usual profile floor without opening the floodgates to false hits.
+				minFaceDetectionConfidence: 0.35,
+				minFacePresenceConfidence: 0.35,
+				minTrackingConfidence: 0.35,
+				outputFaceBlendshapes: false,
+				outputFacialTransformationMatrixes: false,
+			});
+		};
+		// Pages and classic workers load the classic wasm loader; module workers
+		// (no working `importScripts`) need the ESM variant.
+		if (typeof document !== "undefined") return create(false);
+		try {
+			return await create(false);
+		} catch {
+			return create(true);
+		}
 	});
 }
 
@@ -56,6 +93,11 @@ function getLandmarker(): Promise<FaceLandmarker> {
 		});
 	}
 	return landmarkerPromise;
+}
+
+/** Load the landmarker ahead of the first detection; rejects if it cannot load. */
+export async function preloadMediapipeFace(): Promise<void> {
+	await getLandmarker();
 }
 
 export function boxFromPoints(points: Float32Array): FaceBox {
@@ -103,7 +145,7 @@ export async function detectFacesMediapipe(
 	const { width, height } = getImageSourceSize(image);
 	if (width <= 0 || height <= 0) return [];
 	const landmarker = await getLandmarker();
-	const result = landmarker.detect(image);
+	const result = withQuietNativeLogs(() => landmarker.detect(image));
 	return landmarksToFaces(result.faceLandmarks ?? []);
 }
 

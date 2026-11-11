@@ -1,12 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
 	FACE_SLIM_INDICES,
+	FACE_V_INDICES,
 	LEFT_EYE_INDICES,
 	NOSE_WING_INDICES,
 	RIGHT_EYE_INDICES,
 } from "@/beauty/analysis/landmark-indices";
 import type { FaceLandmarks } from "@/beauty/analysis/types";
 import {
+	FACE_SLIM_POINT_COUNT,
 	MAX_BEAUTY_FACES,
 	packWarpFaces,
 	skinMaskCoverage,
@@ -25,8 +27,11 @@ function syntheticFace(scale = 1): FaceLandmarks {
 	set(152, 0.5, 0.7); // chin
 	set(234, 0.3, 0.5);
 	set(454, 0.7, 0.5);
-	FACE_SLIM_INDICES.imageLeft.forEach((i) => set(i, 0.32, 0.6));
-	FACE_SLIM_INDICES.imageRight.forEach((i) => set(i, 0.68, 0.6));
+	// Cheek → chin: stagger y so packing covers the full slim arc.
+	FACE_SLIM_INDICES.imageLeft.forEach((i, n) => set(i, 0.32, 0.55 + n * 0.03));
+	FACE_SLIM_INDICES.imageRight.forEach((i, n) => set(i, 0.68, 0.55 + n * 0.03));
+	FACE_V_INDICES.imageLeft.forEach((i, n) => set(i, 0.36, 0.68 + n * 0.02));
+	FACE_V_INDICES.imageRight.forEach((i, n) => set(i, 0.64, 0.68 + n * 0.02));
 	set(NOSE_WING_INDICES.imageLeft, 0.46, 0.55);
 	set(NOSE_WING_INDICES.imageRight, 0.54, 0.55);
 	// image-left eye (RIGHT_EYE list): corners 33 outer, 133 inner
@@ -65,8 +70,17 @@ describe("beauty warp packing", () => {
 			expect(Math.abs(sx - tx)).toBeGreaterThan(0.01);
 		}
 		const radii = slot(data, 0, WARP_SLOT.radii);
-		expect(radii[0]).toBeCloseTo(0.4 * 0.3, 5); // temple width * JAW_RADIUS_SCALE
-		expect(radii[1]).toBeCloseTo(0.08 * 0.9, 5);
+		expect(radii[0]).toBeCloseTo(0.4 * 0.22, 5); // temple width * JAW_RADIUS_SCALE
+		expect(radii[1]).toBeCloseTo(0.08 * 0.7, 5);
+		expect(radii[2]).toBeCloseTo(0.4 * 0.2, 5); // temple width * V_FACE_RADIUS_SCALE
+		const vLeft = slot(data, 0, WARP_SLOT.vFaceLeft);
+		expect(vLeft[0]).toBeCloseTo(0.36, 5);
+		expect(vLeft[2]).toBeCloseTo(0.5, 5);
+		// Slim spans cheek → lower jaw: first and last control points differ in y.
+		const slim0 = slot(data, 0, WARP_SLOT.jawLeft);
+		const slimLast = slot(data, 0, WARP_SLOT.jawLeft + FACE_SLIM_POINT_COUNT - 1);
+		expect(FACE_SLIM_POINT_COUNT).toBe(5);
+		expect(slimLast[1]).toBeGreaterThan(slim0[1]);
 	});
 
 	test("keeps the largest faces up to MAX_BEAUTY_FACES", () => {

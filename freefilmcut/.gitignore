@@ -33,3 +33,8 @@ apps/web/public/fonts/msyh.ttf
 apps/web/public/models/beauty/*.onnx
 apps/web/public/models/beauty/*.task
 apps/web/public/models/beauty/*.tflite
+
+# Beauty analysis runtimes (copied from node_modules by sync-beauty-vendor.mjs)
+apps/web/public/vendor/onnxruntime-web/
+apps/web/public/vendor/mediapipe-tasks-vision/
+apps/web/public/vendor/beauty-vendor.json

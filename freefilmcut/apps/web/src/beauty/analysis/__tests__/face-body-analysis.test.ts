@@ -3,14 +3,16 @@ import { BeautyAnalysisCache } from "@/beauty/analysis/cache";
 import {
 	analyzeBeautyFrame,
 	clipMaskToFaceBoxes,
+	clipSkinMaskToFaces,
 	type FaceBodyAnalysisDeps,
 	mapCropFaceToFullImage,
 	padBoxToPixelRect,
 } from "@/beauty/analysis/face-body-analysis";
+import { buildBoxFallbackMask } from "@/beauty/analysis/landmark-fallback-mask";
 import { boxFromPoints } from "@/beauty/analysis/mediapipe-face";
 import { skinMaskFromSegmentation } from "@/beauty/analysis/selfie-skin";
 import type { BeautyImageSource } from "@/beauty/analysis/image-source";
-import type { FaceBox, FaceLandmarks } from "@/beauty/analysis/types";
+import type { FaceLandmarks } from "@/beauty/analysis/types";
 import {
 	computeLetterbox,
 	decodeYoloFaceOutput,
@@ -18,7 +20,6 @@ import {
 } from "@/beauty/analysis/yolo-face";
 
 const IMAGE = { id: "image" } as unknown as BeautyImageSource;
-const CROP = { id: "crop" } as unknown as BeautyImageSource;
 
 /** 478 points all clustered near a centre so box / polygons are well-defined. */
 function makeFace(cx: number, cy: number, r = 0.1): FaceLandmarks {
@@ -37,9 +38,7 @@ function makeDeps(
 	return {
 		cache: new BeautyAnalysisCache(),
 		detectFaces: async () => [],
-		detectYoloBoxes: async () => [],
 		segmentSkin: async () => null,
-		cropImage: () => CROP,
 		getImageSize: () => ({ width: 1000, height: 500 }),
 		...overrides,
 	};
@@ -61,8 +60,12 @@ describe("analyzeBeautyFrame", () => {
 		expect(calls).toBe(1);
 	});
 
-	test("mediapipe faces + selfie skin -> source mediapipe, mask clipped to faces", async () => {
-		const mask = new Uint8Array(256 * 256).fill(255);
+	test("mediapipe faces + segmented skin keeps body skin (no face clip)", async () => {
+		const mask = new Uint8Array(256 * 256);
+		// Skin only in a corner far from the face at image center.
+		for (let y = 200; y < 240; y++) {
+			for (let x = 10; x < 50; x++) mask[y * 256 + x] = 255;
+		}
 		const deps = makeDeps({
 			detectFaces: async () => [makeFace(0.5, 0.5, 0.1)],
 			segmentSkin: async () => ({ width: 256, height: 256, mask }),
@@ -74,40 +77,13 @@ describe("analyzeBeautyFrame", () => {
 		expect(frame.source).toBe("mediapipe");
 		expect(frame.faces).toHaveLength(1);
 		expect(frame.skinWidth).toBe(256);
-		expect(frame.skinMask[128 * 256 + 128]).toBe(255);
-		expect(frame.skinMask[0]).toBe(0);
+		// Body/arm skin is kept for smooth+whiten even though it is outside the face.
+		expect(frame.skinMask[220 * 256 + 30]).toBeGreaterThan(200);
 	});
 
-	test("no faces -> yolo crop -> mediapipe on crop maps to full image", async () => {
-		const yolo: FaceBox = { x: 0.4, y: 0.4, w: 0.2, h: 0.4 };
-		const detectImages: BeautyImageSource[] = [];
+	test("no MediaPipe faces still keeps segmented skin for smooth/whiten", async () => {
 		const deps = makeDeps({
-			detectYoloBoxes: async () => [yolo],
-			detectFaces: async (img) => {
-				detectImages.push(img);
-				return img === CROP ? [makeFace(0.5, 0.5, 0.2)] : [];
-			},
-		});
-		const frame = await analyzeBeautyFrame(
-			{ clipId: "c", mediaTimeTicks: 0, image: IMAGE },
-			deps,
-		);
-		expect(detectImages).toEqual([IMAGE, CROP]);
-		expect(frame.source).toBe("landmarks-only-mask");
-		expect(frame.faces).toHaveLength(1);
-		// Crop centre (0.5, 0.5) maps to the yolo box centre (0.5, 0.6).
-		const face = frame.faces[0];
-		const centerX = face.box.x + face.box.w / 2;
-		const centerY = face.box.y + face.box.h / 2;
-		expect(centerX).toBeCloseTo(0.5, 2);
-		expect(centerY).toBeCloseTo(0.6, 2);
-	});
-
-	test("yolo+mediapipe source when selfie skin succeeds", async () => {
-		const deps = makeDeps({
-			detectYoloBoxes: async () => [{ x: 0.4, y: 0.3, w: 0.2, h: 0.4 }],
-			detectFaces: async (img) =>
-				img === CROP ? [makeFace(0.5, 0.5, 0.2)] : [],
+			detectFaces: async () => [],
 			segmentSkin: async () => ({
 				width: 256,
 				height: 256,
@@ -118,7 +94,9 @@ describe("analyzeBeautyFrame", () => {
 			{ clipId: "c", mediaTimeTicks: 0, image: IMAGE },
 			deps,
 		);
-		expect(frame.source).toBe("yolo+mediapipe");
+		expect(frame.faces).toHaveLength(0);
+		expect(frame.source).toBe("mediapipe");
+		expect(frame.skinMask[128 * 256 + 128]).toBeGreaterThan(200);
 	});
 
 	test("skin fallback with faces uses landmarks-only-mask and fills the face", async () => {
@@ -161,12 +139,35 @@ describe("analyzeBeautyFrame", () => {
 });
 
 describe("helpers", () => {
-	test("padBoxToPixelRect pads 1.3x and clamps", () => {
+	test("padBoxToPixelRect pads 1.5x and clamps", () => {
 		const rect = padBoxToPixelRect({ x: 0.4, y: 0.4, w: 0.2, h: 0.2 }, 1000, 1000);
-		expect(rect.w).toBe(260);
-		expect(rect.x).toBe(370);
+		expect(rect.w).toBe(300);
+		expect(rect.x).toBe(350);
 		const clamped = padBoxToPixelRect({ x: 0, y: 0, w: 0.2, h: 0.2 }, 1000, 1000);
 		expect(clamped.x).toBe(0);
+	});
+
+	test("collapsed face oval falls back to the expanded box clip", () => {
+		const mask = new Uint8Array(64 * 64).fill(255);
+		// All landmarks piled on a vertical line → degenerate oval, wide box.
+		const points = new Float32Array(478 * 2);
+		for (let i = 0; i < 478; i++) {
+			points[i * 2] = 0.5;
+			points[i * 2 + 1] = 0.2 + (i / 477) * 0.6;
+		}
+		const face = {
+			points,
+			box: { x: 0.25, y: 0.2, w: 0.5, h: 0.6 },
+		};
+		const out = clipSkinMaskToFaces(mask, 64, 64, [face]);
+		const kept = out.reduce((n, v) => n + (v > 0 ? 1 : 0), 0);
+		expect(kept).toBeGreaterThan(64 * 4); // more than a thin strip
+	});
+
+	test("buildBoxFallbackMask paints a soft ellipse inside the box", () => {
+		const out = buildBoxFallbackMask([{ x: 0.25, y: 0.25, w: 0.5, h: 0.5 }], 32, 32);
+		expect(out[16 * 32 + 16]).toBe(255);
+		expect(out[0]).toBe(0);
 	});
 
 	test("mapCropFaceToFullImage", () => {
@@ -243,7 +244,7 @@ describe("yolo decode", () => {
 });
 
 describe("selfie skin decode", () => {
-	test("NHWC argmax marks skin classes 2 and 3", () => {
+	test("NHWC argmax marks face-skin only (not body-skin / neck)", () => {
 		const h = 1;
 		const w = 4;
 		const data = new Float32Array(h * w * 6);
@@ -251,11 +252,11 @@ describe("selfie skin decode", () => {
 			data[i * 6 + c] = 1;
 		};
 		setClass(0, 0); // background
-		setClass(1, 2); // body-skin
+		setClass(1, 2); // body-skin (neck) — excluded
 		setClass(2, 3); // face-skin
 		setClass(3, 4); // clothes
 		const result = skinMaskFromSegmentation(data, [1, h, w, 6]);
-		expect(Array.from(result?.mask ?? [])).toEqual([0, 255, 255, 0]);
+		expect(Array.from(result?.mask ?? [])).toEqual([0, 0, 255, 0]);
 	});
 
 	test("NCHW layout is supported", () => {

@@ -117,6 +117,9 @@ if exist "%LOCK%" (
   del /f /q "%LOCK%" >nul 2>&1
 )
 
+REM Next/Turbopack can OOM-restart mid-chunk and leave /projects stuck on skeletons.
+if not defined NODE_OPTIONS set "NODE_OPTIONS=--max-old-space-size=8192"
+
 start "FreeFilmCut-OpenBrowser" cmd /c "timeout /t 8 /nobreak >nul & start %APP_URL%"
 bun run dev:web
 set "EC=%ERRORLEVEL%"

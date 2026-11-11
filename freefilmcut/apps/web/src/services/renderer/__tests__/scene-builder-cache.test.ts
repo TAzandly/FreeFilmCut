@@ -147,7 +147,11 @@ describe("buildScene node cache", () => {
 
 		const beautified = {
 			...clip,
-			params: { ...clip.params, "beauty.smooth": 0.6 },
+			params: {
+				...clip.params,
+				"beauty.enabled": true,
+				"beauty.smooth": 0.6,
+			},
 		} as TimelineElement;
 		const second = build(tracksOf([beautified]), cache, [media]);
 		const videoNode2 = second.children.find((n) => n instanceof VideoNode);
@@ -168,7 +172,14 @@ describe("buildScene node cache", () => {
 
 			build(
 				tracksOf([
-					{ ...clip, params: { ...clip.params, "beauty.smooth": 0.5 } } as TimelineElement,
+					{
+						...clip,
+						params: {
+							...clip.params,
+							"beauty.enabled": true,
+							"beauty.smooth": 0.5,
+						},
+					} as TimelineElement,
 				]),
 				cache,
 				[media],

@@ -1,32 +1,32 @@
 import { BeautyAnalysisCache } from "./cache";
 import {
 	type BeautyImageSource,
-	cropToCanvas,
 	getImageSourceSize,
 	type PixelRect,
 } from "./image-source";
-import { buildLandmarkFallbackMask } from "./landmark-fallback-mask";
 import {
-	boxFromPoints,
-	detectFacesMediapipe,
-	MEDIAPIPE_MAX_FACES,
-} from "./mediapipe-face";
+	buildBoxFallbackMask,
+	buildLandmarkFallbackMask,
+	clipMaskToFaceOvals,
+} from "./landmark-fallback-mask";
+import { blurSkinMask } from "./mask-blur";
+import { boxFromPoints, detectFacesMediapipe } from "./mediapipe-face";
+import { DLMV_SKIN_SIZE } from "./dlmv-skin";
 import {
-	SELFIE_SKIN_SIZE,
 	type SkinSegmentation,
-	segmentSkinSelfie,
-} from "./selfie-skin";
+	segmentSkin,
+} from "./segment-skin";
 import type { BeautyAnalysisFrame, FaceBox, FaceLandmarks } from "./types";
-import { detectFacesYolo } from "./yolo-face";
 
-/** YOLO box is grown by this factor (around its center) before the crop pass. */
-export const YOLO_CROP_PAD = 1.3;
-/** Face boxes are grown by this factor when clipping the selfie skin mask. */
-export const SKIN_FACE_BOX_EXPAND = 1.5;
-/** Faces from different passes overlapping above this IoU are duplicates. */
-export const FACE_DEDUPE_IOU = 0.5;
-/** Minimum crop edge (px) worth sending to MediaPipe. */
-const MIN_CROP_PX = 16;
+/** Default pad when expanding a normalized box to pixel crop (tests / helpers). */
+export const YOLO_CROP_PAD = 1.5;
+/** Face boxes are grown by this factor when clipping a legacy face-bound mask. */
+export const SKIN_FACE_BOX_EXPAND = 1.55;
+/**
+ * If the face-oval clip keeps less than this fraction of the box-clipped mask,
+ * the oval is treated as collapsed (typical of side faces) and we keep the box.
+ */
+export const SKIN_OVAL_MIN_KEEP = 0.4;
 
 export type AnalyzeBeautyFrameParams = {
 	clipId: string;
@@ -35,11 +35,9 @@ export type AnalyzeBeautyFrameParams = {
 };
 
 export type FaceBodyAnalysisDeps = {
-	cache: BeautyAnalysisCache;
+	cache: Pick<BeautyAnalysisCache, "get" | "set">;
 	detectFaces: (image: BeautyImageSource) => Promise<FaceLandmarks[]>;
-	detectYoloBoxes: (image: BeautyImageSource) => Promise<FaceBox[]>;
 	segmentSkin: (image: BeautyImageSource) => Promise<SkinSegmentation | null>;
-	cropImage: (image: BeautyImageSource, rect: PixelRect) => BeautyImageSource;
 	getImageSize: (image: BeautyImageSource) => { width: number; height: number };
 };
 
@@ -48,23 +46,11 @@ export const beautyAnalysisCache = new BeautyAnalysisCache();
 const defaultDeps: FaceBodyAnalysisDeps = {
 	cache: beautyAnalysisCache,
 	detectFaces: detectFacesMediapipe,
-	detectYoloBoxes: detectFacesYolo,
-	segmentSkin: segmentSkinSelfie,
-	cropImage: cropToCanvas,
+	segmentSkin: segmentSkin,
 	getImageSize: getImageSourceSize,
 };
 
 let mediapipeErrorLogged = false;
-
-function boxIou(a: FaceBox, b: FaceBox): number {
-	const x0 = Math.max(a.x, b.x);
-	const y0 = Math.max(a.y, b.y);
-	const x1 = Math.min(a.x + a.w, b.x + b.w);
-	const y1 = Math.min(a.y + a.h, b.y + b.h);
-	const inter = Math.max(0, x1 - x0) * Math.max(0, y1 - y0);
-	const union = a.w * a.h + b.w * b.h - inter;
-	return union <= 0 ? 0 : inter / union;
-}
 
 /** Normalized box -> padded, integer, image-clamped pixel rect. */
 export function padBoxToPixelRect(
@@ -99,39 +85,35 @@ export function mapCropFaceToFullImage(
 	return { points, box: boxFromPoints(points) };
 }
 
-function mergeFaces(
-	into: FaceLandmarks[],
-	incoming: FaceLandmarks[],
-	max = MEDIAPIPE_MAX_FACES,
-): void {
-	for (const face of incoming) {
-		if (into.length >= max) return;
-		if (into.every((f) => boxIou(f.box, face.box) < FACE_DEDUPE_IOU)) {
-			into.push(face);
-		}
-	}
+function maskCoverage(mask: Uint8Array): number {
+	let n = 0;
+	for (let i = 0; i < mask.length; i++) if (mask[i] > 0) n++;
+	return n;
 }
 
-async function detectFacesViaYolo(
-	image: BeautyImageSource,
+/**
+ * Clip selfie skin to the faces. Prefer the face oval (drops neck), but fall
+ * back to the expanded AABB when the oval collapses — common on side faces
+ * where MediaPipe's mesh folds in on itself.
+ */
+export function clipSkinMaskToFaces(
+	mask: Uint8Array,
 	width: number,
 	height: number,
-	deps: FaceBodyAnalysisDeps,
-): Promise<FaceLandmarks[]> {
-	const boxes = await deps.detectYoloBoxes(image);
-	const faces: FaceLandmarks[] = [];
-	for (const box of boxes) {
-		if (faces.length >= MEDIAPIPE_MAX_FACES) break;
-		const rect = padBoxToPixelRect(box, width, height);
-		if (rect.w < MIN_CROP_PX || rect.h < MIN_CROP_PX) continue;
-		const crop = deps.cropImage(image, rect);
-		const cropFaces = await deps.detectFaces(crop);
-		mergeFaces(
-			faces,
-			cropFaces.map((f) => mapCropFaceToFullImage(f, rect, width, height)),
-		);
+	faces: readonly FaceLandmarks[],
+	boxes: readonly FaceBox[] = [],
+): Uint8Array {
+	const boxSources =
+		faces.length > 0 ? faces : boxes.map((box) => ({ box }));
+	if (boxSources.length === 0) return mask;
+	const byBox = clipMaskToFaceBoxes(mask, width, height, boxSources);
+	if (faces.length === 0) return byBox;
+	const byOval = clipMaskToFaceOvals(byBox, width, height, faces);
+	const boxCount = maskCoverage(byBox);
+	if (boxCount > 0 && maskCoverage(byOval) < boxCount * SKIN_OVAL_MIN_KEEP) {
+		return byBox;
 	}
-	return faces;
+	return byOval;
 }
 
 /** Zero skin pixels outside the union of expanded face boxes. */
@@ -159,6 +141,102 @@ export function clipMaskToFaceBoxes(
 	return out;
 }
 
+export type BeautyFaceDetection = {
+	faces: FaceLandmarks[];
+	/** Landmark boxes (for optional legacy mask helpers / skinBoxes). */
+	boxes: FaceBox[];
+	source: "mediapipe";
+	/** The detector threw (vs. simply found no face); results must not be cached. */
+	failed: boolean;
+};
+
+/** MediaPipe Face Landmarker only — no YOLO fallback. */
+export async function detectBeautyFaces(
+	image: BeautyImageSource,
+	overrides: Partial<FaceBodyAnalysisDeps> = {},
+): Promise<BeautyFaceDetection> {
+	const deps = { ...defaultDeps, ...overrides };
+	try {
+		const faces = await deps.detectFaces(image);
+		return {
+			faces,
+			boxes: faces.map((f) => f.box),
+			source: "mediapipe",
+			failed: false,
+		};
+	} catch (error) {
+		if (!mediapipeErrorLogged) {
+			mediapipeErrorLogged = true;
+			console.warn("[beauty] Face landmark detection failed:", error);
+		}
+		return { faces: [], boxes: [], source: "mediapipe", failed: true };
+	}
+}
+
+export type ComposedSkinMask = {
+	skinWidth: number;
+	skinHeight: number;
+	skinMask: Uint8Array;
+	/** False when the landmark polygon stood in for segmentation. */
+	segmented: boolean;
+};
+
+/**
+ * Final skin mask for smooth / whiten.
+ *
+ * When a skin segmenter ran, its full mask is used as-is (face + body skin) —
+ * not clipped to face landmarks. Landmark / box fallbacks only apply when
+ * segmentation is unavailable.
+ */
+export function composeSkinMask(
+	faces: readonly FaceLandmarks[],
+	seg: SkinSegmentation | null,
+	boxes: readonly FaceBox[] = [],
+): ComposedSkinMask {
+	let skinWidth: number;
+	let skinHeight: number;
+	let skinMask: Uint8Array;
+	if (seg) {
+		skinWidth = seg.width;
+		skinHeight = seg.height;
+		skinMask = seg.mask;
+	} else {
+		skinWidth = DLMV_SKIN_SIZE;
+		skinHeight = DLMV_SKIN_SIZE;
+		skinMask =
+			faces.length > 0
+				? buildLandmarkFallbackMask(faces, skinWidth, skinHeight)
+				: buildBoxFallbackMask(boxes, skinWidth, skinHeight);
+	}
+	// Soften hard class / polygon edges before smooth+whiten sample the mask.
+	skinMask = blurSkinMask(skinMask, skinWidth, skinHeight);
+	return { skinWidth, skinHeight, skinMask, segmented: seg !== null };
+}
+
+export function beautyFrameFrom(
+	clipId: string,
+	mediaTimeTicks: number,
+	detection: Pick<BeautyFaceDetection, "faces" | "boxes" | "source">,
+	mask: ComposedSkinMask,
+): BeautyAnalysisFrame {
+	return {
+		clipId,
+		mediaTimeTicks,
+		faces: detection.faces,
+		skinBoxes:
+			detection.faces.length === 0 && detection.boxes.length > 0
+				? detection.boxes
+				: undefined,
+		skinWidth: mask.skinWidth,
+		skinHeight: mask.skinHeight,
+		skinMask: mask.skinMask,
+		source:
+			!mask.segmented && detection.faces.length > 0
+				? "landmarks-only-mask"
+				: detection.source,
+	};
+}
+
 /**
  * Detect faces + skin mask for one video frame.
  * Cached per `(clipId, quantized mediaTimeTicks)`.
@@ -172,29 +250,7 @@ export async function analyzeBeautyFrame(
 	const cached = deps.cache.get(clipId, mediaTimeTicks);
 	if (cached) return cached;
 
-	const { width, height } = deps.getImageSize(image);
-
-	let faces: FaceLandmarks[] = [];
-	let source: BeautyAnalysisFrame["source"] = "mediapipe";
-	let detectionFailed = false;
-
-	try {
-		faces = await deps.detectFaces(image);
-		if (faces.length === 0 && width > 0 && height > 0) {
-			const viaYolo = await detectFacesViaYolo(image, width, height, deps);
-			if (viaYolo.length > 0) {
-				faces = viaYolo;
-				source = "yolo+mediapipe";
-			}
-		}
-	} catch (error) {
-		detectionFailed = true;
-		faces = [];
-		if (!mediapipeErrorLogged) {
-			mediapipeErrorLogged = true;
-			console.warn("[beauty] Face landmark detection failed:", error);
-		}
-	}
+	const detection = await detectBeautyFaces(image, deps);
 
 	let seg: SkinSegmentation | null = null;
 	try {
@@ -203,33 +259,13 @@ export async function analyzeBeautyFrame(
 		seg = null;
 	}
 
-	let skinWidth: number;
-	let skinHeight: number;
-	let skinMask: Uint8Array;
-	if (seg) {
-		skinWidth = seg.width;
-		skinHeight = seg.height;
-		skinMask =
-			faces.length > 0
-				? clipMaskToFaceBoxes(seg.mask, skinWidth, skinHeight, faces)
-				: seg.mask;
-	} else {
-		skinWidth = SELFIE_SKIN_SIZE;
-		skinHeight = SELFIE_SKIN_SIZE;
-		skinMask = buildLandmarkFallbackMask(faces, skinWidth, skinHeight);
-		if (faces.length > 0) source = "landmarks-only-mask";
-	}
-
-	const frame: BeautyAnalysisFrame = {
+	const frame = beautyFrameFrom(
 		clipId,
 		mediaTimeTicks,
-		faces,
-		skinWidth,
-		skinHeight,
-		skinMask,
-		source,
-	};
+		detection,
+		composeSkinMask(detection.faces, seg, detection.boxes),
+	);
 	// Do not pin transient detector failures in the cache.
-	if (!detectionFailed) deps.cache.set(clipId, mediaTimeTicks, frame);
+	if (!detection.failed) deps.cache.set(clipId, mediaTimeTicks, frame);
 	return frame;
 }

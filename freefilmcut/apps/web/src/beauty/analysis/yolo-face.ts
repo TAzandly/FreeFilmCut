@@ -14,7 +14,8 @@ import type { FaceBox } from "./types";
 
 export const YOLO_FACE_MODEL_URL = "/models/beauty/yolo-face.onnx";
 export const YOLO_FACE_INPUT_SIZE = 640;
-export const YOLO_FACE_SCORE_THRESHOLD = 0.4;
+/** Slightly below the usual 0.5 so three-quarter / side faces still fire. */
+export const YOLO_FACE_SCORE_THRESHOLD = 0.3;
 export const YOLO_FACE_NMS_IOU_THRESHOLD = 0.45;
 export const YOLO_FACE_MAX_DETECTIONS = 16;
 const YOLO_LETTERBOX_FILL = "rgb(114,114,114)";

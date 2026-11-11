@@ -2,6 +2,7 @@ import {
 	EYE_CORNER_INDICES,
 	FACE_AXIS_INDICES,
 	FACE_SLIM_INDICES,
+	FACE_V_INDICES,
 	FACE_WIDTH_INDICES,
 	LEFT_EYE_INDICES,
 	NOSE_WING_INDICES,
@@ -16,36 +17,47 @@ import type { FaceLandmarks } from "../analysis/types";
  */
 export const MAX_BEAUTY_FACES = 4;
 
-/** `vec4` slots per face in the warp uniform array. */
-export const WARP_VEC4_PER_FACE = 11;
+	/** Control points per side for face slim / V-face (must match landmark lists). */
+	export const FACE_SLIM_POINT_COUNT = FACE_SLIM_INDICES.imageLeft.length;
+	export const FACE_V_POINT_COUNT = FACE_V_INDICES.imageLeft.length;
 
-/**
- * Per-face layout (all positions in aspect space: `x * width/height, y`, so
- * distances are isotropic):
- *   [0],[1]   eyes     (cx, cy, radius, 0)       image-left, image-right
- *   [2..4]    jaw L    (sx, sy, tx, ty)           FACE_SLIM_INDICES.imageLeft
- *   [5..7]    jaw R    (sx, sy, tx, ty)           FACE_SLIM_INDICES.imageRight
- *   [8],[9]   nose     (sx, sy, tx, ty)           NOSE_WING_INDICES left, right
- *   [10]      radii    (jawRadius, noseRadius, 0, 0)
- * `(tx, ty)` is the closest point on the face axis (nose bridge to chin); the
- * shader moves content `(t - s) * strength`.
- */
-export const WARP_SLOT = {
-	eyeLeft: 0,
-	eyeRight: 1,
-	jawLeft: 2,
-	jawRight: 5,
-	noseLeft: 8,
-	noseRight: 9,
-	radii: 10,
-} as const;
+	/** `vec4` slots per face in the warp uniform array. */
+	export const WARP_VEC4_PER_FACE =
+		2 + FACE_SLIM_POINT_COUNT * 2 + 2 + 1 + FACE_V_POINT_COUNT * 2;
+
+	/**
+	 * Per-face layout (all positions in aspect space: `x * width/height, y`, so
+	 * distances are isotropic):
+	 *   [0],[1]     eyes     (cx, cy, radius, 0)       image-left, image-right
+	 *   [2..6]      slim L   (sx, sy, tx, ty)           FACE_SLIM_INDICES.imageLeft
+	 *   [7..11]     slim R   (sx, sy, tx, ty)           FACE_SLIM_INDICES.imageRight
+	 *   [12],[13]   nose     (sx, sy, tx, ty)           NOSE_WING_INDICES left, right
+	 *   [14]        radii    (jawRadius, noseRadius, vFaceRadius, 0)
+	 *   [15..17]    vFace L  (sx, sy, tx, ty)           FACE_V_INDICES.imageLeft
+	 *   [18..20]    vFace R  (sx, sy, tx, ty)           FACE_V_INDICES.imageRight
+	 * `(tx, ty)` is the closest point on the face axis (nose bridge to chin); the
+	 * shader moves content `(t - s) * strength`.
+	 */
+	export const WARP_SLOT = {
+		eyeLeft: 0,
+		eyeRight: 1,
+		jawLeft: 2,
+		jawRight: 2 + FACE_SLIM_POINT_COUNT,
+		noseLeft: 2 + FACE_SLIM_POINT_COUNT * 2,
+		noseRight: 2 + FACE_SLIM_POINT_COUNT * 2 + 1,
+		radii: 2 + FACE_SLIM_POINT_COUNT * 2 + 2,
+		vFaceLeft: 2 + FACE_SLIM_POINT_COUNT * 2 + 3,
+		vFaceRight: 2 + FACE_SLIM_POINT_COUNT * 2 + 3 + FACE_V_POINT_COUNT,
+	} as const;
 
 /** Eye radius as a multiple of the eye-corner distance. */
 export const EYE_RADIUS_SCALE = 1.1;
 /** Jaw influence radius as a multiple of the temple-to-temple width. */
-export const JAW_RADIUS_SCALE = 0.3;
+export const JAW_RADIUS_SCALE = 0.22;
 /** Nose influence radius as a multiple of the nostril-wing distance. */
-export const NOSE_RADIUS_SCALE = 0.9;
+export const NOSE_RADIUS_SCALE = 0.7;
+/** V-face influence radius as a multiple of the temple-to-temple width. */
+export const V_FACE_RADIUS_SCALE = 0.2;
 
 export type PackedWarpFaces = {
 	/** `MAX_BEAUTY_FACES * WARP_VEC4_PER_FACE * 4` floats; unused faces are zero. */
@@ -130,6 +142,8 @@ export function packWarpFace(
 	FACE_SLIM_INDICES.imageRight.forEach((idx, i) => drag(WARP_SLOT.jawRight + i, idx));
 	drag(WARP_SLOT.noseLeft, NOSE_WING_INDICES.imageLeft);
 	drag(WARP_SLOT.noseRight, NOSE_WING_INDICES.imageRight);
+	FACE_V_INDICES.imageLeft.forEach((idx, i) => drag(WARP_SLOT.vFaceLeft + i, idx));
+	FACE_V_INDICES.imageRight.forEach((idx, i) => drag(WARP_SLOT.vFaceRight + i, idx));
 
 	const faceWidth = dist(
 		pt(p, FACE_WIDTH_INDICES[0], aspect),
@@ -145,7 +159,7 @@ export function packWarpFace(
 		WARP_SLOT.radii,
 		faceWidth * JAW_RADIUS_SCALE,
 		noseWidth * NOSE_RADIUS_SCALE,
-		0,
+		faceWidth * V_FACE_RADIUS_SCALE,
 		0,
 	);
 }

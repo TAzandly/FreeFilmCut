@@ -1,5 +1,9 @@
 export type { ClipBeautyParams } from "./types";
-export { BEAUTY_PARAM_KEYS, DEFAULT_BEAUTY_PARAMS } from "./types";
+export {
+	BEAUTY_PARAM_KEYS,
+	BEAUTY_SLIDER_PARAM_KEYS,
+	DEFAULT_BEAUTY_PARAMS,
+} from "./types";
 export {
 	clamp01,
 	isBeautyActive,
@@ -26,6 +30,7 @@ export {
 	analyzeBeautyFrame,
 	beautyAnalysisCache,
 } from "./analysis/face-body-analysis";
+export { analyzeBeautyFrameOffThread } from "./analysis/worker-client";
 export type {
 	AnalyzeBeautyFrameParams,
 	FaceBodyAnalysisDeps,
@@ -37,6 +42,7 @@ export {
 export type { BeautyImageSource } from "./analysis/image-source";
 export {
 	applyBeautyPass,
+	BEAUTY_PREVIEW_MAX_EDGE,
 	disposeBeautyPass,
 	fitBeautyPassSize,
 	planBeautyPasses,

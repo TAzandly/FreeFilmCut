@@ -110,6 +110,7 @@ import {
 import { getLiveDragTransform } from "@/preview/live-drag-transform";
 import {
 	applyBeautyPass,
+	BEAUTY_PREVIEW_MAX_EDGE,
 	BeautyAnalysisRequester,
 	disposeBeautyPass,
 	isBeautyParamsActive,
@@ -381,6 +382,8 @@ class ThreeCompositor {
 	private exportSizeLock: { width: number; height: number } | null = null;
 	/** Current render pass: force flower/text-anim RTs at project res (export). */
 	private flowerTextFullRes = false;
+	/** Export path (`waitForFlowerText`): full beauty RT + smooth. Preview stays light. */
+	private beautyFullQuality = false;
 	/** Shared Text-layer RT (plain + flower). stencilBuffer required for inner shadow. */
 	private textLayerRT: THREE.WebGLRenderTarget | null = null;
 	/** Cache for shared-registry Text Fx composers (per compositor). */
@@ -646,6 +649,7 @@ class ThreeCompositor {
 		const waitText = !!opts?.waitForFlowerText;
 		// Export: text-anim / flower RT at project res (never preview 0.5x).
 		this.flowerTextFullRes = waitText;
+		this.beautyFullQuality = waitText;
 		/**
 		 * `renderFrame` starts counting before `ensureInitialized` + `clear`, but
 		 * the per-pass spans only start after them. Without this mark the residual
@@ -951,6 +955,7 @@ class ThreeCompositor {
 		}
 		} finally {
 			this.flowerTextFullRes = false;
+			this.beautyFullQuality = false;
 		}
 	}
 
@@ -3952,6 +3957,7 @@ class ThreeCompositor {
 		const analysis = this.beautyRequester.request(request);
 		if (!analysis) return null;
 		const size = this.initializedSize;
+		const composeEdge = size ? Math.max(size.width, size.height) : 1024;
 		return applyBeautyPass({
 			renderer,
 			inputTexture: entry.texture,
@@ -3959,8 +3965,11 @@ class ThreeCompositor {
 			height: entry.height,
 			beauty: item.beauty,
 			analysis,
-			// Layers are drawn into the compose buffer; 2x covers zoomed clips.
-			...(size ? { maxEdge: Math.min(4096, Math.max(size.width, size.height) * 2) } : {}),
+			// Preview and export both use compose resolution (export capped higher).
+			maxEdge: Math.min(
+				this.beautyFullQuality ? 4096 : BEAUTY_PREVIEW_MAX_EDGE,
+				composeEdge,
+			),
 		});
 	}
 

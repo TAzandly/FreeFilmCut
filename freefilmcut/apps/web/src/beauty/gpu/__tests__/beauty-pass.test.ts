@@ -41,8 +41,11 @@ describe("beauty pass planning", () => {
 		expect(fitBeautyPassSize(0, 0, 100)).toEqual({ width: 1, height: 1 });
 	});
 
-	test("isBeautyParamsActive matches resolved params", () => {
+	test("isBeautyParamsActive requires enabled + a slider", () => {
 		expect(isBeautyParamsActive(base)).toBe(false);
-		expect(isBeautyParamsActive({ ...base, noseSlim: 0.1 })).toBe(true);
+		expect(isBeautyParamsActive({ ...base, noseSlim: 0.1 })).toBe(false);
+		expect(
+			isBeautyParamsActive({ ...base, enabled: true, noseSlim: 0.1 }),
+		).toBe(true);
 	});
 });

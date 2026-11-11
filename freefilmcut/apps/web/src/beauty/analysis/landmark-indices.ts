@@ -46,11 +46,26 @@ export const FACE_WIDTH_INDICES = [234, 454] as const;
 /** Nose bridge and chin: define the facial axis that slimming pulls toward. */
 export const FACE_AXIS_INDICES = [168, 152] as const;
 
-/** Cheek, mid-jaw and jaw-angle points that move toward the axis (face slim). */
-export const FACE_SLIM_INDICES = {
-	imageLeft: [93, 58, 172],
-	imageRight: [323, 288, 397],
-} as const;
+	/**
+	 * Cheek → lower-jaw points that move toward the axis (face slim).
+	 * Ordered cheek → chin along the face oval so the Gu blend yields a smooth
+	 * contour instead of three discrete pulls.
+	 * Oval (image-left): 93 → 132 → 58 → 172 → 136 → …
+	 */
+	export const FACE_SLIM_INDICES = {
+		imageLeft: [93, 132, 58, 172, 136],
+		imageRight: [323, 361, 288, 397, 365],
+	} as const;
+
+	/**
+	 * Near-chin points for V-face taper. Kept below the slim set so the two
+	 * sliders do not double-drag the same landmarks.
+	 * Oval (image-left): … → 150 → 149 → 176 → 148 → 152(chin).
+	 */
+	export const FACE_V_INDICES = {
+		imageLeft: [150, 149, 176],
+		imageRight: [379, 378, 400],
+	} as const;
 
 /** Outer nostril wings that move toward the axis (nose slim). */
 export const NOSE_WING_INDICES = {

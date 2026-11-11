@@ -16,14 +16,29 @@ describe("beauty settings", () => {
 		});
 	});
 
-	test("isBeautyActive false when all zero", () => {
-		expect(isBeautyActive({ params: {} })).toBe(false);
+	test("default enabled is false", () => {
+		expect(DEFAULT_BEAUTY_PARAMS.enabled).toBe(false);
+		expect(readBeautyFromParams({ params: {} }).enabled).toBe(false);
 	});
 
-	test("isBeautyActive true when any channel > 0", () => {
+	test("isBeautyActive false when all zero or switch off", () => {
+		expect(isBeautyActive({ params: {} })).toBe(false);
 		expect(
 			isBeautyActive({
 				params: { "beauty.smooth": 0.2 },
+			}),
+		).toBe(false);
+		expect(
+			isBeautyActive({
+				params: { "beauty.enabled": true },
+			}),
+		).toBe(false);
+	});
+
+	test("isBeautyActive true when enabled and any channel > 0", () => {
+		expect(
+			isBeautyActive({
+				params: { "beauty.enabled": true, "beauty.smooth": 0.2 },
 			}),
 		).toBe(true);
 	});
@@ -31,6 +46,7 @@ describe("beauty settings", () => {
 	test("readBeautyFromParams reads dotted keys", () => {
 		const b = readBeautyFromParams({
 			params: {
+				"beauty.enabled": true,
 				"beauty.smooth": 0.5,
 				"beauty.whiten": 0.1,
 				"beauty.eye": 0,
@@ -38,11 +54,22 @@ describe("beauty settings", () => {
 				"beauty.noseSlim": 0,
 			},
 		});
+		expect(b.enabled).toBe(true);
 		expect(b.smooth).toBe(0.5);
 		expect(b.faceSlim).toBe(0.3);
 	});
 
 	test("resolveBeautyFromParams returns null when inactive", () => {
 		expect(resolveBeautyFromParams({ params: {} })).toBeNull();
+		expect(
+			resolveBeautyFromParams({
+				params: { "beauty.smooth": 0.5 },
+			}),
+		).toBeNull();
+		expect(
+			resolveBeautyFromParams({
+				params: { "beauty.enabled": true, "beauty.smooth": 0.5 },
+			})?.smooth,
+		).toBe(0.5);
 	});
 });

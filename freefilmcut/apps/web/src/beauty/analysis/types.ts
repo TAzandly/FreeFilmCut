@@ -14,8 +14,10 @@ export type BeautyAnalysisFrame = {
 	clipId: string;
 	mediaTimeTicks: number;
 	faces: FaceLandmarks[];
+	/** Present when landmarks are missing but a head box is still known. */
+	skinBoxes?: FaceBox[];
 	skinWidth: number;
 	skinHeight: number;
 	skinMask: Uint8Array;
-	source: "mediapipe" | "yolo+mediapipe" | "landmarks-only-mask";
+	source: "mediapipe" | "landmarks-only-mask";
 };
