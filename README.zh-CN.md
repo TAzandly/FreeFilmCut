@@ -75,4 +75,12 @@ Web 多轨剪辑，Three.js 合成，观感主要靠资源包：
 - [OpenCut](https://github.com/OpenCut-app/OpenCut) — 剪辑端基础  
 - [three.js](https://github.com/mrdoob/three.js) — WebGL 与我们扩展后的 Editor
 
-二次分发或修改请遵守上游许可证。
+---
+
+## 协议与免责声明
+
+本仓库包含并依赖多项第三方软件、模型与资源，各自适用**其原有许可证**（例如 OpenCut / three.js 的 MIT、MediaPipe 的 Apache-2.0、Whisper / transformers.js 相关模型条款，以及美颜 DLMV 皮肤模型的 **GPL-3.0** 等）。请查阅对应 LICENSE 与模型说明。
+
+**商业用途：** 若将本项目（或其捆绑 / 自动下载的依赖）用于商业用途，须**自行审查并遵守**全部适用的许可、署名与再分发要求。
+
+**免责：** 本软件按现状提供，仅供学习与试验。作者**不承担**因使用、再分发或商业部署本项目及其依赖而产生的任何法律主张、损害或其他责任；相关法律风险由使用者自行承担，与作者本人无关。

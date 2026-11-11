@@ -75,4 +75,12 @@ More `.vfxpack`s · body reshape · stronger particles · keep the make-pack →
 - [OpenCut](https://github.com/OpenCut-app/OpenCut) — NLE foundation  
 - [three.js](https://github.com/mrdoob/three.js) — WebGL + Editor we extend for `.vfxpack`
 
-Respect upstream licenses when you redistribute or modify.
+---
+
+## License & disclaimer
+
+This repository includes and depends on third-party software, models, and assets under **their own licenses** (for example OpenCut / three.js MIT terms, MediaPipe Apache-2.0, Whisper / transformers.js model terms, and the DLMV skin model under **GPL-3.0**). See the corresponding LICENSE files and model READMEs.
+
+**Commercial use:** If you use this project (or any bundled / auto-downloaded dependency) for commercial purposes, you **must** review and comply with all applicable licenses, attribution, and redistribution requirements yourself.
+
+**No liability:** This software is provided as-is for learning and experimentation. The author accepts **no responsibility** for any legal claims, damages, or other liability arising from your use, redistribution, or commercial deployment of this project or its dependencies. Any legal risk is yours alone.
