@@ -81,16 +81,18 @@ export async function createOrtSession(modelUrl: string): Promise<OrtSession> {
 	);
 }
 
-/** HEAD-probe a model URL; returns false on 404 / network failure. */
-export async function modelFileExists(url: string): Promise<boolean> {
-	if (typeof fetch === "undefined") return false;
-	try {
-		const head = await fetch(resolveAssetUrl(url), { method: "HEAD" });
-		if (!head.ok) return false;
-		// Next dev servers answer unknown paths with an HTML 200 for some setups.
-		const type = head.headers.get("content-type") ?? "";
-		return !type.includes("text/html");
-	} catch {
-		return false;
+	/** HEAD-probe a model URL; returns false on 404 / network failure. */
+	export async function modelFileExists(url: string): Promise<boolean> {
+		if (typeof fetch === "undefined") return false;
+		// Object URLs / data URIs are already resolved in-memory.
+		if (url.startsWith("blob:") || url.startsWith("data:")) return true;
+		try {
+			const head = await fetch(resolveAssetUrl(url), { method: "HEAD" });
+			if (!head.ok) return false;
+			// Next dev servers answer unknown paths with an HTML 200 for some setups.
+			const type = head.headers.get("content-type") ?? "";
+			return !type.includes("text/html");
+		} catch {
+			return false;
+		}
 	}
-}

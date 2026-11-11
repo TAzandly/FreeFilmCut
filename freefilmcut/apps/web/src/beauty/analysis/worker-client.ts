@@ -1,22 +1,23 @@
 import {
-	BEAUTY_ANALYSIS_TICK_QUANTUM,
-	quantizeMediaTimeTicks,
-} from "./cache";
-import {
-	type AnalyzeBeautyFrameParams,
-	type BeautyFaceDetection,
-	analyzeBeautyFrame,
-	beautyAnalysisCache,
-	beautyFrameFrom,
-	composeSkinMask,
-} from "./face-body-analysis";
-import type { SkinSegmentation } from "./segment-skin";
-import type { BeautyAnalysisFrame } from "./types";
-import type {
-	BeautyWorkerRequest,
-	BeautyWorkerResponse,
-	PriorSkin,
-} from "./worker-protocol";
+		BEAUTY_ANALYSIS_TICK_QUANTUM,
+		quantizeMediaTimeTicks,
+	} from "./cache";
+	import { ensureBeautyModels } from "./ensure-models";
+	import {
+		type AnalyzeBeautyFrameParams,
+		type BeautyFaceDetection,
+		analyzeBeautyFrame,
+		beautyAnalysisCache,
+		beautyFrameFrom,
+		composeSkinMask,
+	} from "./face-body-analysis";
+	import type { SkinSegmentation } from "./segment-skin";
+	import type { BeautyAnalysisFrame } from "./types";
+	import type {
+		BeautyWorkerRequest,
+		BeautyWorkerResponse,
+		PriorSkin,
+	} from "./worker-protocol";
 
 /** A prior full-frame skin mask is reused for at most this long (1 s). */
 export const BEAUTY_PRIOR_SKIN_MAX_TICKS = 120_000;
@@ -127,13 +128,18 @@ async function runFacesJob(job: DistributiveOmit<Job, "id">, bitmap: ImageBitmap
  * Exact analysis (export) in the worker; main-thread fallback for non-bitmap
  * sources or when the worker cannot load. Cacheable results are cached.
  */
-export async function analyzeBeautyFrameOffThread(
-	params: AnalyzeBeautyFrameParams,
-): Promise<BeautyAnalysisFrame> {
-	const { clipId, mediaTimeTicks, image } = params;
-	if (!isBitmap(image) || !(await facesLane.available())) {
-		return analyzeBeautyFrame(params);
-	}
+	export async function analyzeBeautyFrameOffThread(
+		params: AnalyzeBeautyFrameParams,
+	): Promise<BeautyAnalysisFrame> {
+		const { clipId, mediaTimeTicks, image } = params;
+		try {
+			await ensureBeautyModels();
+		} catch {
+			/* status surfaces in the Beauty panel; analysis may still degrade */
+		}
+		if (!isBitmap(image) || !(await facesLane.available())) {
+			return analyzeBeautyFrame(params);
+		}
 	const cached = beautyAnalysisCache.get(clipId, mediaTimeTicks);
 	if (cached) {
 		image.close();
@@ -284,6 +290,11 @@ export async function analyzeBeautyPreviewOffThread(
 	onRefined?: () => void,
 ): Promise<BeautyAnalysisFrame> {
 	const { clipId, mediaTimeTicks, image } = params;
+	try {
+		await ensureBeautyModels();
+	} catch {
+		/* Beauty panel shows download errors; preview continues degraded */
+	}
 	if (!isBitmap(image) || !(await facesLane.available())) {
 		return analyzeBeautyFrame(params);
 	}

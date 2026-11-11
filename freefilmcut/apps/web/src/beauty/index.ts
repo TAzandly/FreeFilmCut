@@ -31,6 +31,16 @@ export {
 	beautyAnalysisCache,
 } from "./analysis/face-body-analysis";
 export { analyzeBeautyFrameOffThread } from "./analysis/worker-client";
+export {
+	ensureBeautyModels,
+	getBeautyModelStatus,
+	resetBeautyModelEnsure,
+	subscribeBeautyModelStatus,
+} from "./analysis/ensure-models";
+export type {
+	BeautyModelStatus,
+	EnsureBeautyModelsResult,
+} from "./analysis/ensure-models";
 export type {
 	AnalyzeBeautyFrameParams,
 	FaceBodyAnalysisDeps,

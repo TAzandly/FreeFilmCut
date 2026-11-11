@@ -1,8 +1,12 @@
 # Beauty analysis models
 
 These model files are **NOT committed** to the repository (see `.gitignore`).
-A developer must download them and place them in this directory. They are
-served statically at `/models/beauty/<filename>`.
+For local / self-hosted installs, download them into this directory so they are
+served at `/models/beauty/<filename>`.
+
+On public deploys (or when a file is missing), enabling Beauty **auto-downloads**
+the same upstream URLs into the browser Cache API (`beauty-models-v1`) and shows
+inline progress in the Beauty panel.
 
 | File | Used by | Required? | If missing |
 | --- | --- | --- | --- |

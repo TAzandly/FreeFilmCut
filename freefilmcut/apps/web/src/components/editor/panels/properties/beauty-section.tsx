@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Section,
@@ -18,13 +19,29 @@ import {
 	BEAUTY_PARAM_KEYS,
 	BEAUTY_SLIDER_PARAM_KEYS,
 	DEFAULT_BEAUTY_PARAMS,
+	ensureBeautyModels,
+	getBeautyModelStatus,
 	readBeautyFromParams,
+	resetBeautyModelEnsure,
+	subscribeBeautyModelStatus,
+	type BeautyModelStatus,
 } from "@/beauty";
 
 type MediaHost = ImageElement | VideoElement;
 
 const BEAUTY_SLIDER_KEYS = new Set<string>(BEAUTY_SLIDER_PARAM_KEYS);
 const ENABLED_KEY = BEAUTY_PARAM_KEYS.enabled;
+
+function statusLabel(status: BeautyModelStatus): string | null {
+	if (status.phase === "downloading") {
+		return `Downloading beauty models… ${status.percent}%`;
+	}
+	if (status.phase === "ready") return "Beauty models ready";
+	if (status.phase === "error") {
+		return status.message || "Failed to download beauty models";
+	}
+	return null;
+}
 
 export function BeautySection({
 	element,
@@ -43,6 +60,29 @@ export function BeautySection({
 		(param) => BEAUTY_SLIDER_KEYS.has(param.key),
 	);
 	const beauty = readBeautyFromParams({ params: renderElement.params });
+	const [modelStatus, setModelStatus] = useState<BeautyModelStatus>(() =>
+		getBeautyModelStatus(),
+	);
+	const [showReady, setShowReady] = useState(false);
+
+	useEffect(() => subscribeBeautyModelStatus(setModelStatus), []);
+
+	useEffect(() => {
+		if (modelStatus.phase !== "ready") {
+			setShowReady(false);
+			return;
+		}
+		setShowReady(true);
+		const timer = window.setTimeout(() => setShowReady(false), 3000);
+		return () => window.clearTimeout(timer);
+	}, [modelStatus]);
+
+	useEffect(() => {
+		if (!beauty.enabled) return;
+		void ensureBeautyModels().catch(() => {
+			/* status already set */
+		});
+	}, [beauty.enabled]);
 
 	const hasNonDefault =
 		beauty.enabled ||
@@ -65,6 +105,18 @@ export function BeautySection({
 
 	const handleEnabled = (checked: boolean) => {
 		commitParams({ [ENABLED_KEY]: checked });
+		if (checked) {
+			void ensureBeautyModels().catch(() => {
+				/* status already set */
+			});
+		}
+	};
+
+	const handleRetry = () => {
+		resetBeautyModelEnsure();
+		void ensureBeautyModels().catch(() => {
+			/* status already set */
+		});
 	};
 
 	const handleReset = () => {
@@ -78,6 +130,14 @@ export function BeautySection({
 			[BEAUTY_PARAM_KEYS.noseSlim]: DEFAULT_BEAUTY_PARAMS.noseSlim,
 		});
 	};
+
+	const visibleStatus =
+		modelStatus.phase === "downloading" ||
+		modelStatus.phase === "error" ||
+		(modelStatus.phase === "ready" && showReady)
+			? modelStatus
+			: null;
+	const label = visibleStatus ? statusLabel(visibleStatus) : null;
 
 	return (
 		<Section collapsible defaultOpen sectionKey={`${element.id}:beauty`}>
@@ -108,6 +168,24 @@ export function BeautySection({
 			>
 				<SectionTitle>Beauty</SectionTitle>
 			</SectionHeader>
+			{label ? (
+				<div className="flex items-center gap-2 px-4 pb-2 text-xs text-muted-foreground">
+					<span className="min-w-0 flex-1 leading-snug">{label}</span>
+					{modelStatus.phase === "error" ? (
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-6 shrink-0 px-2 text-xs"
+							onClick={(event) => {
+								event.stopPropagation();
+								handleRetry();
+							}}
+						>
+							Retry
+						</Button>
+					) : null}
+				</div>
+			) : null}
 			{beauty.enabled ? (
 				<SectionContent>
 					<SectionFields>

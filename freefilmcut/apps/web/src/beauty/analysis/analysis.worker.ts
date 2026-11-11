@@ -6,6 +6,7 @@ import {
 	composeSkinMask,
 	detectBeautyFaces,
 } from "./face-body-analysis";
+import { ensureBeautyModels } from "./ensure-models";
 import { preloadMediapipeFace } from "./mediapipe-face";
 import { preloadSkinSegmentation, segmentSkin } from "./segment-skin";
 import type { BeautyAnalysisFrame } from "./types";
@@ -79,6 +80,7 @@ async function analyzeFaces(
 async function handle(message: BeautyWorkerRequest): Promise<void> {
 	if (message.type === "warmup") {
 		try {
+			await ensureBeautyModels();
 			if (message.lane === "faces") await preloadMediapipeFace();
 			else await preloadSkinSegmentation();
 			post({ type: "warmup", ok: true });
