@@ -28,3 +28,8 @@ target/
 rust-migration-notes.md
 # Local Microsoft YaHei extract (do not redistribute)
 apps/web/public/fonts/msyh.ttf
+
+# Beauty analysis models (download manually; see README in that folder)
+apps/web/public/models/beauty/*.onnx
+apps/web/public/models/beauty/*.task
+apps/web/public/models/beauty/*.tflite

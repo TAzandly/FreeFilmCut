@@ -21,3 +21,12 @@ export {
 	quantizeMediaTimeTicks,
 } from "./analysis/cache";
 export { buildLandmarkFallbackMask } from "./analysis/landmark-fallback-mask";
+export {
+	analyzeBeautyFrame,
+	beautyAnalysisCache,
+} from "./analysis/face-body-analysis";
+export type {
+	AnalyzeBeautyFrameParams,
+	FaceBodyAnalysisDeps,
+} from "./analysis/face-body-analysis";
+export type { BeautyImageSource } from "./analysis/image-source";
