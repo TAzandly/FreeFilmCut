@@ -49,7 +49,14 @@ export type FrameItemDescriptor =
 			colorCorrection?: ResolvedColorCorrection | null;
 			/** Active beauty params; absent or null leaves the beauty pass off. */
 			beauty?: ClipBeautyParams | null;
-			/** Clip-local seconds / duration for mediaAnims sampling. */
+			/**
+			 * Timeline element id. Set with `beauty`: keys face analysis per clip.
+			 * `clipLocalTime` (below) is always set when `beauty` is.
+			 */
+			elementId?: string;
+			/** Still image (analysis time is pinned to 0); false/absent for video. */
+			sourceIsStatic?: boolean;
+			/** Clip-local seconds / duration for mediaAnims sampling (and beauty analysis time). */
 			clipLocalTime?: number;
 			clipDurationSec?: number;
 			mediaAnims?: import("@/timeline").MediaAnimAssignment;

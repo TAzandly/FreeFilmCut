@@ -3,6 +3,7 @@ export { BEAUTY_PARAM_KEYS, DEFAULT_BEAUTY_PARAMS } from "./types";
 export {
 	clamp01,
 	isBeautyActive,
+	isBeautyParamsActive,
 	normalizeBeautyParams,
 	readBeautyFromParams,
 	resolveBeautyFromParams,
@@ -30,3 +31,26 @@ export type {
 	FaceBodyAnalysisDeps,
 } from "./analysis/face-body-analysis";
 export type { BeautyImageSource } from "./analysis/image-source";
+export {
+	applyBeautyPass,
+	disposeBeautyPass,
+	fitBeautyPassSize,
+	planBeautyPasses,
+	trimBeautyPass,
+} from "./gpu/beauty-pass";
+export type { ApplyBeautyPassParams, BeautyPassPlan } from "./gpu/beauty-pass";
+export {
+	BEAUTY_ANALYSIS_MAX_EDGE,
+	BEAUTY_STALE_MAX_TICKS,
+	BeautyAnalysisRequester,
+	snapshotForBeautyAnalysis,
+} from "./gpu/analysis-requests";
+export type {
+	BeautyAnalysisRequest,
+	BeautyAnalysisRequesterDeps,
+} from "./gpu/analysis-requests";
+export {
+	MAX_BEAUTY_FACES,
+	packWarpFaces,
+	skinMaskCoverage,
+} from "./gpu/warp-points";

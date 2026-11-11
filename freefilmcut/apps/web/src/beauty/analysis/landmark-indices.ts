@@ -26,3 +26,34 @@ export const LIPS_INNER_INDICES = [
 	78, 95, 88, 178, 87, 14, 317, 402, 318, 324, 308, 415, 310, 311, 312, 13, 82, 81,
 	80, 191,
 ] as const;
+
+/*
+ * Warp control points (MediaPipe 478-landmark topology). Image-left / image-right
+ * mean the viewer's left / right (the subject's right / left).
+ */
+
+/** Eye corners used to size the enlarge radius. */
+export const EYE_CORNER_INDICES = {
+	/** [outer, inner] — image-left eye (subject's right). */
+	imageLeft: [33, 133],
+	/** [outer, inner] — image-right eye (subject's left). */
+	imageRight: [263, 362],
+} as const;
+
+/** Temple-to-temple width reference for face-slim radius. */
+export const FACE_WIDTH_INDICES = [234, 454] as const;
+
+/** Nose bridge and chin: define the facial axis that slimming pulls toward. */
+export const FACE_AXIS_INDICES = [168, 152] as const;
+
+/** Cheek, mid-jaw and jaw-angle points that move toward the axis (face slim). */
+export const FACE_SLIM_INDICES = {
+	imageLeft: [93, 58, 172],
+	imageRight: [323, 288, 397],
+} as const;
+
+/** Outer nostril wings that move toward the axis (nose slim). */
+export const NOSE_WING_INDICES = {
+	imageLeft: 129,
+	imageRight: 358,
+} as const;

@@ -108,6 +108,14 @@ import {
 	scaleStickerPlacementToBuffer,
 } from "@/vfxpack/sticker-pack-blit";
 import { getLiveDragTransform } from "@/preview/live-drag-transform";
+import {
+	applyBeautyPass,
+	BeautyAnalysisRequester,
+	isBeautyParamsActive,
+	trimBeautyPass,
+	type BeautyAnalysisRequest,
+} from "@/beauty";
+import { TICKS_PER_SECOND } from "@/wasm";
 
 function readStickerPlacement(params: ParamValues | null | undefined): {
 	scaleX: number;
@@ -335,6 +343,14 @@ class ThreeCompositor {
 	private cache = new Map<string, TextureCacheEntry>();
 	private layerMeshes: THREE.Mesh[] = [];
 	private layerPool: THREE.Mesh[] = [];
+	/**
+	 * Face analysis for beauty layers. Preview reads the latest result without
+	 * blocking; export awaits the exact frame (see `ensureFrameBeauty`).
+	 */
+	private beautyRequester = new BeautyAnalysisRequester({
+		// A finished analysis must repaint a paused preview.
+		onReady: () => bumpFlowerTextFrameEpoch(),
+	});
 	private packScenes = new Map<string, BuiltPackScene>();
 	/** Synthetic Troika flower-text scenes for timeline TextElements. */
 	private flowerTextScenes = new Map<
@@ -552,6 +568,9 @@ class ThreeCompositor {
 			// fire-and-forget + bumpFlowerTextFrameEpoch so RAF is not blocked.
 			if (waitText) {
 				await this.ensureFrameFlowerTexts(frame);
+				// Export: beauty must be present in every encoded frame, so wait
+				// for exact face analysis before any layer is drawn.
+				await this.ensureFrameBeauty(frame);
 				// Await yielded to preview RAF — re-pin size before compositing.
 				this.ensureInitialized({ width: frame.width, height: frame.height });
 			} else {
@@ -819,6 +838,8 @@ class ThreeCompositor {
 
 		// Present accum 鈫?canvas
 		this.presentAccum();
+		// Release beauty RTs / mask once no beauty layer has drawn for a while.
+		trimBeautyPass(renderer);
 
 		if (perfMarks) {
 			recordSpan({
@@ -3713,7 +3734,12 @@ class ThreeCompositor {
 		 */
 		let defineChanged = false;
 		if (material.map === null) defineChanged = true;
-		material.map = entry.texture;
+		// Beauty is a pre-process (multi-pass RTs) of the layer map, not a material
+		// patch: warp -> smooth -> whiten, then everything downstream (chroma,
+		// correction, grade, mask, blend) sees the retouched pixels. Null keeps
+		// the raw texture (inactive, or no analysis yet / unavailable).
+		const beautyMap = this.applyBeautyToLayer(item, entry);
+		material.map = beautyMap ?? entry.texture;
 		material.opacity = item.opacity;
 		material.transparent = true;
 
@@ -3796,6 +3822,77 @@ class ThreeCompositor {
 		applyQuadTransform(mesh, item.transform, z);
 		scene.add(mesh);
 		this.layerMeshes.push(mesh);
+	}
+
+	/** Analysis request for a beauty layer, or null when it has no beauty / key. */
+	private beautyRequestFor(
+		item: Extract<FrameItemDescriptor, { type: "layer" }>,
+		entry: TextureCacheEntry,
+	): BeautyAnalysisRequest | null {
+		if (!item.beauty || !isBeautyParamsActive(item.beauty)) return null;
+		if (!item.elementId || entry.width <= 0 || entry.height <= 0) return null;
+		return {
+			clipId: item.elementId,
+			// Stills never change; video is keyed by clip-local time (quantized to
+			// one 30 fps frame by the analysis cache).
+			mediaTimeTicks: item.sourceIsStatic
+				? 0
+				: Math.max(0, Math.round((item.clipLocalTime ?? 0) * TICKS_PER_SECOND)),
+			source: entry.kind === "external" ? entry.source : entry.canvas,
+			width: entry.width,
+			height: entry.height,
+		};
+	}
+
+	/**
+	 * Run the beauty pass for one layer. Preview uses the newest analysis it has
+	 * (starting a background refresh), so the first frames may be unprocessed;
+	 * export has already awaited the exact analysis in `ensureFrameBeauty`, so
+	 * this is a cache hit there.
+	 */
+	private applyBeautyToLayer(
+		item: Extract<FrameItemDescriptor, { type: "layer" }>,
+		entry: TextureCacheEntry,
+	): THREE.Texture | null {
+		const renderer = this.renderer;
+		if (!renderer) return null;
+		const request = this.beautyRequestFor(item, entry);
+		if (!request || !item.beauty) return null;
+		const analysis = this.beautyRequester.request(request);
+		if (!analysis) return null;
+		const size = this.initializedSize;
+		return applyBeautyPass({
+			renderer,
+			inputTexture: entry.texture,
+			width: entry.width,
+			height: entry.height,
+			beauty: item.beauty,
+			analysis,
+			// Layers are drawn into the compose buffer; 2x covers zoomed clips.
+			...(size ? { maxEdge: Math.min(4096, Math.max(size.width, size.height) * 2) } : {}),
+		});
+	}
+
+	/**
+	 * Export only: await exact face analysis for every beauty layer (including
+	 * cut-transition sides) so no encoded frame is drawn unprocessed.
+	 */
+	private async ensureFrameBeauty(frame: FrameDescriptor): Promise<void> {
+		const layers: Extract<FrameItemDescriptor, { type: "layer" }>[] = [];
+		for (const item of frame.items) {
+			if (item.type === "layer") layers.push(item);
+			else if (item.type === "transition") {
+				layers.push(...item.from.layers, ...item.to.layers);
+			}
+		}
+		const pending: Promise<unknown>[] = [];
+		for (const layer of layers) {
+			const entry = this.cache.get(layer.textureId);
+			if (!entry) continue;
+			const request = this.beautyRequestFor(layer, entry);
+			if (request) pending.push(this.beautyRequester.ensure(request));
+		}
+		if (pending.length > 0) await Promise.all(pending);
 	}
 
 	private syncExternalTexture(texture: ExternalTextureDescriptor) {

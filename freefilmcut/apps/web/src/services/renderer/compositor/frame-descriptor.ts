@@ -416,7 +416,18 @@ async function collectVisualSourceNode({
 		...(node.resolved.colorCorrection
 			? { colorCorrection: node.resolved.colorCorrection }
 			: {}),
-		...(node.resolved.beauty ? { beauty: node.resolved.beauty } : {}),
+		...(node.resolved.beauty
+			? {
+					beauty: node.resolved.beauty,
+					// Beauty analysis is keyed by (element, clip-local time).
+					...(node.params.elementId
+						? { elementId: node.params.elementId }
+						: {}),
+					sourceIsStatic: node instanceof ImageNode,
+					clipLocalTime,
+					clipDurationSec,
+				}
+			: {}),
 		...((node instanceof ImageNode || node instanceof VideoNode) &&
 		node.params.mediaAnims
 			? {
@@ -608,7 +619,15 @@ function collectTransitionSide({
 		...(side.colorCorrection
 			? { colorCorrection: side.colorCorrection }
 			: {}),
-		...(side.beauty ? { beauty: side.beauty } : {}),
+		...(side.beauty
+			? {
+					beauty: side.beauty,
+					...(side.elementId ? { elementId: side.elementId } : {}),
+					sourceIsStatic: side.sourceIsStatic,
+					clipLocalTime: side.clipLocalTime,
+					clipDurationSec: side.clipDurationSec,
+				}
+			: {}),
 		...(side.mediaAnims
 			? {
 					clipLocalTime: side.clipLocalTime,

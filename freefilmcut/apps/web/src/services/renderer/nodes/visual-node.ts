@@ -77,6 +77,8 @@ export type CutTransitionSide = {
 	colorCorrection: ResolvedColorCorrection | null;
 	/** Null/absent when beauty is inactive. */
 	beauty?: ClipBeautyParams | null;
+	/** Timeline element id of this side (beauty analysis key). */
+	elementId?: string;
 	clipLocalTime: number;
 	clipDurationSec: number;
 	mediaAnims?: MediaAnimAssignment;

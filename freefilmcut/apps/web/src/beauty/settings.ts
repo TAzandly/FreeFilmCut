@@ -72,12 +72,8 @@ export function readBeautyFromParams({
 	});
 }
 
-export function isBeautyActive({
-	params,
-}: {
-	params: ParamValues | undefined;
-}): boolean {
-	const beauty = readBeautyFromParams({ params });
+/** True when any slider of already-resolved beauty params is above epsilon. */
+export function isBeautyParamsActive(beauty: ClipBeautyParams): boolean {
 	return (
 		beauty.smooth > BEAUTY_ACTIVE_EPSILON ||
 		beauty.whiten > BEAUTY_ACTIVE_EPSILON ||
@@ -85,6 +81,14 @@ export function isBeautyActive({
 		beauty.faceSlim > BEAUTY_ACTIVE_EPSILON ||
 		beauty.noseSlim > BEAUTY_ACTIVE_EPSILON
 	);
+}
+
+export function isBeautyActive({
+	params,
+}: {
+	params: ParamValues | undefined;
+}): boolean {
+	return isBeautyParamsActive(readBeautyFromParams({ params }));
 }
 
 export function resolveBeautyFromParams({

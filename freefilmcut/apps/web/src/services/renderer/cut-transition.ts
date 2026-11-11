@@ -77,6 +77,8 @@ export type TransitionMediaSource = {
 	colorCorrection: ColorCorrectionSettings;
 	/** Active beauty params (null when inactive) — applied to media for uFrom/uTo. */
 	beauty?: ClipBeautyParams | null;
+	/** Timeline element id (beauty analysis key). */
+	elementId?: string;
 	/** Clip-anim assignment — baked into media (not fill) for uFrom/uTo. */
 	mediaAnims?: MediaAnimAssignment;
 } & (
@@ -246,6 +248,7 @@ function toTransitionMedia({
 			colorGrade,
 			colorCorrection,
 			beauty: resolveBeautyFromParams({ params: element.params }),
+			elementId: element.id,
 			mediaAnims: element.mediaAnims,
 		};
 	if (element.type === "video" && media.type === "video") {
@@ -539,6 +542,7 @@ async function sampleSide({
 		colorGrade: isColorGradeIdentity({ grade }) ? null : grade,
 		colorCorrection,
 		beauty: media.beauty ?? null,
+		...(media.elementId ? { elementId: media.elementId } : {}),
 		clipLocalTime: mediaTimeToSeconds({ time: localTime }),
 		clipDurationSec: mediaTimeToSeconds({ time: media.elementDuration }),
 		...(media.mediaAnims ? { mediaAnims: media.mediaAnims } : {}),
