@@ -5,8 +5,9 @@ For local / self-hosted installs, download them into this directory so they are
 served at `/models/beauty/<filename>`.
 
 On public deploys (or when a file is missing), enabling Beauty **auto-downloads**
-the same upstream URLs into the browser Cache API (`beauty-models-v1`) and shows
-inline progress in the Beauty panel.
+models via the same-origin Edge proxy `/api/beauty-models/<id>` (GitHub release
+assets block browser CORS). Files are stored in the browser Cache API
+(`beauty-models-v1`) with inline progress in the Beauty panel.
 
 | File | Used by | Required? | If missing |
 | --- | --- | --- | --- |
