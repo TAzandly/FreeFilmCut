@@ -33,6 +33,7 @@ import {
 	buildColorGradeHslParamDefs,
 } from "@/color-grade/param-defs";
 import { buildColorCorrectionParamDefs } from "@/color-correction/param-defs";
+import { buildBeautyParamDefs } from "@/beauty/param-defs";
 
 export type ElementParamDefinition<TKey extends string = string> =
 	ParamDefinition<TKey> & {
@@ -308,6 +309,7 @@ const chromaKeyParams: ElementParamDefinition[] = [
 ];
 
 const colorCorrectionParams = buildColorCorrectionParamDefs();
+const beautyParams = buildBeautyParamDefs();
 
 const colorGradeBasicParams: ElementParamDefinition[] = [
 	{
@@ -645,6 +647,7 @@ elementParamRegistry.register({
 		...chromaKeyParams,
 		...backgroundFillParams,
 		...colorCorrectionParams,
+		...beautyParams,
 		...colorGradeBasicParams,
 		...colorGradeHslParams,
 		...colorGradeCurvesParams,
@@ -657,6 +660,7 @@ elementParamRegistry.register({
 		...chromaKeyParams,
 		...backgroundFillParams,
 		...colorCorrectionParams,
+		...beautyParams,
 		...colorGradeBasicParams,
 		...colorGradeHslParams,
 		...colorGradeCurvesParams,

@@ -22,6 +22,7 @@ import {
 	ElementParamsTab,
 } from "./components/element-params-tab";
 import { ColorCorrectionSection } from "./color-correction-section";
+import { BeautySection } from "./beauty-section";
 import { getElementParams } from "@/params/registry";
 import {
 	COLOR_GRADE_HSL_PARAM_KEYS,
@@ -114,6 +115,7 @@ export type MediaPropertiesPage =
 	| "video"
 	| "animation"
 	| "adjustment"
+	| "beauty"
 	| "audio"
 	| "speed";
 
@@ -138,6 +140,9 @@ export function MediaPropertiesView({
 	}
 	if (page === "adjustment") {
 		return <AdjustmentPage element={element} trackId={trackId} />;
+	}
+	if (page === "beauty") {
+		return <BeautyPage element={element} trackId={trackId} />;
 	}
 	if (page === "audio") {
 		if (element.type !== "video") return null;
@@ -167,6 +172,25 @@ const COLOR_GRADE_BASIC_KEYS = [
 	"colorGrade.highlights",
 	"colorGrade.shadows",
 ] as const;
+
+function BeautyPage({
+	element,
+	trackId,
+}: {
+	element: MediaHost;
+	trackId: string;
+}) {
+	return (
+		<div className="flex h-full flex-col">
+			<div className="flex h-11 shrink-0 items-center border-b px-3.5">
+				<SectionTitle>Beauty</SectionTitle>
+			</div>
+			<div className="min-h-0 flex-1 overflow-auto">
+				<BeautySection element={element} trackId={trackId} />
+			</div>
+		</div>
+	);
+}
 
 function AdjustmentPage({
 	element,

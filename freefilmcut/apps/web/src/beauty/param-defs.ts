@@ -5,7 +5,7 @@ export function buildBeautyParamDefs(): ElementParamDefinition[] {
 	return [
 		{
 			key: BEAUTY_PARAM_KEYS.smooth,
-			label: "Smooth",
+			label: "磨皮",
 			type: "number",
 			control: "slider",
 			default: DEFAULT_BEAUTY_PARAMS.smooth,
@@ -16,7 +16,7 @@ export function buildBeautyParamDefs(): ElementParamDefinition[] {
 		},
 		{
 			key: BEAUTY_PARAM_KEYS.whiten,
-			label: "Whiten",
+			label: "美白",
 			type: "number",
 			control: "slider",
 			default: DEFAULT_BEAUTY_PARAMS.whiten,
@@ -27,7 +27,7 @@ export function buildBeautyParamDefs(): ElementParamDefinition[] {
 		},
 		{
 			key: BEAUTY_PARAM_KEYS.eye,
-			label: "Eye",
+			label: "大眼",
 			type: "number",
 			control: "slider",
 			default: DEFAULT_BEAUTY_PARAMS.eye,
@@ -38,7 +38,7 @@ export function buildBeautyParamDefs(): ElementParamDefinition[] {
 		},
 		{
 			key: BEAUTY_PARAM_KEYS.faceSlim,
-			label: "Face Slim",
+			label: "瘦脸",
 			type: "number",
 			control: "slider",
 			default: DEFAULT_BEAUTY_PARAMS.faceSlim,
@@ -49,7 +49,7 @@ export function buildBeautyParamDefs(): ElementParamDefinition[] {
 		},
 		{
 			key: BEAUTY_PARAM_KEYS.noseSlim,
-			label: "Nose Slim",
+			label: "瘦鼻",
 			type: "number",
 			control: "slider",
 			default: DEFAULT_BEAUTY_PARAMS.noseSlim,

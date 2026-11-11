@@ -289,6 +289,18 @@ function getTextConfig({
 					/>
 				),
 			},
+			{
+				id: "beauty",
+				label: "Beauty",
+				icon: <HugeiconsIcon icon={HappyIcon} size={16} />,
+				content: ({ trackId }) => (
+					<MediaPropertiesView
+						element={element}
+						trackId={trackId}
+						page="beauty"
+					/>
+				),
+			},
 		];
 		if (showAudioTab) {
 			tabs.push({
@@ -355,6 +367,18 @@ function getTextConfig({
 							element={element}
 							trackId={trackId}
 							page="adjustment"
+						/>
+					),
+				},
+				{
+					id: "beauty",
+					label: "Beauty",
+					icon: <HugeiconsIcon icon={HappyIcon} size={16} />,
+					content: ({ trackId }) => (
+						<MediaPropertiesView
+							element={element}
+							trackId={trackId}
+							page="beauty"
 						/>
 					),
 				},
