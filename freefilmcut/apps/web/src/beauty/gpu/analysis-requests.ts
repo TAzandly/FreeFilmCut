@@ -32,7 +32,7 @@ export type BeautyAnalysisRequest = {
 
 export type BeautyAnalysisRequesterDeps = {
 	analyze: (params: AnalyzeBeautyFrameParams) => Promise<BeautyAnalysisFrame>;
-	cache: Pick<BeautyAnalysisCache, "get">;
+	cache: Pick<BeautyAnalysisCache, "get" | "delete">;
 	/** Copy `source` into a private bitmap; the pooled source mutates later. */
 	snapshot: (request: BeautyAnalysisRequest) => BeautyImageSource | null;
 	/** Called when an analysis finishes so a paused preview can repaint. */
@@ -77,6 +77,12 @@ export class BeautyAnalysisRequester {
 	private readonly deps: BeautyAnalysisRequesterDeps;
 	private readonly latest = new Map<string, Latest>();
 	private readonly inFlight = new Map<string, InFlight>();
+	/**
+	 * Bumped by `invalidateClip` / `clear`; an analysis started under an older
+	 * token is stale and its result is dropped instead of remembered.
+	 */
+	private readonly clipGeneration = new Map<string, number>();
+	private epoch = 0;
 
 	constructor(deps: Partial<BeautyAnalysisRequesterDeps> = {}) {
 		this.deps = {
@@ -122,6 +128,7 @@ export class BeautyAnalysisRequester {
 		const { clipId, mediaTimeTicks } = request;
 		const ticksKey = quantizeMediaTimeTicks(mediaTimeTicks, BEAUTY_ANALYSIS_TICK_QUANTUM);
 		for (let attempt = 0; attempt < 3; attempt++) {
+			const token = this.token(clipId);
 			const exact = this.deps.cache.get(clipId, mediaTimeTicks);
 			if (exact) return exact;
 			const last = this.latest.get(clipId);
@@ -135,17 +142,31 @@ export class BeautyAnalysisRequester {
 				if (pending.ticksKey === ticksKey && done) return done;
 				continue;
 			}
-			return this.start(request, ticksKey, true);
+			const result = await this.start(request, ticksKey, true);
+			// Invalidated while analysing: the result was dropped, so re-analyze.
+			if (this.token(clipId) !== token) continue;
+			return result;
 		}
 		return null;
 	}
 
+	/** Forget a clip's results; late in-flight results for it are ignored. */
 	invalidateClip(clipId: string): void {
 		this.latest.delete(clipId);
+		this.inFlight.delete(clipId);
+		this.clipGeneration.set(clipId, (this.clipGeneration.get(clipId) ?? 0) + 1);
 	}
 
+	/** Forget everything (compositor teardown); all in-flight results are ignored. */
 	clear(): void {
 		this.latest.clear();
+		this.inFlight.clear();
+		this.clipGeneration.clear();
+		this.epoch++;
+	}
+
+	private token(clipId: string): string {
+		return `${this.epoch}:${this.clipGeneration.get(clipId) ?? 0}`;
 	}
 
 	private start(
@@ -156,9 +177,18 @@ export class BeautyAnalysisRequester {
 		const { clipId, mediaTimeTicks } = request;
 		const image = this.deps.snapshot(request);
 		if (!image) return Promise.resolve(null);
+		const token = this.token(clipId);
 		const promise = this.deps
 			.analyze({ clipId, mediaTimeTicks, image })
 			.then((frame): BeautyAnalysisFrame | null => {
+				if (this.token(clipId) !== token) {
+					// Source/trim changed mid-analysis: the analyzer already cached
+					// this frame, so evict it and never surface it.
+					if (this.deps.cache.get(clipId, mediaTimeTicks) === frame) {
+						this.deps.cache.delete(clipId, mediaTimeTicks);
+					}
+					return null;
+				}
 				this.remember(clipId, { ticksKey, at: this.deps.now(), frame });
 				// Export awaits the result directly; only the preview needs a wake-up.
 				if (!quiet) this.deps.onReady?.();

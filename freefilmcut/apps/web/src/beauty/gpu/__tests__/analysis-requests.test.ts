@@ -123,6 +123,43 @@ describe("BeautyAnalysisRequester", () => {
 		expect(t.calls.map((c) => c.ticks)).toEqual([0, 40_000]);
 	});
 
+	test("invalidateClip drops a late in-flight result and evicts it from the cache", async () => {
+		const t = setup();
+		t.requester.request(req("a", 0));
+		t.requester.invalidateClip("a");
+		await t.finishNext(); // stale analysis resolves
+		expect(t.ready()).toBe(0);
+		expect(t.cache.get("a", 0)).toBeUndefined();
+		expect(t.requester.peek("a", 0)).toBeNull();
+		// a fresh request starts a new analysis
+		expect(t.requester.request(req("a", 0))).toBeNull();
+		expect(t.calls).toHaveLength(2);
+		await t.finishNext();
+		expect(t.requester.request(req("a", 0))?.clipId).toBe("a");
+	});
+
+	test("clear ignores late in-flight results for every clip", async () => {
+		const t = setup();
+		t.requester.request(req("a", 0));
+		t.requester.request(req("b", 0));
+		t.requester.clear();
+		await t.finishNext();
+		await t.finishNext();
+		expect(t.ready()).toBe(0);
+		expect(t.requester.peek("a", 0)).toBeNull();
+		expect(t.requester.peek("b", 0)).toBeNull();
+	});
+
+	test("ensure re-analyzes when the clip is invalidated mid-analysis", async () => {
+		const t = setup();
+		const p = t.requester.ensure(req("a", 0));
+		t.requester.invalidateClip("a");
+		await t.finishNext(); // stale
+		await t.finishNext(); // retry
+		expect((await p)?.clipId).toBe("a");
+		expect(t.calls).toHaveLength(2);
+	});
+
 	test("uncached results are not re-analyzed every frame, only after retry delay", async () => {
 		const t = setup({ cacheResults: false });
 		t.requester.request(req("a", 0));

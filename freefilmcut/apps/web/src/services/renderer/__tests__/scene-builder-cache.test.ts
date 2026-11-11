@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { MediaAsset } from "@/media";
 import type { SceneTracks, TimelineElement } from "@/timeline";
+import { subscribeBeautyInvalidation } from "@/beauty";
 import { VideoNode } from "../nodes/video-node";
 import { buildScene, createSceneNodeCache } from "../scene-builder";
 
@@ -153,6 +154,56 @@ describe("buildScene node cache", () => {
 
 		expect(videoNode2).toBe(videoNode);
 		expect(videoNode2?.params.beauty?.smooth).toBe(0.6);
+	});
+
+	test("trim/reverse/retime/removal invalidate beauty analysis, params scrubs do not", () => {
+		const invalidated: string[] = [];
+		const unsubscribe = subscribeBeautyInvalidation((id) => invalidated.push(id));
+		try {
+			const cache = createSceneNodeCache();
+			const media = fakeVideoMedia("m1");
+			const clip = videoClip("v1", "m1");
+			build(tracksOf([clip]), cache, [media]);
+			expect(invalidated).toEqual([]);
+
+			build(
+				tracksOf([
+					{ ...clip, params: { ...clip.params, "beauty.smooth": 0.5 } } as TimelineElement,
+				]),
+				cache,
+				[media],
+			);
+			expect(invalidated).toEqual([]);
+
+			build(tracksOf([{ ...clip, trimStart: 40 } as TimelineElement]), cache, [media]);
+			expect(invalidated).toEqual(["v1"]);
+
+			build(
+				tracksOf([{ ...clip, trimStart: 40, reversed: true } as TimelineElement]),
+				cache,
+				[media],
+			);
+			expect(invalidated).toEqual(["v1", "v1"]);
+
+			build(
+				tracksOf([
+					{
+						...clip,
+						trimStart: 40,
+						reversed: true,
+						retime: { rate: 2 },
+					} as unknown as TimelineElement,
+				]),
+				cache,
+				[media],
+			);
+			expect(invalidated).toEqual(["v1", "v1", "v1"]);
+
+			build(tracksOf([]), cache, [media]);
+			expect(invalidated).toEqual(["v1", "v1", "v1", "v1"]);
+		} finally {
+			unsubscribe();
+		}
 	});
 
 	test("without a cache every call builds a fresh tree", () => {

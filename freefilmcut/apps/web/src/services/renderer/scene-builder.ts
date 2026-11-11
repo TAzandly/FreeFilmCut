@@ -25,7 +25,7 @@ import {
 } from "@/rendering";
 import { buildCutTransitionBindings } from "./cut-transition";
 import { readChromaKeyFromParams } from "@/chroma-key";
-import { resolveBeautyFromParams } from "@/beauty";
+import { invalidateBeautyClip, resolveBeautyFromParams } from "@/beauty";
 import { readColorCorrectionFromParams } from "@/color-correction";
 import { readColorGradeFromParams } from "@/color-grade";
 
@@ -101,6 +101,8 @@ type CachedElementNodes = {
 	nodes: AnyBaseNode[];
 	/** Last element object that was built or patched into `nodes`. */
 	element: TimelineElement;
+	/** Inputs that change which source frame a clip shows (see `getMediaFrameDeps`). */
+	mediaFrameDeps: readonly unknown[];
 };
 
 /**
@@ -136,6 +138,32 @@ function sameDeps(a: readonly unknown[], b: readonly unknown[]): boolean {
 		if (!Object.is(a[i], b[i])) return false;
 	}
 	return true;
+}
+
+/**
+ * Inputs that decide which decoded frame a video/image clip shows at a given
+ * clip-local time. These are patched in place (not in `getElementNodeDeps`), so
+ * beauty analysis keyed on `(elementId, clip-local time)` must be invalidated
+ * when any of them change.
+ */
+function getMediaFrameDeps({
+	element,
+	mediaMap,
+}: {
+	element: TimelineElement;
+	mediaMap: Map<string, MediaAsset>;
+}): unknown[] {
+	if (element.type !== "video" && element.type !== "image") return [];
+	return [
+		element.mediaId,
+		mediaMap.get(element.mediaId),
+		element.trimStart,
+		element.trimEnd,
+		element.type === "video" ? element.reversed === true : false,
+		element.type === "video" && element.retime
+			? JSON.stringify(element.retime)
+			: null,
+	];
 }
 
 /** Structural inputs — param-only edits (color grade, opacity, …) must NOT be here. */
@@ -384,7 +412,11 @@ function buildTrackNodes({
 				canvasSize,
 				isPreview,
 			});
+			const mediaFrameDeps = getMediaFrameDeps({ element, mediaMap });
 			let entry = cache.elements.get(element.id);
+			if (entry && !sameDeps(entry.mediaFrameDeps, mediaFrameDeps)) {
+				invalidateBeautyClip(element.id);
+			}
 			if (!entry || !sameDeps(entry.deps, deps)) {
 				entry = {
 					deps,
@@ -396,12 +428,14 @@ function buildTrackNodes({
 						isPreview,
 					}),
 					element,
+					mediaFrameDeps,
 				};
 				cache.elements.set(element.id, entry);
 			} else if (entry.element !== element) {
 				// New element object, same structure — Basic/HSL scrub, opacity, …
 				patchElementNodes({ nodes: entry.nodes, element, canvasSize });
 				entry.element = element;
+				entry.mediaFrameDeps = mediaFrameDeps;
 				cache.paramsPatched = true;
 			}
 			nodes.push(...entry.nodes);
@@ -410,7 +444,9 @@ function buildTrackNodes({
 
 	if (cache) {
 		for (const id of [...cache.elements.keys()]) {
-			if (!seenIds.has(id)) cache.elements.delete(id);
+			if (seenIds.has(id)) continue;
+			cache.elements.delete(id);
+			invalidateBeautyClip(id);
 		}
 	}
 

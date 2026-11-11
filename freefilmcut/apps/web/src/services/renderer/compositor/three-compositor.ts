@@ -111,7 +111,9 @@ import { getLiveDragTransform } from "@/preview/live-drag-transform";
 import {
 	applyBeautyPass,
 	BeautyAnalysisRequester,
+	disposeBeautyPass,
 	isBeautyParamsActive,
+	subscribeBeautyInvalidation,
 	trimBeautyPass,
 	type BeautyAnalysisRequest,
 } from "@/beauty";
@@ -351,6 +353,8 @@ class ThreeCompositor {
 		// A finished analysis must repaint a paused preview.
 		onReady: () => bumpFlowerTextFrameEpoch(),
 	});
+	/** Drops requester state when a clip's source/trim/retime changes (scene builder). */
+	private unsubscribeBeautyInvalidation: (() => void) | null = null;
 	private packScenes = new Map<string, BuiltPackScene>();
 	/** Synthetic Troika flower-text scenes for timeline TextElements. */
 	private flowerTextScenes = new Map<
@@ -493,6 +497,11 @@ class ThreeCompositor {
 			this.ensureComposeTargets(width, height);
 			this.ensureBlitPass();
 
+			if (!this.unsubscribeBeautyInvalidation) {
+				this.unsubscribeBeautyInvalidation = subscribeBeautyInvalidation(
+					(clipId) => this.beautyRequester.invalidateClip(clipId),
+				);
+			}
 			if (!this.unsubscribePacks) {
 				this.unsubscribePacks = subscribePackRegistry(() => {
 					this.syncPackScenes();
@@ -520,6 +529,88 @@ class ThreeCompositor {
 			this.ensureBlitPass();
 			this.updatePackCameraAspects(width, height);
 		}
+	}
+
+	/**
+	 * Release GPU resources and beauty state. Safe to call repeatedly; a later
+	 * `ensureInitialized` rebuilds everything.
+	 */
+	dispose() {
+		this.unsubscribeBeautyInvalidation?.();
+		this.unsubscribeBeautyInvalidation = null;
+		this.unsubscribePacks?.();
+		this.unsubscribePacks = null;
+		// Beauty RTs/mask are keyed on the renderer; analysis state is per-compositor.
+		if (this.renderer) disposeBeautyPass(this.renderer);
+		this.beautyRequester.clear();
+
+		for (const id of [...this.flowerTextScenes.keys()]) {
+			this.disposeFlowerTextEntry(id);
+		}
+		for (const pp of this.packComposers.values()) {
+			try {
+				pp.dispose();
+			} catch {
+				/* ignore */
+			}
+		}
+		this.packComposers.clear();
+		for (const entry of this.cache.values()) entry.texture.dispose();
+		this.cache.clear();
+
+		for (const rt of [
+			this.accumRT,
+			this.belowSourceRT,
+			this.mediaOnlyRT,
+			this.transitionFromRT,
+			this.transitionToRT,
+			this.inputFlipFromRT,
+			this.inputFlipToRT,
+			this.inputFlipBelowRT,
+			this.stickerRT,
+			this.textLayerRT,
+			this.msaaRT,
+		]) {
+			rt?.dispose();
+		}
+		this.accumRT = null;
+		this.belowSourceRT = null;
+		this.mediaOnlyRT = null;
+		this.transitionFromRT = null;
+		this.transitionToRT = null;
+		this.inputFlipFromRT = null;
+		this.inputFlipToRT = null;
+		this.inputFlipBelowRT = null;
+		this.stickerRT = null;
+		this.textLayerRT = null;
+		this.msaaRT = null;
+		this.textFxCache.built?.dispose();
+		this.textFxCache.built = null;
+		this.belowFbTex?.dispose();
+		this.belowFbTex = null;
+		this.lastBelowTexture = null;
+
+		if (this.blitMesh) {
+			this.blitMesh.geometry.dispose();
+			const material = this.blitMesh.material;
+			if (Array.isArray(material)) {
+				for (const entry of material) entry.dispose();
+			} else {
+				material.dispose();
+			}
+		}
+		this.presentMaterial?.dispose();
+		this.blitScene = null;
+		this.blitCamera = null;
+		this.blitMaterial = null;
+		this.presentMaterial = null;
+		this.blitMesh = null;
+
+		this.renderer?.dispose();
+		this.renderer = null;
+		this.scene = null;
+		this.camera = null;
+		this.initializedSize = null;
 	}
 
 	getCanvas(): HTMLCanvasElement {

@@ -30,6 +30,10 @@ export type {
 	AnalyzeBeautyFrameParams,
 	FaceBodyAnalysisDeps,
 } from "./analysis/face-body-analysis";
+export {
+	invalidateBeautyClip,
+	subscribeBeautyInvalidation,
+} from "./invalidation";
 export type { BeautyImageSource } from "./analysis/image-source";
 export {
 	applyBeautyPass,

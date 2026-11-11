@@ -59,6 +59,10 @@ export class BeautyAnalysisCache {
 		}
 	}
 
+	delete(clipId: string, mediaTimeTicks: number): void {
+		this.map.delete(beautyAnalysisCacheKey(clipId, mediaTimeTicks));
+	}
+
 	invalidateClip(clipId: string): void {
 		const prefix = `${clipId}:`;
 		for (const key of [...this.map.keys()]) {
