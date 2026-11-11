@@ -41,9 +41,11 @@ https://youtu.be/QRCSDf3mw9k
 
 Web 多轨剪辑，Three.js 合成，观感主要靠资源包：
 
-艺术字 · 文字动画 · 特效 · 滤镜 · 调色 · 抠像 · 遮罩 · 转场 · 贴纸 · **人脸美颜**（磨皮 / 美白 / 大眼 / 瘦脸 / V脸 / 瘦鼻）等
+艺术字 · 文字动画 · 特效 · 滤镜 · 调色 · 抠像 · 遮罩 · 转场 · 贴纸 · **人脸美颜**（磨皮 / 美白 / 大眼 / 瘦脸 / V脸 / 瘦鼻） · **自动字幕**（浏览器端 Whisper）等
 
-美颜在浏览器端完成（MediaPipe 关键点 + DLMV 皮肤分割，GPU warp / 磨皮 / 美白）。模型需单独下载，见 [`freefilmcut/apps/web/public/models/beauty/README.md`](freefilmcut/apps/web/public/models/beauty/README.md)。
+美颜在浏览器端完成（MediaPipe 关键点 + DLMV 皮肤分割，GPU warp / 磨皮 / 美白）。本地没有模型时会在首次开启美颜时自动下载，见 [`freefilmcut/apps/web/public/models/beauty/README.md`](freefilmcut/apps/web/public/models/beauty/README.md)。
+
+自动字幕在本地用 Whisper（transformers.js）识别；打开 **Captions** 面板即可生成时间线上的字幕片段。
 
 ---
 
@@ -57,7 +59,7 @@ Web 多轨剪辑，Three.js 合成，观感主要靠资源包：
 
 ## 计划
 
-更多资源包 · 美体塑形 · 自动字幕 · 更强粒子 · 把「做包 → 剪辑」链路继续做好、保持免费
+更多资源包 · 美体塑形 · 更强粒子 · 把「做包 → 剪辑」链路继续做好、保持免费
 
 ---
 
