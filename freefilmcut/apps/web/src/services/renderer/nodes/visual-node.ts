@@ -1,5 +1,6 @@
 import { BaseNode } from "./base-node";
 import type { BackgroundFillSettings } from "@/background/fill";
+import type { ClipBeautyParams } from "@/beauty";
 import type { ChromaKeySettings } from "@/chroma-key";
 import type {
 	ColorCorrectionSettings,
@@ -33,6 +34,8 @@ export interface VisualNodeParams {
 	colorGrade?: ColorGradeSettings;
 	/** Base correction; sampled per frame in `resolve` (intensity keyframes). */
 	colorCorrection?: ColorCorrectionSettings;
+	/** Active beauty params (flat `beauty.*` keys); null/absent when inactive. */
+	beauty?: ClipBeautyParams | null;
 	/** Clip-anim library assignment (image/video). */
 	mediaAnims?: MediaAnimAssignment;
 }
@@ -48,6 +51,8 @@ export interface ResolvedVisualNodeState {
 	colorGrade: ColorGradeSettings | null;
 	/** Active correction at `localTime`; null when disabled or unanalyzed. */
 	colorCorrection: ResolvedColorCorrection | null;
+	/** Active beauty at `localTime`; null/absent when all sliders are zero. */
+	beauty?: ClipBeautyParams | null;
 }
 
 /**
@@ -70,6 +75,8 @@ export type CutTransitionSide = {
 	colorGrade: ColorGradeSettings | null;
 	/** Null when inactive. */
 	colorCorrection: ResolvedColorCorrection | null;
+	/** Null/absent when beauty is inactive. */
+	beauty?: ClipBeautyParams | null;
 	clipLocalTime: number;
 	clipDurationSec: number;
 	mediaAnims?: MediaAnimAssignment;

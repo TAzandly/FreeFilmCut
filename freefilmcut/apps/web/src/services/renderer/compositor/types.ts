@@ -1,4 +1,5 @@
 import type { BlendMode } from "@/rendering";
+import type { ClipBeautyParams } from "@/beauty";
 import type { ChromaKeySettings } from "@/chroma-key";
 import type { ResolvedColorCorrection } from "@/color-correction";
 import type { ColorGradeSettings } from "@/color-grade";
@@ -46,6 +47,8 @@ export type FrameItemDescriptor =
 			 * correction pass off.
 			 */
 			colorCorrection?: ResolvedColorCorrection | null;
+			/** Active beauty params; absent or null leaves the beauty pass off. */
+			beauty?: ClipBeautyParams | null;
 			/** Clip-local seconds / duration for mediaAnims sampling. */
 			clipLocalTime?: number;
 			clipDurationSec?: number;

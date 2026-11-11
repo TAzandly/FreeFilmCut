@@ -292,6 +292,8 @@ function resolveVisualState({
 					: null,
 			/** Null when disabled or unanalyzed so the correction pass stays off. */
 			colorCorrection,
+			/** Beauty is not keyframed; already resolved to null when inactive. */
+			beauty: params.beauty ?? null,
 		};
 	}
 
@@ -336,6 +338,7 @@ async function resolveOwnedCutTransition({
 			chromaKey: null,
 			colorGrade: null,
 			colorCorrection: null,
+			beauty: null,
 		};
 
 	return {

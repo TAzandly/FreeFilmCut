@@ -8,6 +8,8 @@ import {
 } from "@/background/fill";
 import { resolveBackgroundFillStyleUrl } from "@/background/fill-styles";
 import type { StyleFillSource } from "@/background/paint-fill";
+import { resolveBeautyFromParams } from "@/beauty";
+import type { ClipBeautyParams } from "@/beauty";
 import type { ColorCorrectionSettings } from "@/color-correction";
 import {
 	readColorCorrectionFromParams,
@@ -73,6 +75,8 @@ export type TransitionMediaSource = {
 	colorGrade: ColorGradeSettings;
 	/** Base color correction — applied to media (not fill) for uFrom/uTo. */
 	colorCorrection: ColorCorrectionSettings;
+	/** Active beauty params (null when inactive) — applied to media for uFrom/uTo. */
+	beauty?: ClipBeautyParams | null;
 	/** Clip-anim assignment — baked into media (not fill) for uFrom/uTo. */
 	mediaAnims?: MediaAnimAssignment;
 } & (
@@ -241,6 +245,7 @@ function toTransitionMedia({
 			fillStyleUrl,
 			colorGrade,
 			colorCorrection,
+			beauty: resolveBeautyFromParams({ params: element.params }),
 			mediaAnims: element.mediaAnims,
 		};
 	if (element.type === "video" && media.type === "video") {
@@ -533,6 +538,7 @@ async function sampleSide({
 		styleSource,
 		colorGrade: isColorGradeIdentity({ grade }) ? null : grade,
 		colorCorrection,
+		beauty: media.beauty ?? null,
 		clipLocalTime: mediaTimeToSeconds({ time: localTime }),
 		clipDurationSec: mediaTimeToSeconds({ time: media.elementDuration }),
 		...(media.mediaAnims ? { mediaAnims: media.mediaAnims } : {}),

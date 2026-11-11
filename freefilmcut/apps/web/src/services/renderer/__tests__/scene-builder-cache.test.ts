@@ -136,6 +136,25 @@ describe("buildScene node cache", () => {
 		expect(videoNode2?.params.colorGrade?.basic.contrast).toBe(0.1);
 	});
 
+	test("beauty.* params plumb onto VideoNode params and patch in place", () => {
+		const cache = createSceneNodeCache();
+		const media = fakeVideoMedia("m1");
+		const clip = videoClip("v1", "m1");
+		const first = build(tracksOf([clip]), cache, [media]);
+		const videoNode = first.children.find((n) => n instanceof VideoNode);
+		expect(videoNode?.params.beauty).toBeNull();
+
+		const beautified = {
+			...clip,
+			params: { ...clip.params, "beauty.smooth": 0.6 },
+		} as TimelineElement;
+		const second = build(tracksOf([beautified]), cache, [media]);
+		const videoNode2 = second.children.find((n) => n instanceof VideoNode);
+
+		expect(videoNode2).toBe(videoNode);
+		expect(videoNode2?.params.beauty?.smooth).toBe(0.6);
+	});
+
 	test("without a cache every call builds a fresh tree", () => {
 		const tracks = tracksOf([effect("a", 0)]);
 		const params = {

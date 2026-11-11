@@ -416,6 +416,7 @@ async function collectVisualSourceNode({
 		...(node.resolved.colorCorrection
 			? { colorCorrection: node.resolved.colorCorrection }
 			: {}),
+		...(node.resolved.beauty ? { beauty: node.resolved.beauty } : {}),
 		...((node instanceof ImageNode || node instanceof VideoNode) &&
 		node.params.mediaAnims
 			? {
@@ -607,6 +608,7 @@ function collectTransitionSide({
 		...(side.colorCorrection
 			? { colorCorrection: side.colorCorrection }
 			: {}),
+		...(side.beauty ? { beauty: side.beauty } : {}),
 		...(side.mediaAnims
 			? {
 					clipLocalTime: side.clipLocalTime,

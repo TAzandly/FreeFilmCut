@@ -25,6 +25,7 @@ import {
 } from "@/rendering";
 import { buildCutTransitionBindings } from "./cut-transition";
 import { readChromaKeyFromParams } from "@/chroma-key";
+import { resolveBeautyFromParams } from "@/beauty";
 import { readColorCorrectionFromParams } from "@/color-correction";
 import { readColorGradeFromParams } from "@/color-grade";
 
@@ -81,6 +82,17 @@ function buildColorCorrectionParam({
 }): { colorCorrection: import("@/color-correction").ColorCorrectionSettings } {
 	return {
 		colorCorrection: readColorCorrectionFromParams({ params: element.params }),
+	};
+}
+
+/** Flat `beauty.*` keys -> null when every slider is zero. */
+function buildBeautyParam({
+	element,
+}: {
+	element: { params: import("@/params").ParamValues };
+}): { beauty: import("@/beauty").ClipBeautyParams | null } {
+	return {
+		beauty: resolveBeautyFromParams({ params: element.params }),
 	};
 }
 
@@ -241,6 +253,7 @@ export function patchElementNodes({
 			p.chromaKey = buildChromaKeyParam({ element }).chromaKey;
 			p.colorGrade = buildColorGradeParam({ element }).colorGrade;
 			p.colorCorrection = buildColorCorrectionParam({ element }).colorCorrection;
+			p.beauty = buildBeautyParam({ element }).beauty;
 			continue;
 		}
 		if (node instanceof BlurBackgroundNode && (element.type === "video" || element.type === "image")) {
@@ -476,6 +489,7 @@ function buildElementNodes({
 								...buildChromaKeyParam({ element }),
 								...buildColorGradeParam({ element }),
 								...buildColorCorrectionParam({ element }),
+								...buildBeautyParam({ element }),
 								...(cutTransitions.length > 0 ? { cutTransitions } : {}),
 							}),
 						);
@@ -505,6 +519,7 @@ function buildElementNodes({
 								...buildChromaKeyParam({ element }),
 								...buildColorGradeParam({ element }),
 								...buildColorCorrectionParam({ element }),
+								...buildBeautyParam({ element }),
 								...(cutTransitions.length > 0 ? { cutTransitions } : {}),
 								...(isPreview && {
 									maxSourceSize: PREVIEW_MAX_IMAGE_SIZE,
