@@ -44,7 +44,7 @@ export function Footer() {
 								alt="FreeFilmCut"
 								width={24}
 								height={24}
-								className="invert dark:invert-0"
+								className="size-6 rounded-md object-cover"
 							/>
 							<span className="text-lg font-bold">FreeFilmCut</span>
 						</div>

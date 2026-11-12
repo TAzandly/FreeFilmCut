@@ -48,7 +48,7 @@ export function HomeSidebar({
 					alt="FreeFilmCut"
 					width={28}
 					height={28}
-					className="invert dark:invert-0"
+					className="size-7 rounded-md object-cover"
 				/>
 				<span className="text-sm font-semibold tracking-tight">FreeFilmCut</span>
 			</div>

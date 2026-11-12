@@ -10,4 +10,4 @@ export const SITE_INFO = {
 	favicon: "/favicon.ico",
 };
 
-export const DEFAULT_LOGO_URL = "/logos/opencut/svg/logo.svg";
+export const DEFAULT_LOGO_URL = "/logos/freefilmcut/logo.png";

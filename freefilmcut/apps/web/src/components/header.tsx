@@ -58,7 +58,7 @@ export function Header() {
 								<Image
 									src={DEFAULT_LOGO_URL}
 									alt="FreeFilmCut Logo"
-									className="invert dark:invert-0"
+									className="size-8 rounded-md object-cover"
 									width={32}
 									height={32}
 								/>
@@ -68,23 +68,25 @@ export function Header() {
 							<ContextMenuItem
 								onClick={async () => {
 									const res = await fetch(DEFAULT_LOGO_URL);
-									const svg = await res.text();
-									await navigator.clipboard.writeText(svg);
+									const blob = await res.blob();
+									await navigator.clipboard.write([
+										new ClipboardItem({ [blob.type]: blob }),
+									]);
 								}}
 							>
 								<HugeiconsIcon icon={Copy01Icon} />
-								Copy SVG
+								Copy logo
 							</ContextMenuItem>
 							<ContextMenuItem
 								onClick={() => {
 									const a = document.createElement("a");
 									a.href = DEFAULT_LOGO_URL;
-									a.download = "opencut-logo.svg";
+									a.download = "freefilmcut-logo.png";
 									a.click();
 								}}
 							>
 								<HugeiconsIcon icon={Download01Icon} />
-								Download SVG
+								Download logo
 							</ContextMenuItem>
 							<Link href="/brand">
 								<ContextMenuItem>
