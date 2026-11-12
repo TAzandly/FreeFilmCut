@@ -15,6 +15,7 @@ import type { PrimaryVfxPackType } from "@/vfxpack/types";
  *   sticker-anims/index.json      → type sticker-anim
  *   text-anims/in|out|loop/       → type text-anim
  *   clip-anims/in|out|combo/      → type clip-anim
+ *   face-fx/ — temporarily not loaded (NLE UI hidden until Face FX is stable)
  */
 const BUILTIN_FOLDERS: Array<{
 	folder: string;

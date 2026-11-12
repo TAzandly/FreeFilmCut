@@ -16,6 +16,7 @@ export const PRIMARY_VFX_PACK_TYPES = [
 	"text-anim",
 	"text-template",
 	"clip-anim",
+	"face-fx",
 ] as const;
 
 export const VFX_PACK_TYPE_LABELS: Record<PrimaryVfxPackType, string> = {
@@ -28,12 +29,14 @@ export const VFX_PACK_TYPE_LABELS: Record<PrimaryVfxPackType, string> = {
 	"text-anim": "文字动画",
 	"text-template": "Text templates",
 	"clip-anim": "Clip animation",
+	"face-fx": "Face FX",
 };
 
 export const VFX_PACK_TYPE_ORDER: PrimaryVfxPackType[] = [
 	"sticker",
 	"transition",
 	"effect",
+	"face-fx",
 	"filter",
 	"art-text",
 ];
@@ -68,6 +71,9 @@ export function normalizeVfxPackType(
 		case "media-anim":
 		case "media_anim":
 			return "clip-anim";
+		case "facefx":
+		case "face_fx":
+			return "face-fx";
 		case "scene":
 		case "animation":
 		case "overlay":
@@ -101,6 +107,7 @@ export type VfxPackPlacement = {
 
 		switch (normalized) {
 			case "filter":
+			case "face-fx":
 				return {
 					type: normalized,
 					label,

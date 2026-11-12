@@ -1,0 +1,82 @@
+{
+	"rabbitEars": {
+		"driver": {
+			"landmarks": true,
+			"transformationMatrix": true,
+			"maxFaces": 4
+		},
+		"layers": [
+			{
+				"id": "ears",
+				"kind": "anchor3d",
+				"asset": "models/rabbit_ears.glb",
+				"bind": "forehead",
+				"offset": [0, 0.02, 0],
+				"scale": 1
+			}
+		]
+	},
+	"eyeLaser": {
+		"driver": {
+			"landmarks": true,
+			"transformationMatrix": true,
+			"maxFaces": 4
+		},
+		"layers": [
+			{
+				"id": "laser",
+				"kind": "eyeRay",
+				"color": "#ff2244",
+				"length": 2.2,
+				"width": 0.012
+			}
+		]
+	},
+	"funhouseBulge": {
+		"driver": {
+			"landmarks": true,
+			"transformationMatrix": true,
+			"maxFaces": 4
+		},
+		"layers": [
+			{
+				"id": "bulge",
+				"kind": "warp2d",
+				"preset": "bulge",
+				"strength": 0.85,
+				"region": "face"
+			}
+		]
+	},
+	"partyCombo": {
+		"driver": {
+			"landmarks": true,
+			"transformationMatrix": true,
+			"maxFaces": 4
+		},
+		"layers": [
+			{
+				"id": "ears",
+				"kind": "anchor3d",
+				"asset": "models/rabbit_ears.glb",
+				"bind": "forehead",
+				"offset": [0, 0.02, 0],
+				"scale": 1
+			},
+			{
+				"id": "laser",
+				"kind": "eyeRay",
+				"color": "#00e5ff",
+				"length": 1.8,
+				"width": 0.01
+			},
+			{
+				"id": "wave",
+				"kind": "warp2d",
+				"preset": "wave",
+				"strength": 0.55,
+				"region": "face"
+			}
+		]
+	}
+}

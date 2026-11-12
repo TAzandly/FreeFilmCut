@@ -121,6 +121,17 @@ function MenubarView( editor ) {
 	} );
 	options.add( option );
 
+	option = new UIRow().addClass( 'option' ).addClass( 'toggle' ).setTextContent( strings.getKey( 'menubar/view/faceFx' ) || 'Face FX' ).onClick( function () {
+
+		if ( typeof editor.toggleFaceFxPanel === 'function' ) {
+
+			editor.toggleFaceFxPanel();
+
+		}
+
+	} );
+	options.add( option );
+
 	// Text→RT→blit preview (align OpenCut timeline text path). Off by default.
 	const textLayerRTOption = new UIRow().addClass( 'option' ).addClass( 'toggle' ).setTextContent( strings.getKey( 'menubar/view/textLayerRT' ) ).onClick( function () {
 

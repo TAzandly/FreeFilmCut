@@ -43,6 +43,48 @@ export {
 	type VfxPackPlacement,
 } from "@/vfxpack/pack-placement";
 export {
+	FACE_FX_BIND_TARGETS,
+	FACE_FX_LAYER_KINDS,
+	FACE_FX_WARP_PRESETS,
+	createDefaultFaceFx,
+	normalizeFaceFx,
+	type FaceFxBindTarget,
+	type FaceFxLayerKind,
+	type FaceFxWarpPreset,
+	type FaceFxDriver,
+	type FaceFxLayer,
+	type FaceFxAnchor3dLayer,
+	type FaceFxEyeRayLayer,
+	type FaceFxWarp2dLayer,
+	type FaceFxConfig,
+} from "@/vfxpack/face-fx";
+export {
+	FACE_FX_BIND_LANDMARKS,
+	FACE_FX_IRIS_INDICES,
+	averageLandmarkIndices,
+	faceFxBindLandmarkIndices,
+	resolveFaceFxBindPoint,
+	type FaceFxBindPoint,
+} from "@/vfxpack/face-fx-driver";
+export {
+	sampleFaceWarpUv,
+	faceFxHasWarp2d,
+	type FaceWarpUvParams,
+} from "@/vfxpack/face-fx-warp2d";
+export {
+	applyFaceFxPass,
+	disposeFaceFxPass,
+	trimFaceFxPass,
+	packWarpFaces,
+	packEyeRays,
+	packEarAnchors,
+	type ApplyFaceFxPassParams,
+} from "@/vfxpack/face-fx-pass";
+export {
+	FACE_FX_GPU_MAX_FACES,
+	faceFxWarpPresetId,
+} from "@/vfxpack/face-fx-shaders";
+export {
 	BELOW_INPUT_UNIFORM_NAMES,
 	BELOW_INPUT_PREFERRED,
 	isBelowInputUniformName,

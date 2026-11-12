@@ -7,7 +7,8 @@ export type PrimaryVfxPackType =
 	| "sticker-anim"
 	| "text-anim"
 	| "text-template"
-	| "clip-anim";
+	| "clip-anim"
+	| "face-fx";
 
 /** Canonical + legacy type strings accepted in manifest.type */
 export type VfxPackType =
@@ -128,6 +129,8 @@ export interface VfxManifest {
 		};
 	};
 	scope?: VfxPackScope | string;
+	/** face-fx packs: landmark-driven layers (anchor3d / eyeRay / warp2d). */
+	faceFx?: import("@/vfxpack/face-fx").FaceFxConfig;
 	entry?: { scene?: string };
 	params?: Array<{
 		key: string;

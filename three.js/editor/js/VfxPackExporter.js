@@ -46,22 +46,162 @@ function slugify( name ) {
 
 }
 
-const PACK_TYPES = [ 'sticker', 'transition', 'effect', 'filter', 'art-text', 'sticker-anim', 'text-anim', 'text-template', 'clip-anim' ];
+	const PACK_TYPES = [ 'sticker', 'transition', 'effect', 'filter', 'art-text', 'sticker-anim', 'text-anim', 'text-template', 'clip-anim', 'face-fx' ];
+	
+	function normalizePackType( value ) {
+	
+		return PACK_TYPES.includes( value ) ? value : 'effect';
+	
+	}
+	
+	function defaultScopeForType( type ) {
+	
+		// filter / effect / clip-anim / face-fx consume layers below by default; others stay stack overlays for MVP.
+		// clip-anim below is optional at authoring time — default matches effect.
+		if ( type === 'filter' || type === 'effect' || type === 'clip-anim' || type === 'face-fx' ) return 'below';
+		return 'stack';
+	
+	}
 
-function normalizePackType( value ) {
+	function defaultFaceFxConfig() {
 
-	return PACK_TYPES.includes( value ) ? value : 'effect';
+		return {
+			driver: {
+				landmarks: true,
+				transformationMatrix: true,
+				maxFaces: 4
+			},
+			layers: []
+		};
 
-}
+	}
 
-function defaultScopeForType( type ) {
+	/** Pack GLB/GLTF listed on faceFx.anchor3d layers into pack/models/. */
+	async function collectFaceFxModelAssets( editor, faceFx, packFolder ) {
 
-	// filter / effect / clip-anim consume layers below by default; others stay stack overlays for MVP.
-	// clip-anim below is optional at authoring time — default matches effect.
-	if ( type === 'filter' || type === 'effect' || type === 'clip-anim' ) return 'below';
-	return 'stack';
+		if ( ! faceFx || ! Array.isArray( faceFx.layers ) || ! packFolder ) return;
+		const pf = editor && editor.projectFolder;
+		const models = packFolder.folder( 'models' );
+		const seen = new Set();
+		for ( const layer of faceFx.layers ) {
 
-}
+			if ( ! layer || layer.kind !== 'anchor3d' ) continue;
+			const asset = String( layer.asset || '' ).trim();
+			if ( ! asset || seen.has( asset ) ) continue;
+			seen.add( asset );
+			const baseName = asset.split( /[/\\]/ ).pop() || 'anchor.glb';
+			const relInPack = 'models/' + baseName;
+			layer.asset = relInPack;
+			let bytes = null;
+			const tryPaths = [
+				asset,
+				'assets/' + asset.replace( /^\.\//, '' ),
+				'assets/models/' + baseName,
+				'models/' + baseName
+			];
+			if ( pf && typeof pf.readBinaryFile === 'function' ) {
+
+				for ( const p of tryPaths ) {
+
+					try {
+
+						const bin = await pf.readBinaryFile( p );
+						if ( bin && bin.buffer ) {
+
+							bytes = bin.buffer;
+							break;
+
+						}
+
+					} catch ( e ) { /* next */ }
+
+				}
+
+			}
+			if ( ! bytes ) {
+
+				try {
+
+					const res = await fetch( '/vfxpacks/face-fx/' + relInPack );
+					if ( res.ok ) bytes = await res.arrayBuffer();
+
+				} catch ( e ) { /* missing */ }
+
+			}
+			if ( bytes ) models.file( baseName, new Uint8Array( bytes ) );
+			else console.warn( '[VfxPack] face-fx model missing:', asset );
+
+		}
+
+	}
+
+	/** Embed manifest.faceFx from project config or scene.userData (empty layers OK). */
+	function collectFaceFxConfig( editor, scene ) {
+
+		const fromConfig = editor && editor.config && editor.config.getKey( 'project/vfxpack/faceFx' );
+		const fromScene = scene && scene.userData && scene.userData.faceFx;
+		const raw = ( fromConfig && typeof fromConfig === 'object' ) ? fromConfig
+			: ( fromScene && typeof fromScene === 'object' ) ? fromScene
+				: null;
+		if ( ! raw ) return defaultFaceFxConfig();
+
+		const driverIn = raw.driver && typeof raw.driver === 'object' ? raw.driver : {};
+		const maxFaces = Math.max( 1, Math.min( 8, Math.round( Number( driverIn.maxFaces ) || 4 ) ) );
+		const layersIn = Array.isArray( raw.layers ) ? raw.layers : [];
+		const layers = [];
+		for ( let i = 0; i < layersIn.length; i ++ ) {
+
+			const L = layersIn[ i ];
+			if ( ! L || typeof L !== 'object' ) continue;
+			const kind = String( L.kind || '' ).trim();
+			if ( kind !== 'anchor3d' && kind !== 'eyeRay' && kind !== 'warp2d' ) continue;
+			const id = String( L.id || '' ).trim() || ( 'layer_' + i );
+			if ( kind === 'anchor3d' ) {
+
+				const off = Array.isArray( L.offset ) && L.offset.length >= 3 ? L.offset : [ 0, 0, 0 ];
+				layers.push( {
+					id,
+					kind: 'anchor3d',
+					asset: String( L.asset || '' ).trim(),
+					bind: String( L.bind || 'forehead' ).trim() || 'forehead',
+					offset: [ Number( off[ 0 ] ) || 0, Number( off[ 1 ] ) || 0, Number( off[ 2 ] ) || 0 ],
+					scale: Math.max( 0.001, Number( L.scale ) || 1 )
+				} );
+
+			} else if ( kind === 'eyeRay' ) {
+
+				layers.push( {
+					id,
+					kind: 'eyeRay',
+					color: String( L.color || '#ff0033' ).trim() || '#ff0033',
+					length: Math.max( 0, Number( L.length ) || 2 ),
+					width: Math.max( 0.0001, Number( L.width ) || 0.01 )
+				} );
+
+			} else {
+
+				layers.push( {
+					id,
+					kind: 'warp2d',
+					preset: String( L.preset || 'bulge' ).trim() || 'bulge',
+					strength: Math.max( 0, Math.min( 2, Number( L.strength ) || 0.5 ) ),
+					region: L.region ? String( L.region ).trim() : undefined
+				} );
+
+			}
+
+		}
+
+		return {
+			driver: {
+				landmarks: driverIn.landmarks !== false,
+				transformationMatrix: driverIn.transformationMatrix !== false,
+				maxFaces
+			},
+			layers
+		};
+
+	}
 
 function clipAnimPhaseFromConfig( editor ) {
 
@@ -2395,6 +2535,13 @@ void main() {
 
 		const fitRaw = editor.config && editor.config.getKey( 'project/vfxpack/fitMode' );
 		manifest.fitMode = fitRaw === 'stretch' ? 'stretch' : 'crop';
+
+	}
+	if ( packType === 'face-fx' ) {
+
+		manifest.scope = 'below';
+		manifest.faceFx = collectFaceFxConfig( editor, scene );
+		await collectFaceFxModelAssets( editor, manifest.faceFx, pack );
 
 	}
 	if ( customEffectsList.length > 0 ) {

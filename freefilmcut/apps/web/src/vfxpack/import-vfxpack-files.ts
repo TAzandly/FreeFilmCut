@@ -51,12 +51,18 @@ export async function importVfxPackFiles({
 						p.sourceFileName.toLowerCase() === file.name.toLowerCase(),
 				);
 			const pack = await loadVfxPackFromFile({ file });
+			const type = normalizeVfxPackType(pack.type);
+			// Face FX is temporarily hidden in the NLE until the feature is stable.
+			if (type === "face-fx") {
+				toast.message(`Skipped ${pack.displayName}`, {
+					description: "Face FX packs are temporarily unavailable in the editor.",
+				});
+				continue;
+			}
 			const existingById = usePackRegistry.getState().getPack(pack.id);
 			await persistUserVfxPackFile({ file, pack });
 			registerPack(pack);
 			imported.push(pack);
-
-			const type = normalizeVfxPackType(pack.type);
 			const placement = getVfxPackPlacement({ type: pack.type });
 			const replaced = Boolean(existingById || existingByName);
 			const typeMismatch =

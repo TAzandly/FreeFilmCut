@@ -26,21 +26,34 @@ export const MEDIAPIPE_WASM_CDN_BASE = `https://cdn.jsdelivr.net/npm/@mediapipe/
 export const MEDIAPIPE_ESM_CDN_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_TASKS_VISION_VERSION}/vision_bundle.mjs`;
 export const MEDIAPIPE_FACE_MODEL_URL = "/models/beauty/face_landmarker.task";
 
-export type MediapipeFaceConfig = {
-	/** Absolute URL or path to `vision_bundle.mjs`. */
-	esmUrl?: string;
-	wasmBaseUrl?: string;
-	modelUrl?: string;
-};
+	export type MediapipeFaceConfig = {
+		/** Absolute URL or path to `vision_bundle.mjs`. */
+		esmUrl?: string;
+		wasmBaseUrl?: string;
+		modelUrl?: string;
+		/**
+		 * When true, Face Landmarker also returns facial transformation matrices
+		 * (needed by face-fx `faceMatrix` bind). Recreates the landmarker.
+		 */
+		outputFacialTransformationMatrixes?: boolean;
+	};
+	
+	let config: MediapipeFaceConfig = {};
+	let landmarkerPromise: Promise<FaceLandmarker> | null = null;
+	
+	/** Override ESM / wasm / model locations (call before first `detectFacesMediapipe`). */
+	export function configureMediapipeFace(next: MediapipeFaceConfig): void {
+		config = { ...config, ...next };
+		landmarkerPromise = null;
+	}
 
-let config: MediapipeFaceConfig = {};
-let landmarkerPromise: Promise<FaceLandmarker> | null = null;
-
-/** Override ESM / wasm / model locations (call before first `detectFacesMediapipe`). */
-export function configureMediapipeFace(next: MediapipeFaceConfig): void {
-	config = { ...config, ...next };
-	landmarkerPromise = null;
-}
+	/** Enable / disable transformation matrices without touching asset URLs. */
+	export function setMediapipeFacialTransformationMatrixes(
+		enabled: boolean,
+	): void {
+		if (config.outputFacialTransformationMatrixes === enabled) return;
+		configureMediapipeFace({ outputFacialTransformationMatrixes: enabled });
+	}
 
 async function createLandmarker(): Promise<FaceLandmarker> {
 	if (typeof window === "undefined" && typeof self === "undefined") {
@@ -70,10 +83,11 @@ async function createLandmarker(): Promise<FaceLandmarker> {
 				minFaceDetectionConfidence: 0.35,
 				minFacePresenceConfidence: 0.35,
 				minTrackingConfidence: 0.35,
-				outputFaceBlendshapes: false,
-				outputFacialTransformationMatrixes: false,
-			});
-		};
+					outputFaceBlendshapes: false,
+					outputFacialTransformationMatrixes:
+						config.outputFacialTransformationMatrixes === true,
+				});
+			};
 		// Pages and classic workers load the classic wasm loader; module workers
 		// (no working `importScripts`) need the ESM variant.
 		if (typeof document !== "undefined") return create(false);
@@ -121,33 +135,46 @@ export function boxFromPoints(points: Float32Array): FaceBox {
 	return { x: x0, y: y0, w: Math.max(0, x1 - x0), h: Math.max(0, y1 - y0) };
 }
 
-/** Convert MediaPipe `NormalizedLandmark[][]` into `FaceLandmarks[]`. */
-export function landmarksToFaces(
-	faceLandmarks: ReadonlyArray<ReadonlyArray<{ x: number; y: number }>>,
-): FaceLandmarks[] {
-	const faces: FaceLandmarks[] = [];
-	for (const landmarks of faceLandmarks) {
-		if (landmarks.length < MEDIAPIPE_FACE_LANDMARK_COUNT) continue;
-		const points = new Float32Array(MEDIAPIPE_FACE_LANDMARK_COUNT * 2);
-		for (let i = 0; i < MEDIAPIPE_FACE_LANDMARK_COUNT; i++) {
-			points[i * 2] = landmarks[i].x;
-			points[i * 2 + 1] = landmarks[i].y;
+	/** Convert MediaPipe `NormalizedLandmark[][]` into `FaceLandmarks[]`. */
+	export function landmarksToFaces(
+		faceLandmarks: ReadonlyArray<ReadonlyArray<{ x: number; y: number }>>,
+		facialTransformationMatrixes?: ReadonlyArray<{
+			data?: ArrayLike<number> | null;
+		} | null> | null,
+	): FaceLandmarks[] {
+		const faces: FaceLandmarks[] = [];
+		for (let fi = 0; fi < faceLandmarks.length; fi++) {
+			const landmarks = faceLandmarks[fi];
+			if (landmarks.length < MEDIAPIPE_FACE_LANDMARK_COUNT) continue;
+			const points = new Float32Array(MEDIAPIPE_FACE_LANDMARK_COUNT * 2);
+			for (let i = 0; i < MEDIAPIPE_FACE_LANDMARK_COUNT; i++) {
+				points[i * 2] = landmarks[i].x;
+				points[i * 2 + 1] = landmarks[i].y;
+			}
+			const face: FaceLandmarks = { points, box: boxFromPoints(points) };
+			const mat = facialTransformationMatrixes?.[fi];
+			const data = mat && "data" in mat ? mat.data : null;
+			if (data && data.length >= 16) {
+				face.transformationMatrix = Float32Array.from(data);
+			}
+			faces.push(face);
 		}
-		faces.push({ points, box: boxFromPoints(points) });
+		return faces;
 	}
-	return faces;
-}
-
-/** Detect faces with MediaPipe FaceLandmarker (IMAGE mode, up to 4 faces). */
-export async function detectFacesMediapipe(
-	image: BeautyImageSource,
-): Promise<FaceLandmarks[]> {
-	const { width, height } = getImageSourceSize(image);
-	if (width <= 0 || height <= 0) return [];
-	const landmarker = await getLandmarker();
-	const result = withQuietNativeLogs(() => landmarker.detect(image));
-	return landmarksToFaces(result.faceLandmarks ?? []);
-}
+	
+	/** Detect faces with MediaPipe FaceLandmarker (IMAGE mode, up to 4 faces). */
+	export async function detectFacesMediapipe(
+		image: BeautyImageSource,
+	): Promise<FaceLandmarks[]> {
+		const { width, height } = getImageSourceSize(image);
+		if (width <= 0 || height <= 0) return [];
+		const landmarker = await getLandmarker();
+		const result = withQuietNativeLogs(() => landmarker.detect(image));
+		return landmarksToFaces(
+			result.faceLandmarks ?? [],
+			result.facialTransformationMatrixes,
+		);
+	}
 
 export function disposeMediapipeFace(): void {
 	const pending = landmarkerPromise;

@@ -5,6 +5,7 @@ import type {
 	VfxSceneFile,
 } from "@/vfxpack/types";
 import { normalizeVfxPackType } from "@/vfxpack/pack-placement";
+import { normalizeFaceFx } from "@/vfxpack/face-fx";
 import { resolveTextTemplatePayload } from "@/vfxpack/apply-text-template";
 import { loadCustomDefinitions } from "@/vfxpack/postprocess";
 import type { CustomEffectDefinition } from "@/vfxpack/postprocess";
@@ -13,7 +14,8 @@ function defaultScopeForType(type: string): string {
 	if (
 		type === "filter" ||
 		type === "effect" ||
-		type === "clip-anim"
+		type === "clip-anim" ||
+		type === "face-fx"
 	) {
 		return "below";
 	}
@@ -105,7 +107,8 @@ export async function loadVfxPackFromFile({
 			lower.includes(".vert.") ||
 			lower.includes(".frag.");
 		const isFont = /\.(ttf|otf|woff)$/i.test(lower);
-		if (!isImage && !isVideo && !isShader && !isFont) continue;
+		const isModel = /\.(glb|gltf)$/i.test(lower);
+		if (!isImage && !isVideo && !isShader && !isFont && !isModel) continue;
 		const copy = bytes.slice();
 		const blob = new Blob([copy], {
 			type: isImage
@@ -114,30 +117,37 @@ export async function loadVfxPackFromFile({
 					? "video/mp4"
 					: isFont
 						? "font/ttf"
-						: "text/plain",
+						: isModel
+							? "model/gltf-binary"
+							: "text/plain",
 		});
 		objectUrls.set(path, URL.createObjectURL(blob));
 	}
 
-	const type = normalizeVfxPackType(manifest.type);
+		const type = normalizeVfxPackType(manifest.type);
 
-	const pack: LoadedVfxPack = {
-		id: manifest.id,
-		displayName: manifest.displayName || manifest.id,
-		type,
-		scope: String(manifest.scope || defaultScopeForType(type)),
-		manifest,
-		scene,
-		files,
-		objectUrls,
-		sourceFileName: file.name,
-	};
+		if (type === "face-fx") {
+			manifest.faceFx = normalizeFaceFx(manifest.faceFx);
+			if (!manifest.scope) manifest.scope = "below";
+		}
 
-	// text-template: hydrate manifest.textTemplate from text-template.json or scene.json
-	// when the pack was exported by the generic VfxPackExporter (missing payload).
-	if (type === "text-template") {
-		resolveTextTemplatePayload(pack);
-	}
+		const pack: LoadedVfxPack = {
+			id: manifest.id,
+			displayName: manifest.displayName || manifest.id,
+			type,
+			scope: String(manifest.scope || defaultScopeForType(type)),
+			manifest,
+			scene,
+			files,
+			objectUrls,
+			sourceFileName: file.name,
+		};
+
+		// text-template: hydrate manifest.textTemplate from text-template.json or scene.json
+		// when the pack was exported by the generic VfxPackExporter (missing payload).
+		if (type === "text-template") {
+			resolveTextTemplatePayload(pack);
+		}
 
 	// Custom PP definitions (also re-registered in buildPackScene).
 	const customs = (manifest as { customEffects?: CustomEffectDefinition[] })

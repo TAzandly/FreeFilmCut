@@ -292,6 +292,11 @@ export function loadPersistedUserVfxPacks(): void {
 						continue;
 					}
 					const pack = await loadVfxPackFromFile({ file });
+					// Face FX temporarily hidden in the NLE — skip restoring into the library.
+					const packType = String(pack.type || "")
+						.trim()
+						.toLowerCase();
+					if (packType === "face-fx") continue;
 					// Keep the user-facing file name for replace-by-name on re-import.
 					pack.sourceFileName = entry.fileName || pack.sourceFileName;
 					usePackRegistry.getState().registerPack(pack);

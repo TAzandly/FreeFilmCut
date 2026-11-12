@@ -8,6 +8,11 @@ export type FaceBox = { x: number; y: number; w: number; h: number };
 export type FaceLandmarks = {
 	points: Float32Array;
 	box: FaceBox;
+	/**
+	 * Optional 4×4 column-major facial transformation matrix from MediaPipe
+	 * (`outputFacialTransformationMatrixes`). Used by face-fx `faceMatrix` bind.
+	 */
+	transformationMatrix?: Float32Array;
 };
 
 export type BeautyAnalysisFrame = {

@@ -66,18 +66,19 @@
 
 			import * as THREE from 'three';
 
-			import { Editor } from './js/Editor.js?v=fcc-ui-234';
-			import { Viewport } from './js/Viewport.js?v=fcc-ui-230';
+			import { Editor } from './js/Editor.js?v=fcc-ui-240';
+			import { Viewport } from './js/Viewport.js?v=fcc-ui-252';
 			import { Toolbar } from './js/Toolbar.js?v=fcc-ui-220';
 			import { Script } from './js/Script.js?v=fcc-ui-109';
 			import { Player } from './js/Player.js';
 			import { Sidebar } from './js/Sidebar.js?v=fcc-ui-232';
-			import { Menubar } from './js/Menubar.js?v=fcc-ui-232';
+			import { Menubar } from './js/Menubar.js?v=fcc-ui-241';
 			import { Resizer } from './js/Resizer.js';
 			import { AnimationResizer } from './js/AnimationResizer.js?v=fcc-ui-109';
 			import { Animation } from './js/Animation.js?v=fcc-ui-228';
 			import { FccTimelineEditor } from './js/timeline/FccTimelineEditor.js?v=fcc-ui-195';
 			import { StickerMotionPanel } from './js/sticker-motion/StickerMotionPanel.js?v=fcc-ui-109';
+			import { FaceFxPanel } from './js/face-fx/FaceFxPanel.js?v=fcc-ui-252';
 			import { createProjectFolder } from './js/ProjectFolder.js?v=fcc-ui-219';
 
 			import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
@@ -170,6 +171,9 @@
 
 			const stickerMotionPanel = new StickerMotionPanel( editor );
 			document.body.appendChild( stickerMotionPanel.dom );
+
+			const faceFxPanel = new FaceFxPanel( editor );
+			document.body.appendChild( faceFxPanel.dom );
 
 			const animationResizer = new AnimationResizer( editor );
 			document.body.appendChild( animationResizer.dom );

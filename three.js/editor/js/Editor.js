@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { Config } from './Config.js?v=fcc-ui-212';
 import { Loader } from './Loader.js?v=fcc-anim-14';
 import { History as _History } from './History.js';
-import { Strings } from './Strings.js?v=fcc-ui-153';
+import { Strings } from './Strings.js?v=fcc-ui-252';
 import { Storage as _Storage } from './Storage.js?v=fcc-ui-212';
 import { Selector } from './Selector.js?v=fcc-ui-106';
 import {
@@ -124,7 +124,8 @@ function Editor() {
 
 		// FreeFilmCut: project resolution / safe frame
 		vfxpackChanged: new Signal(), // FreeFilmCut: VfxPack poster/hover preview updated
-		resolutionChanged: new Signal()
+		resolutionChanged: new Signal(),
+		faceFxPreviewStatus: new Signal() // FreeFilmCut: Face FX MediaPlayer preview status
 
 	};
 

@@ -37,6 +37,7 @@ export const VFX_PACK_TIMELINE_CLASS: Record<PrimaryVfxPackType, string> = {
 	"text-anim": "bg-[#E8E8E8]",
 	"text-template": "bg-[#D16BA5]",
 	"clip-anim": "bg-[#E8E8E8]",
+	"face-fx": "bg-[#6B9FD6]",
 };
 
 export const VFX_PACK_TIMELINE_COLOR: Record<PrimaryVfxPackType, string> = {
@@ -49,6 +50,7 @@ export const VFX_PACK_TIMELINE_COLOR: Record<PrimaryVfxPackType, string> = {
 	"text-anim": "#E8E8E8",
 	"text-template": "#D16BA5",
 	"clip-anim": "#E8E8E8",
+	"face-fx": "#6B9FD6",
 };
 
 export function vfxPackTimelineClassName({

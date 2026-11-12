@@ -53,7 +53,10 @@ export function packNeedsBelowInput({
 		t === "posteffect" ||
 		t === "clip-anim" ||
 		t === "clipanim" ||
-		t === "clip_anim";
+		t === "clip_anim" ||
+		t === "face-fx" ||
+		t === "facefx" ||
+		t === "face_fx";
 	if (!usesBelowByType) return false;
 	// Missing scope already normalized to "below" in load-pack for these types.
 	return s === "below" || s === "";

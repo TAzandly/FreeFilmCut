@@ -25,7 +25,8 @@ const PACK_TYPES = {
 	'sticker-anim': 'Sticker animation',
 	'text-anim': '文字动画',
 	'text-template': 'Text template',
-	'clip-anim': 'Clip animation'
+	'clip-anim': 'Clip animation',
+	'face-fx': 'Face FX'
 };
 
 const VALID_TYPES = Object.keys( PACK_TYPES );

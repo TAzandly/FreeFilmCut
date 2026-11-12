@@ -118,6 +118,22 @@ import {
 	trimBeautyPass,
 	type BeautyAnalysisRequest,
 } from "@/beauty";
+import { normalizeFaceFx } from "@/vfxpack/face-fx";
+import {
+	applyFaceFxPass,
+	disposeFaceFxPass,
+	trimFaceFxPass,
+} from "@/vfxpack/face-fx-pass";
+import {
+	clearFaceFxAnalysis,
+	disposeFaceFxAnalysisScratch,
+	requestFaceFxFaces,
+} from "@/vfxpack/face-fx-analysis";
+import {
+	ensureFaceFxAnchorInstances,
+	faceFxConfigHasGlbAnchors,
+	poseFaceFxAnchors,
+} from "@/vfxpack/face-fx-anchors";
 import { TICKS_PER_SECOND } from "@/wasm";
 
 function readStickerPlacement(params: ParamValues | null | undefined): {
@@ -354,6 +370,17 @@ class ThreeCompositor {
 		// A finished analysis must repaint a paused preview.
 		onReady: () => bumpFlowerTextFrameEpoch(),
 	});
+	/** Face FX GLB anchor roots keyed by pack id. */
+	private faceFxAnchorGroups = new Map<string, THREE.Group>();
+	private faceFxOverlayScene = new THREE.Scene();
+	private faceFxOverlayCam = new THREE.OrthographicCamera(
+		-0.5,
+		0.5,
+		0.5,
+		-0.5,
+		-10,
+		10,
+	);
 	/** Drops requester state when a clip's source/trim/retime changes (scene builder). */
 	private unsubscribeBeautyInvalidation: (() => void) | null = null;
 	private packScenes = new Map<string, BuiltPackScene>();
@@ -544,7 +571,16 @@ class ThreeCompositor {
 		this.unsubscribePacks?.();
 		this.unsubscribePacks = null;
 		// Beauty RTs/mask are keyed on the renderer; analysis state is per-compositor.
-		if (this.renderer) disposeBeautyPass(this.renderer);
+		if (this.renderer) {
+			disposeBeautyPass(this.renderer);
+			disposeFaceFxPass(this.renderer);
+		}
+		disposeFaceFxAnalysisScratch();
+		clearFaceFxAnalysis();
+		for (const group of this.faceFxAnchorGroups.values()) {
+			this.faceFxOverlayScene.remove(group);
+		}
+		this.faceFxAnchorGroups.clear();
 		this.beautyRequester.clear();
 
 		for (const id of [...this.flowerTextScenes.keys()]) {
@@ -931,10 +967,11 @@ class ThreeCompositor {
 			perfMark = now;
 		}
 
-		// Present accum 鈫?canvas
+		// Present accum → canvas
 		this.presentAccum();
-		// Release beauty RTs / mask once no beauty layer has drawn for a while.
+		// Release beauty / face-fx RTs once idle.
 		trimBeautyPass(renderer);
+		trimFaceFxPass(renderer);
 
 		if (perfMarks) {
 			recordSpan({
@@ -1878,6 +1915,140 @@ class ThreeCompositor {
 		return target.texture;
 	}
 
+	/**
+	 * face-fx: snapshot below → landmarks → warp2d / eyeRay / procedural ears,
+	 * then blit onto the compose target (same below contract as filters).
+	 */
+	private renderFaceFxPack({
+		packId,
+		width,
+		height,
+		clearFirst,
+		target,
+		clipLocalTime = 0,
+		belowInputOverride = null,
+	}: {
+		packId: string;
+		width: number;
+		height: number;
+		clearFirst: boolean;
+		target: THREE.WebGLRenderTarget | null;
+		clipLocalTime?: number;
+		belowInputOverride?: THREE.Texture | null;
+	}) {
+		const renderer = this.renderer;
+		const accumRT = this.accumRT;
+		if (!renderer || !target) return;
+
+		const pack = getPackRegistrySnapshot().packs.find((p) => p.id === packId);
+		const faceFx = normalizeFaceFx(pack?.manifest?.faceFx);
+		const belowTex =
+			belowInputOverride ??
+			(target === accumRT ? this.snapshotBelowSource() : belowInputOverride);
+		if (!belowTex) {
+			if (clearFirst) {
+				renderer.setRenderTarget(target);
+				renderer.setClearColor(0x000000, 1);
+				renderer.clear();
+			}
+			return;
+		}
+
+		const faces = requestFaceFxFaces({
+			key: `facefx:${packId}`,
+			renderer,
+			texture: belowTex,
+			width,
+			height,
+			config: faceFx,
+			onReady: () => bumpFlowerTextFrameEpoch(),
+		});
+
+		const hasGlb = faceFxConfigHasGlbAnchors(faceFx);
+		const out =
+			faces.length > 0
+				? applyFaceFxPass({
+						renderer,
+						inputTexture: belowTex,
+						width,
+						height,
+						faces,
+						config: faceFx,
+						timeSec: clipLocalTime,
+						maxEdge: Math.max(width, height),
+						skipProceduralEars: hasGlb,
+					})
+				: null;
+
+		const source = out ?? belowTex;
+		this.blitTextureToTarget({
+			source,
+			target,
+			flipY: false,
+			clear: clearFirst,
+			clearAlpha: 1,
+			blend: "replace",
+		});
+
+		if (hasGlb && pack && faces.length > 0) {
+			void this.renderFaceFxGlbOverlay({
+				packId,
+				pack,
+				faceFx,
+				faces,
+				target,
+				width,
+				height,
+			});
+		}
+	}
+
+	private async renderFaceFxGlbOverlay({
+		packId,
+		pack,
+		faceFx,
+		faces,
+		target,
+		width,
+		height,
+	}: {
+		packId: string;
+		pack: LoadedVfxPack;
+		faceFx: ReturnType<typeof normalizeFaceFx>;
+		faces: import("@/beauty/analysis/types").FaceLandmarks[];
+		target: THREE.WebGLRenderTarget;
+		width: number;
+		height: number;
+	}) {
+		const renderer = this.renderer;
+		if (!renderer) return;
+		let group = this.faceFxAnchorGroups.get(packId);
+		if (!group) {
+			group = new THREE.Group();
+			group.name = `FaceFxAnchors_${packId}`;
+			this.faceFxOverlayScene.add(group);
+			this.faceFxAnchorGroups.set(packId, group);
+		}
+		const instances = await ensureFaceFxAnchorInstances({
+			pack,
+			config: faceFx,
+			group,
+		});
+		poseFaceFxAnchors({
+			instances,
+			faces,
+			maxFaces: faceFx.driver.maxFaces,
+		});
+		const prev = renderer.getRenderTarget();
+		const prevAuto = renderer.autoClear;
+		renderer.autoClear = false;
+		renderer.setRenderTarget(target);
+		renderer.setViewport(0, 0, target.width || width, target.height || height);
+		renderer.render(this.faceFxOverlayScene, this.faceFxOverlayCam);
+		renderer.setRenderTarget(prev);
+		renderer.autoClear = prevAuto;
+	}
+
 	private async renderOnePack({
 		packId,
 		width,
@@ -1917,6 +2088,21 @@ class ThreeCompositor {
 		const renderer = this.renderer;
 		const accumRT = this.accumRT;
 		if (!renderer || !accumRT) return;
+		const metaEarly = this.lookupPackMeta(packId);
+		const typeEarly = normalizeVfxPackType(metaEarly?.type);
+		// face-fx is driven by manifest.faceFx (GPU pass), not the pack scene mesh.
+		if (typeEarly === "face-fx") {
+			this.renderFaceFxPack({
+				packId,
+				width,
+				height,
+				clearFirst,
+				target,
+				clipLocalTime,
+				belowInputOverride,
+			});
+			return;
+		}
 		const built = this.packScenes.get(packId);
 		if (!built) {
 			// Scene still building; kick sync and skip this frame.
@@ -1932,8 +2118,8 @@ class ThreeCompositor {
 			ensureBuiltPackDefaultEnvironment({ built, renderer });
 		}
 		const meta = this.lookupPackMeta(packId);
-		const nativeSticker =
-			normalizeVfxPackType(meta?.type || built.packType) === "sticker";
+		const packTypeNorm = normalizeVfxPackType(meta?.type || built.packType);
+		const nativeSticker = packTypeNorm === "sticker";
 		// Stickers keep pack design resolution (e.g. 400×400) — same source as
 		// selection bounds (stickerPackSourceSize). Never fall back to canvas size
 		// or contain-fit / drag travel desyncs from the handle box.

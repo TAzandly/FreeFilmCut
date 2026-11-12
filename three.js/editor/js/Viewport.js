@@ -46,6 +46,7 @@ import {
 } from './ui/TextStickers.js?v=fcc-ui-211';
 import { applyTextGeomFxInScene } from './ui/TextGeomFx.js?v=fcc-ui-146';
 import { disposeFccMedia, fccVideoPlaying, updateFccVideos } from './media/FccVideo.js?v=fcc-ui-207';
+import { FaceFxPreview } from './face-fx/FaceFxPreview.js?v=fcc-ui-252';
 import { bindFccAudio, resumeAndRouteVideos, syncFccListenerToCamera } from './media/FccAudio.js?v=fcc-ui-110';
 
 import { ViewHelper } from './Viewport.ViewHelper.js';
@@ -89,6 +90,7 @@ function Viewport( editor ) {
 	container.setPosition( 'absolute' );
 
 	bindFccAudio( editor );
+	editor.faceFxPreview = new FaceFxPreview( editor );
 	container.dom.addEventListener( 'pointerdown', function () {
 
 		resumeAndRouteVideos( editor );
@@ -1139,6 +1141,7 @@ function Viewport( editor ) {
 	let prevActionsInUse = 0;
 
 	const timer = new THREE.Timer(); // only used for animations
+	let lastAnimDelta = 0;
 
 	function animate() {
 
@@ -1146,6 +1149,7 @@ function Viewport( editor ) {
 
 		const mixer = editor.mixer;
 		const delta = timer.getDelta();
+		lastAnimDelta = delta;
 
 		let needsUpdate = false;
 
@@ -1200,6 +1204,8 @@ function Viewport( editor ) {
 			if ( editor.advanceStickerMotion( delta ) ) needsUpdate = true;
 
 		}
+
+		if ( editor.faceFxPreview && editor.faceFxPreview.enabled ) needsUpdate = true;
 
 		if ( needsUpdate === true ) render();
 
@@ -1272,6 +1278,11 @@ function Viewport( editor ) {
 
 		syncFccListenerToCamera( editor );
 		updateFccVideos( renderer, scene );
+		if ( editor.faceFxPreview && editor.faceFxPreview.enabled ) {
+
+			editor.faceFxPreview.update( renderer, scene, lastAnimDelta );
+
+		}
 
 		// Char poses first, then text-scope bend / wipe in the Troika materials
 		// (they read the posed char matrices). Values come from the last .anim
